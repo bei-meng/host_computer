@@ -89,6 +89,15 @@ class DAC():
         self.ps.send_packets(pkts)
         self.dac_ctr = dac_ctr
 
+    def set_flt(self,data):
+        pkts=Packet()
+        pkts.append_cmdlist([
+            CMD(FLT,command_data=CmdData(data)),                  # 配置flt
+            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le1)),         # cfg_flt_le1
+            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le2)),         # cfg_flt_le2
+        ],mode=1)
+        self.ps.send_packets(pkts)
+
     # def get_out(self):
     #     """
     #         读DAC？
@@ -112,9 +121,3 @@ class DAC():
         assert v <= self.referenceVoltage*self.gain,"VToBytes: 电压超过范围!"
         res = v/self.referenceVoltage/self.gain*self.base
         return int(res)
-    
-    def indexMap(self,num):
-        """
-            将对应的行和列索引映射为对应的dac数字和通道
-        """
-        pass

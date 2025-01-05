@@ -106,7 +106,7 @@ class ADC():
         self.ps.send_packets(pkts)
 
 
-    def set_gain(self,gain):
+    def set_gain(self,gain,delay=None):
         """
             设置ADC的增益?
         """
@@ -116,35 +116,82 @@ class ADC():
         ],mode=1)
 
         # 发送指令
-        self.ps.send_packets(pkts)
+        self.ps.send_packets(pkts,delay=delay)
         self.gain=gain
 
-    def get_out(self,num):
+    def get_out(self,num:list,read_voltage:float,delay=None):
         """
             从adc_num的adc的adc_channel读数据
         """
-        TIA_num = self.TIA_index_map(num)
-        adc_num, adc_channel = int(TIA_num/4),TIA_num%4
+        message_cond = []
+        message_v = []
+        for TIA_num in num:
+            adc_num, adc_channel = int(TIA_num/4),TIA_num%4
 
-        channel_map = {0: 'A', 1: 'B', 2: 'C', 3: 'D'}
-        pkts=Packet()
-        adc_out = CMD(dict(
-            command_addr = 65+TIA_num,
-            command_type = COMMAND_TYPE[1],
-            n_addr_bytes = N_ADDR_BYTES[0],
-            n_data_bytes = N_DATA_BYTES[0],
-            command_name = f"adc{adc_num}_out{channel_map[adc_channel]}",
-            command_data = CmdData(0),
-            command_description = "从ADC对应通道读取数据"
-        ))
-        pkts.append_cmdlist([adc_out],mode=2)
+            channel_map = {0: 'A', 1: 'B', 2: 'C', 3: 'D'}
+            pkts=Packet()
+            adc_out = CMD(dict(
+                command_addr = 65+TIA_num,
+                command_type = COMMAND_TYPE[1],
+                n_addr_bytes = N_ADDR_BYTES[0],
+                n_data_bytes = N_DATA_BYTES[0],
+                command_name = f"adc{adc_num}_out{channel_map[adc_channel]}",
+                command_data = CmdData(0),
+                command_description = "从ADC对应通道读取数据"
+            ))
+            pkts.append_cmdlist([adc_out],mode=2)
 
-        # 发送指令
-        self.ps.send_packets(pkts)
-        # 接收信息
-        # 高16bit：0，低16bit：寄存器的16bit值
-        message = self.ps.receive_packet(f"adc读取:{adc_out.command_name}")
-        return message
+            # 发送指令
+            self.ps.send_packets(pkts,delay=delay)
+            # 接收信息
+            # 高16bit：0，低16bit：寄存器的16bit值
+            message = self.ps.receive_packet(f"adc读取:{adc_out.command_name}")
+            message_cond.append(self.adc_to_cond(message, read_voltage))
+            message_v.append(self.adc_to_voltage(message))
+        return message_cond,message_v
+    
+    def adc_to_voltage(self,message, vref=1.25):
+        """
+            读取的值换算成电压
+        """
+        voltage_sample_hex = message.hex()[2:4] + message.hex()[0:2]
+        # 将十六进制字符串转换为整数
+        data = int(voltage_sample_hex, 16)
+        # 确保数据在16位范围内
+        data &= 0xFFFF
+        # 将16位有符号数转换为Python整数
+        if data & 0x8000:  # 若符号位为1，则表示负数
+            data -= 0x10000
+
+        # 将数据转换为电压
+        voltage = (data / (2**15-1)) * vref  # 32767 是0x7FFF对应的正最大值
+        return voltage
+    
+    def adc_to_cond(self,message,read_voltage,vref=1.25):
+        """
+            读取的值换算成电导(单位:us)
+        """
+        voltage_sample_hex = message.hex()[2:4] + message.hex()[0:2]
+        # 将十六进制字符串转换为整数
+        data = int(voltage_sample_hex, 16)
+        # 确保数据在16位范围内
+        data &= 0xFFFF
+        # 将16位有符号数转换为Python整数
+        if data & 0x8000:  # 若符号位为1，则表示负数
+            data -= 0x10000
+
+        # 将数据转换为电压
+        voltage = (data / (2**15-1)) * vref  # 32767 是0x7FFF对应的正最大值
+        # 返回的单位是us
+        if self.gain == 0:
+            return voltage/((read_voltage+1e-10)*6.0241*(10e3+200))*1e6
+        elif self.gain == 1:
+            return voltage/((read_voltage+1e-10)*1*(10e3+200))*1e6
+        elif self.gain == 2:
+            return voltage/((read_voltage+1e-10)*6.0241*200)*1e6
+        elif self.gain == 3:
+            return voltage/((read_voltage+1e-10)*1*200)*1e6
+    
 
     def TIA_index_map(self,num,device=0,col=True):
         """

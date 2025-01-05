@@ -44,10 +44,12 @@ class PS():
             with self.lock:
                 packet = ""
                 try:
+                    # pass
                     packet = self.socket.recv(1024)  # 每次最多接收 1024 字节
                     if not packet:
                         print("empty packet")
-                    print(f"---Received---\n{packet}\n")
+                    if self.debug:
+                        print(f"Received: {packet}\n")
                     self.history.append(dict(
                         name = name,
                         message = packet
@@ -56,21 +58,22 @@ class PS():
                     print(f"Failed to recv message")
             return packet
 
-    def send_packets(self, pkts: Packet):
+    def send_packets(self, pkts: Packet,delay = None):
         """
             将packer里面的所有上位机指令按顺序有间隔的发送下去
         """
         if self.enable:
             with self.lock:
                 try:
+                    # pass
                     if self.debug:
-                        print(f"------------------------------ 发送指令: ------------------------------ ")
                         print(pkts)
                     for cmd in pkts.get_bytes_list():
                         self.socket.sendall(cmd)
-                        time.sleep(self.delay)
-                    if self.debug:
-                        print(f"------------------------------ 指令发送完成！------------------------------ \n") 
+                        if delay is not None:
+                            time.sleep(delay)
+                        else:
+                            time.sleep(self.delay)
                 except socket.error:
                     print(f"Failed to send message:")
 
