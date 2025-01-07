@@ -246,7 +246,7 @@ class CHIP():
             ],mode=1)
             self.ps.send_packets(pkts,delay=delay)
 
-    def set_dac_read_V(self,v:int):
+    def set_dac_read_V(self,v:float,tg_v:float = 5):
         """
             配置dac的读电压
         """
@@ -260,7 +260,7 @@ class CHIP():
 
                 self.dac.set_voltage(0,dac_num=0,dac_channel=4)           #
                 self.dac.set_voltage(0,dac_num=0,dac_channel=5)           #
-                self.dac.set_voltage(5,dac_num=0,dac_channel=6)           # TG
+                self.dac.set_voltage(tg_v,dac_num=0,dac_channel=6)           # TG
                 self.dac.set_voltage(0,dac_num=0,dac_channel=7)           #
 
                 self.dac.set_voltage(v,dac_num=1,dac_channel=0)           # ROW_Va
@@ -275,7 +275,7 @@ class CHIP():
 
                 self.dac.set_voltage(0,dac_num=0,dac_channel=4)           #
                 self.dac.set_voltage(0,dac_num=0,dac_channel=5)           #
-                self.dac.set_voltage(5,dac_num=0,dac_channel=6)           # TG
+                self.dac.set_voltage(tg_v,dac_num=0,dac_channel=6)           # TG
                 self.dac.set_voltage(0,dac_num=0,dac_channel=7)           #
 
                 self.dac.set_voltage(v,dac_num=1,dac_channel=0)           # ROW_Va
@@ -343,33 +343,35 @@ class CHIP():
         """
         print(self.get_setting_info())
         assert self.op_mode == "read","未设置为读模式。"
+        if not self.read_from_row:
+            row_index, col_index = col_index, row_index
         self.set_cim_reset()                                                                        # 先reset 
-        self.set_latch([[row_index]],row=True,value=None)                                           # 配置行
-        self.set_latch([[col_index]],row=False,value=None)                                          # 配置列
+        self.set_latch([[row_index]],row=self.read_from_row,value=None)                             # 配置行
+        self.set_latch([[col_index]],row=not self.read_from_row,value=None)                         # 配置列
         self.generate_read_pulse()                                                                  # 产生读脉冲
         
-        if self.read_from_row:
-            tia_index = self.adc.TIA_index_map(col_index,self.deviceType,True)
-        else:
-            tia_index = self.adc.TIA_index_map(col_index,self.deviceType,True)
-            
+        tia_index = self.adc.TIA_index_map(col_index,self.deviceType,self.read_from_row)
         return self.adc.get_out([tia_index],read_voltage=self.read_voltage)
 
-    def read_row_or_col(self,row_index:list,col_index:list):
+    def read_row_or_col(self,row_index:list,col_index:list,debug = False):
         """
             读某一行里面的器件，row_index为行索引，col_index为列索引
         """
         print(self.get_setting_info())
         assert self.op_mode == "read","未设置为读模式。"
-        if self.read_from_row:
-            assert len(row_index)==1,"从行读，行必须仅选择一行。"
-        else:
-            assert len(col_index)==1,"从列读，列必须仅选择一行。"
+        if not self.read_from_row:
             row_index, col_index = col_index, row_index
-        self.set_cim_reset()                                                                      # 先reset 
-        self.set_latch([row_index],row=self.read_from_row,value=None)                             # 配置行
 
+        # ----------------------------------------------行数据映射
+        index_data_row = self.get_bank_tia(row_index)
+        bank8_row = [[] for _ in range(8)]
+        for j in index_data_row:
+            bank8_row[j[2]].append(j[1])
+        if debug:
+            print("映射输入端的bank:",bank8_row)
+        # ----------------------------------------------列数据映射
         index_data = self.get_bank_tia(col_index)                                                 # 映射得到i,num,bank，index，tia
+        # print(index_data)
         # ----------------------------------------------映射16路tia
         tia16 = [[] for _ in range(16)]
         for i in index_data:
@@ -392,26 +394,35 @@ class CHIP():
         # for i in read_num:
         #     print(i)
         # ----------------------------------------------循环去读
-        read_res = []
+        read_res_cond = []
+        read_res_voltage = []
         for i in read_num:
+            # ------------------------------------------reset然后配置行
+            self.set_cim_reset()                                                                      # 先reset 
+            self.set_latch(bank8_row,row=self.read_from_row,value=None)                             # 配置行
             # ------------------------------------------映射8个bank
             bank8 = [[] for _ in range(8)]
             for j in i:
                 bank8[j[2]].append(j[1])
-            print("映射bank",bank8)
+            if debug:
+                print("映射读出端的bank:",bank8)
+                print("映射读出端的TIA:",[j[4] for j in i])
             # ------------------------------------------开始配置列latch,如果从行读，row=False，从列读，row=True
             self.set_latch(bank8,row=not self.read_from_row,value=None)
             # ------------------------------------------给读脉冲
             self.generate_read_pulse() 
             # ------------------------------------------读出结果
-            tia_out = self.adc.get_out([j[4] for j in i],read_voltage=self.read_voltage)
-            read_res.append(tia_out)
+            cond,voltage = self.adc.get_out([j[4] for j in i],read_voltage=self.read_voltage)
+            read_res_cond.append(cond)
+            read_res_voltage.append(voltage)
         # ----------------------------------------------将结果映射回原来的顺序
-        result = [0]*len(col_index)
+        result_cond = [0]*len(col_index)
+        result_v = [0]*len(col_index)
         for i,v1 in enumerate(read_num):
             for j,v2 in enumerate(v1):
-                result[v2[0]]=read_res[i][j]
-        return result
+                result_cond[v2[0]]=read_res_cond[i][j]
+                result_v[v2[0]]=read_res_voltage[i][j]
+        return result_cond,result_v
 
     #------------------------------------------------------------------------------------------
     # ************************************** 写相关操作 ****************************************
