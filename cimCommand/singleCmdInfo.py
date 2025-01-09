@@ -14,12 +14,12 @@
 
 from cimCommand.singleCmdData import CmdData
 #-------------------------------------------------------------------备选参数
-PACKET_MODS = [0,1,2,3]             # 四个模式
-N_ADDR_BYTES = [1]                  # 命令的地址占几个字节
-N_DATA_BYTES = [4]                  # 命令的数据占几个字节
-COMMAND_TYPE = ["RW","ROI"]         # 命令的类型是什么
-COMMAND_ADDR = 0                    # 命令的地址
-BYTE_ORDER = "big"               # 命令转换为字节后的字节序，or "big"
+PACKET_MODS  = [0,1,2,3,4,5]                # 四个模式
+N_ADDR_BYTES = [1,0]                        # 命令的地址占几个字节
+N_DATA_BYTES = [4,3,2]                      # 命令的数据占几个字节,3,2是后面加的，为了不打乱前面的顺序
+COMMAND_TYPE = ["RW","ROI","PL"]            # 命令的类型是什么
+COMMAND_ADDR = 0                            # 命令的地址
+BYTE_ORDER   = "big"                        # 命令转换为字节后的字节序，or "big"
 
 
 class FAST_COMMAND1_CONF():
@@ -419,6 +419,21 @@ COMMAND_ADDR+=1         # 命令的地址自增1
 
 
 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+
+
 COMMAND_ADDR=30
 #-------------------------------------------------------------------NEGTIVE_REG_CLK:30
 NEGTIVE_REG_CLK=dict(
@@ -432,23 +447,23 @@ NEGTIVE_REG_CLK=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
 
 
 COMMAND_ADDR =64
@@ -512,13 +527,6 @@ ADC0_OUT_D=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
-
-
-
-
-
-
-
 #-------------------------------------------------------------------ADC1_OUT_A:69
 ADC1_OUT_A=dict(
     command_addr = COMMAND_ADDR,
@@ -566,12 +574,6 @@ ADC1_OUT_D=dict(
     command_description = "ADC1 D通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
-
-
-
-
-
-
 
 #-------------------------------------------------------------------ADC2_OUT_A:73
 ADC2_OUT_A=dict(
@@ -621,13 +623,6 @@ ADC2_OUT_D=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
-
-
-
-
-
-
-
 #-------------------------------------------------------------------ADC3_OUT_A:77
 ADC3_OUT_A=dict(
     command_addr = COMMAND_ADDR,
@@ -673,5 +668,120 @@ ADC3_OUT_D=dict(
     command_name = "adc3_out_D",
     command_data = CmdData(0),
     command_description = "ADC3 D通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+
+
+#------------------------------------------------------------------------------------------
+# **************************************** PL指令 ******************************************
+#------------------------------------------------------------------------------------------
+PL_INS_RAM=dict(
+    command_addr = 0,
+    command_type = COMMAND_TYPE[2],
+    n_addr_bytes = N_ADDR_BYTES[1],# 0
+    n_data_bytes = N_DATA_BYTES[2],# 2
+    command_name = "pl_ins_ram",
+    command_data = CmdData(0),
+    command_description = "ins ram起始地址"
+)
+
+PL_DATA_LENGTH=dict(
+    command_addr = 0,
+    command_type = COMMAND_TYPE[2],
+    n_addr_bytes = N_ADDR_BYTES[1],# 0
+    n_data_bytes = N_DATA_BYTES[2],# 2
+    command_name = "pl_data_length",
+    command_data = CmdData(0),
+    command_description = "指令条数"
+)
+
+
+
+COMMAND_ADDR = 0x00
+
+#-------------------------------------------------------------------PL_JUMP:0
+PL_JUMP=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE[2],
+    n_addr_bytes = N_ADDR_BYTES[0],
+    n_data_bytes = N_DATA_BYTES[1],
+    command_name = "pl_jump",
+    command_data = CmdData(0),
+    command_description = "跳转"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+#-------------------------------------------------------------------PL_ROW_BANK:1
+PL_ROW_BANK=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE[2],
+    n_addr_bytes = N_ADDR_BYTES[0],
+    n_data_bytes = N_DATA_BYTES[1],
+    command_name = "pl_row_bank",
+    command_data = CmdData(0),
+    command_description = "从din_ram读数据，配置32bit行寄存器"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_COL_BANK:2
+PL_COL_BANK=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE[2],
+    n_addr_bytes = N_ADDR_BYTES[0],
+    n_data_bytes = N_DATA_BYTES[1],
+    command_name = "pl_col_bank",
+    command_data = CmdData(0),
+    command_description = "从din_ram读数据，配置32bit列寄存器"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_DAC_V:3
+PL_DAC_V=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE[2],
+    n_addr_bytes = N_ADDR_BYTES[0],
+    n_data_bytes = N_DATA_BYTES[1],
+    command_name = "pl_dac_v",
+    command_data = CmdData(0),
+    command_description = "从din_ram读数据，配置32bit列寄存器"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_ROW_PULSE:4
+PL_ROW_PULSE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE[2],
+    n_addr_bytes = N_ADDR_BYTES[0],
+    n_data_bytes = N_DATA_BYTES[1],
+    command_name = "pl_row_pulse",
+    command_data = CmdData(0),
+    command_description = "产生row读pulse，求平均，16路并行写入dout_ram"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_COL_PULSE:5
+PL_COL_PULSE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE[2],
+    n_addr_bytes = N_ADDR_BYTES[0],
+    n_data_bytes = N_DATA_BYTES[1],
+    command_name = "pl_col_pulse",
+    command_data = CmdData(0),
+    command_description = "产生col读pulse，求平均，16路并行写入dout_ram"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_WRITE_PULSE:6
+PL_WRITE_PULSE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE[2],
+    n_addr_bytes = N_ADDR_BYTES[0],
+    n_data_bytes = N_DATA_BYTES[1],
+    command_name = "pl_write_pulse",
+    command_data = CmdData(0),
+    command_description = "产生写pulse"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
