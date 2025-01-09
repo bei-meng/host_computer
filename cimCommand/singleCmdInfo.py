@@ -36,12 +36,17 @@ class FAST_COMMAND1_CONF():
     cfg_bank_sel = 1<<6
     cfg_flt_le1 = 1<<7
     cfg_flt_le2 = 1<<8
+    
     cfg_reg_clk = 1<<9
+    cfg_pos_reg_clk = 1<<9
+    
     cfg_latch_clk = 1<<10
     cfg_row_pulse = 1<<11
     cfg_col_pulse = 1<<12
     cfg_row_read = 1<<13
     cfg_col_read = 1<<14
+    
+    negative_reg_clk = 1<<31
 
 
 #-------------------------------------------------------------------FAST_COMMAND_0:0
@@ -409,6 +414,41 @@ PULSE_CYC=dict(
     command_description = "row/col pulse的cycle数（不和adc采样关联），0：翻转"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+
+
+
+COMMAND_ADDR=30
+#-------------------------------------------------------------------NEGTIVE_REG_CLK:30
+NEGTIVE_REG_CLK=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE[0],
+    n_addr_bytes = N_ADDR_BYTES[0],
+    n_data_bytes = N_DATA_BYTES[0],
+    command_name = "negtive_reg_clk",
+    command_data = CmdData(0),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 COMMAND_ADDR =64

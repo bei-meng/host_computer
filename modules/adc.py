@@ -171,17 +171,7 @@ class ADC():
         """
             读取的值换算成电导(单位:us)
         """
-        voltage_sample_hex = message.hex()[2:4] + message.hex()[0:2]
-        # 将十六进制字符串转换为整数
-        data = int(voltage_sample_hex, 16)
-        # 确保数据在16位范围内
-        data &= 0xFFFF
-        # 将16位有符号数转换为Python整数
-        if data & 0x8000:  # 若符号位为1，则表示负数
-            data -= 0x10000
-
-        # 将数据转换为电压
-        voltage = (data / (2**15-1)) * vref  # 32767 是0x7FFF对应的正最大值
+        voltage = self.adc_to_voltage(message,vref)
         # 返回的单位是us
         if self.gain == 0:
             return voltage/((read_voltage+1e-10)*6.0241*(10e3+200))*1e6
