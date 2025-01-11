@@ -175,9 +175,9 @@ class ADC():
         # 返回的单位是us
         if self.gain == 0:
             return voltage/((read_voltage+1e-10)*6.0241*(10e3+200))*1e6
-        elif self.gain == 1:
-            return voltage/((read_voltage+1e-10)*1*(10e3+200))*1e6
         elif self.gain == 2:
+            return voltage/((read_voltage+1e-10)*1*(10e3+200))*1e6  
+        elif self.gain == 1:
             return voltage/((read_voltage+1e-10)*6.0241*200)*1e6
         elif self.gain == 3:
             return voltage/((read_voltage+1e-10)*1*200)*1e6
