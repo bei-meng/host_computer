@@ -1,6 +1,7 @@
 from cimCommand import CMD,CmdData,Packet
 from cimCommand.singleCmdInfo import *
 from pc import PS
+import numpy as np
 
 class ADC():
     """
@@ -123,8 +124,8 @@ class ADC():
         """
             从adc_num的adc的adc_channel读数据
         """
-        message_cond = []
-        message_v = []
+        cond = []
+        voltage = []
         for TIA_num in num:
             adc_num, adc_channel = int(TIA_num/4),TIA_num%4
 
@@ -146,9 +147,9 @@ class ADC():
             # 接收信息
             # 高16bit：0，低16bit：寄存器的16bit值
             message = self.ps.receive_packet(f"adc读取:{adc_out.command_name}")
-            message_cond.append(self.adc_to_cond(message, read_voltage))
-            message_v.append(self.adc_to_voltage(message))
-        return message_cond,message_v
+            cond.append(self.adc_to_cond(message, read_voltage))
+            voltage.append(self.adc_to_voltage(message))
+        return np.array(cond),np.array(voltage)
     
     def adc_to_voltage(self,message, vref=1.25):
         """
@@ -210,3 +211,72 @@ class ADC():
         TIA_offset = int((num-index_offset)/index_base)
 
         return TIA_base+TIA_offset
+
+    def hex_to_voltage(self,message_hex,vref=1.25):
+        """
+            读取的16进制值换算成电压
+        """
+        # 将十六进制字符串转换为整数
+        data = int(message_hex, 16)
+        # 确保数据在16位范围内
+        data &= 0xFFFF
+        # 将16位有符号数转换为Python整数
+        if data & 0x8000:  # 若符号位为1，则表示负数
+            data -= 0x10000
+
+        # 将数据转换为电压
+        voltage = (data / (2**15-1)) * vref  # 32767 是0x7FFF对应的正最大值
+        return voltage
+    
+    def hex_to_cond(self,message_hex,read_voltage,vref=1.25):
+        """
+            读取的16进制值换算成电导(单位:us)
+        """
+        voltage = self.hex_to_voltage(message_hex,vref)
+        # 返回的单位是us
+        if self.gain == 0:
+            return voltage/((read_voltage+1e-10)*6.0241*(10e3+200))*1e6
+        elif self.gain == 2:
+            return voltage/((read_voltage+1e-10)*1*(10e3+200))*1e6  
+        elif self.gain == 1:
+            return voltage/((read_voltage+1e-10)*6.0241*200)*1e6
+        elif self.gain == 3:
+            return voltage/((read_voltage+1e-10)*1*200)*1e6
+        
+    def get_tia_out(self,num,dout_ram_start,read_voltage):
+        """
+            从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的16路tia的值
+        """
+        pkts=Packet()
+        pkts.append_single([
+            CMD(PL_RAM_ADDR,command_data=CmdData(dout_ram_start)),
+            CMD(PL_DATA_LENGTH,command_data=CmdData(num))
+        ],mode=6)
+        self.ps.send_packets(pkts)
+        
+
+        tia16_length = 64
+        tia_num = 16
+        tia_length = 4
+        # 接收信息
+        message = self.ps.receive_packet()
+        message = [message.hex()[i*tia16_length:(i+1)*tia16_length] for i in range(num)]
+
+        vres = []
+        cres = []
+        for tia16 in message:
+            tmp = []
+            for i in range(0,tia_num,2):
+                # tia顺序为：1, 0, 3, 2, 5, 4... 需要转换为0,1,2,3,4,5...
+                tmp.append(tia16[(i+1)*tia_length:(i+2)*tia_length])
+                tmp.append(tia16[i*tia_length:(i+1)*tia_length])
+            voltage = []
+            cond = []
+            for i in tmp:
+                voltage.append(self.hex_to_voltage(i))
+                cond.append(self.hex_to_cond(i,read_voltage=read_voltage))
+
+            vres.append(voltage)
+            cres.append(cond)
+        return vres,cres
+        

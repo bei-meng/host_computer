@@ -45,7 +45,7 @@ class PS():
                 packet = ""
                 try:
                     # pass
-                    packet = self.socket.recv(1024)  # 每次最多接收 1024 字节
+                    packet = self.socket.recv(2048)  # 每次最多接收 1024 字节
                     if not packet:
                         print("empty packet")
                     if self.debug:
@@ -62,7 +62,7 @@ class PS():
         """
             将packer里面的所有上位机指令按顺序有间隔的发送下去
         """
-        if self.enable:
+        if self.enable or self.debug:
             with self.lock:
                 try:
                     # pass

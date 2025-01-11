@@ -55,7 +55,7 @@ class DAC():
         pkts=Packet()
         dac_num = dac_num<<24
         dac_channel = (dac_channel+8)<<16
-        vbits = self.VToBytes(v)<<4
+        vbits = self.VToBytes(v)
         pkts.append_cmdlist([
             CMD(DAC_IN,command_data=CmdData(dac_num|dac_channel|vbits)),                    # 设置dac的dac_c通道电压为vbits对应的值
             CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_dac)),           # cfg_dac
@@ -116,8 +116,8 @@ class DAC():
 
     def VToBytes(self,v):
         """
-            将需求的DAC电压转成12bit，对应的电压bit
+            将需求的DAC电压转成16bit，对应的电压bit
         """
         assert v <= self.referenceVoltage*self.gain,"VToBytes: 电压超过范围!"
         res = v/self.referenceVoltage/self.gain*self.base
-        return int(res)
+        return int(res)<<4

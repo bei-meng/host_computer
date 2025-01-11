@@ -52,22 +52,22 @@ class Packet:
         self.instruction_list.clear()
     
     def __str__ (self):
+        max_cmd_name_len = 0
+        for cmd in self.instruction_list:
+            for k in cmd["cmd"]:
+                max_cmd_name_len = max(max_cmd_name_len, len(k.command_name))
+
         res = ""
         for cmd in self.instruction_list:
             # 获取指令的模式和名字
-            res += "模式："+str(cmd["mode"])
+            res += "模式："+str(cmd["mode"]) + "\n"
             for k in cmd["cmd"]:
-                res += ",指令："+str(k.command_name)
-            
-            # 获取指令的字节码
-            cmdbytes = self.header + cmd["mode"].to_bytes(1, BYTE_ORDER)
-            for v in cmd["cmd"]:
                 if cmd["mode"]==3:
                     pass
                 elif cmd["mode"]==2:
-                    cmdbytes += v.get_addr()
+                    cmdbytes = k.get_addr()
+                    res += f"\t指令: {str(k.command_name):<{max_cmd_name_len}}\t字节码: " + " ".join(f'{byte:02x}' for byte in cmdbytes) + "\n"
                 else:
-                    cmdbytes += v.get_command()
-            tmp = " ".join(f'{byte:02x}' for byte in cmdbytes)
-            res+="\n字节码："+tmp+"\n"
+                    cmdbytes = k.get_command()
+                    res += f"\t指令: {str(k.command_name):<{max_cmd_name_len}}\t字节码: " + " ".join(f'{byte:02x}' for byte in cmdbytes) + "\n"
         return res

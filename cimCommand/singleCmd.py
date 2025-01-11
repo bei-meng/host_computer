@@ -18,10 +18,10 @@ class CMD:
         command_description: 对命令功能的描述
     """
     command_addr = -1,
-    command_type = COMMAND_TYPE[0],
+    command_type = COMMAND_TYPE.RW,
 
-    n_addr_bytes = N_ADDR_BYTES[0],
-    n_data_bytes = N_DATA_BYTES[0],
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
 
     command_name = "None",
     command_data = CmdData(-1),
