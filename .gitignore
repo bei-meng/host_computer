@@ -1,4 +1,5 @@
-# cimCommand/__pycache__/
-# modules/__pycache__/
-# pc/__pycache__/
+cimCommand/__pycache__/
+modules/__pycache__/
+pc/__pycache__/
+util/__pycache__/
 result/

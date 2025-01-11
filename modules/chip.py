@@ -30,11 +30,13 @@ class CHIP():
     adc = None
     dac = None
 
-    def __init__(self, ps:PS):
+    def __init__(self, adc:ADC, dac:DAC, ps:PS):
         self.ps = ps
+        self.adc = adc
+        self.dac = dac
+
+        # DAC的初始化操作
         self.initOp()
-        self.adc = ADC(ps)
-        self.dac = DAC(ps)
 
     def get_setting_info(self):
         """
@@ -61,22 +63,17 @@ class CHIP():
         self.set_device_cfg(deviceType=0,reg_clk_cyc=0xF,latch_clk_cyc=0xF)
         pkts=Packet()
         pkts.append_cmdlist([
-            CMD(FLT,command_data=CmdData(0x0FFF)),                                              # 配置flt
-            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le1)),           # cfg_flt_le1
-            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le2)),           # cfg_flt_le2
-            CMD(CIM_RESET,command_data=CmdData(1)),                                             # reset指令
-            CMD(CIM_SS,command_data=CmdData(1)),                                                # reg写入数据打开
-            CMD(SER_PARA_SEL,command_data=CmdData(1)),                                          # 切换到并行模式
+            CMD(FLT,command_data=CmdData(0x0FFF)),                  # 配置flt
+            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le1)),         # cfg_flt_le1
+            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le2)),         # cfg_flt_le2
+            CMD(CIM_RESET,command_data=CmdData(1)),                 # reset指令
+            CMD(CIM_SS,command_data=CmdData(1)),                    # reg写入数据打开
+            CMD(SER_PARA_SEL,command_data=CmdData(1)),              # 切换到并行模式
+            # CMD(NEGTIVE_REG_CLK,command_data=CmdData(1)),                                       # negtive_reg_clk
         ],mode=1)
 
         # 发送指令
         self.ps.send_packets(pkts)
-
-        # 不为空就执行初始化
-        if self.adc is not None:
-            self.adc.initOp()
-        if self.dac is not None:
-            self.dac.initOp()
 
     def set_device_cfg(self,deviceType = None,latch_cyc = None, reg_clk_cyc= None, latch_clk_cyc = None):
         """
@@ -174,16 +171,6 @@ class CHIP():
         ],mode=1)
         self.ps.send_packets(pkts)
 
-    def temp_negative_reg_clk(self,data):
-        """
-            设置NEGTIVE_REG_CLK=data
-        """
-        pkts=Packet()
-        pkts.append_cmdlist([
-            CMD(NEGTIVE_REG_CLK,command_data=CmdData(self.data)),
-        ],mode=1)   
-        self.ps.send_packets(pkts)
-
     def set_latch(self,num:list[list],row=True,value=None):
         """
             将对应的行或列配置成latch为1,
@@ -202,8 +189,7 @@ class CHIP():
                     # 行reg配置
                     CMD(CIM_DATA_IN,command_data=CmdData(index)),                                       # 第index位置1
                     CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_cim_data_in)),       # cfg_cim_data_in
-                    CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_reg_clk)),           # cfg_reg_clk
-                    # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.negative_reg_clk)),     # negative_reg_clk
+                    CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.negative_reg_clk)),      # negative_reg_clk
                     # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_pos_reg_clk)),      # negative_reg_clk
 
                     # 行bank配置
@@ -234,8 +220,6 @@ class CHIP():
             CMD(CIM_DATA_IN,command_data=CmdData(value)),                                       # 第xindex位置1
             CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_cim_data_in)),       # cfg_cim_data_in
             CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_reg_clk)),           # cfg_reg_clk
-            # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.negative_reg_clk)),     # negative_reg_clk
-            # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_pos_reg_clk)),      # negative_reg_clk
 
             # 行bank配置
             CMD(ROW_COL_SEL,command_data=CmdData(row_col_sel)),                                 # 设置为行/列模式
@@ -378,7 +362,7 @@ class CHIP():
         
         return np.array(cond),np.array(voltage)
     
-    def set_read(self, row:bool, v:float, gain:int, tg_v:float = 5):
+    def read_set(self, row:bool, v:float, gain:int, tg_v:float = 5):
         """
             封装
         """

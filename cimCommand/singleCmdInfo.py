@@ -16,7 +16,7 @@ from cimCommand.singleCmdData import CmdData
 #-------------------------------------------------------------------备选参数
 PACKET_MODS  = [0,1,2,3,4,5]                # 四个模式
 N_ADDR_BYTES = [1,0]                        # 命令的地址占几个字节
-N_DATA_BYTES = [4,3,2]                      # 命令的数据占几个字节,3,2是后面加的，为了不打乱前面的顺序
+N_DATA_BYTES = [4,3,2,1]                    # 命令的数据占几个字节,3,2是后面加的，为了不打乱前面的顺序
 COMMAND_TYPE = ["RW","ROI","PL"]            # 命令的类型是什么
 COMMAND_ADDR = 0                            # 命令的地址
 BYTE_ORDER   = "big"                        # 命令转换为字节后的字节序，or "big"
@@ -45,6 +45,7 @@ class FAST_COMMAND1_CONF():
     cfg_col_pulse = 1<<12
     cfg_row_read = 1<<13
     cfg_col_read = 1<<14
+    cfg_ins_run = 1<<15
     
     negative_reg_clk = 1<<31
 
@@ -415,8 +416,17 @@ PULSE_CYC=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
-
-
+#-------------------------------------------------------------------INS_NUM:28
+INS_NUM=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE[0],
+    n_addr_bytes = N_ADDR_BYTES[0],
+    n_data_bytes = N_DATA_BYTES[0],
+    command_name = "ins_num",
+    command_data = CmdData(0),
+    command_description = "指令数量：1~1024，cfg_ins_run前配置"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
 
 # 
@@ -697,6 +707,38 @@ PL_DATA_LENGTH=dict(
     command_description = "指令条数"
 )
 
+PL_DATA=dict(
+    command_addr = 0,
+    command_type = COMMAND_TYPE[2],
+    n_addr_bytes = N_ADDR_BYTES[1],# 0
+    n_data_bytes = N_DATA_BYTES[0],# 4
+    command_name = "pl_data",
+    command_data = CmdData(0),
+    command_description = "数据"
+)
+
+WRITE_DIN_RAM=dict(
+    command_addr = 0,
+    command_type = COMMAND_TYPE[2],
+    n_addr_bytes = N_ADDR_BYTES[1],# 0
+    n_data_bytes = N_DATA_BYTES[2],# 2
+    command_name = "read_din_ram",
+    command_data = CmdData(0),
+    command_description = "写din ram"
+)
+
+READ_DOUT_RAM=dict(
+    command_addr = 0,
+    command_type = COMMAND_TYPE[2],
+    n_addr_bytes = N_ADDR_BYTES[1],# 0
+    n_data_bytes = N_DATA_BYTES[2],# 2
+    command_name = "read_dout_ram",
+    command_data = CmdData(0),
+    command_description = "读dout ram"
+)
+
+
+
 
 
 COMMAND_ADDR = 0x00
@@ -774,14 +816,26 @@ PL_COL_PULSE=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
-#-------------------------------------------------------------------PL_WRITE_PULSE:6
-PL_WRITE_PULSE=dict(
+#-------------------------------------------------------------------PL_WRITE_ROW_PULSE:6
+PL_WRITE_ROW_PULSE=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE[2],
     n_addr_bytes = N_ADDR_BYTES[0],
     n_data_bytes = N_DATA_BYTES[1],
-    command_name = "pl_write_pulse",
+    command_name = "pl_write_row_pulse",
     command_data = CmdData(0),
-    command_description = "产生写pulse"
+    command_description = "产生row写pulse"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_WRITE_COL_PULSE:6
+PL_WRITE_COL_PULSE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE[2],
+    n_addr_bytes = N_ADDR_BYTES[0],
+    n_data_bytes = N_DATA_BYTES[1],
+    command_name = "pl_write_col_pulse",
+    command_data = CmdData(0),
+    command_description = "产生col写pulse"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
