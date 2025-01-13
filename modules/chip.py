@@ -4,6 +4,7 @@ from pc import PS
 from modules.adc import ADC
 from modules.dac import DAC
 import numpy as np
+import time
 
 class CHIP():
     """
@@ -747,6 +748,7 @@ class CHIP():
         """
             设置操作模式
         """
+        self.clear_dac_v2()
         if read:
             self.op_mode = "read"
             self.read_from_row = row
@@ -798,6 +800,29 @@ class CHIP():
                     cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
         return cmd
     
+    def get_write_dac_ins2(self,v,tg=5):
+        """
+            得到读器件的配置dac的指令
+        """
+        cmd=[]
+        if self.deviceType==0:                      # ReRAM
+            for i in DAC_INFO.RERAM_TG:
+                cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(tg))))
+            if self.write_from_row:                  # 从行读
+                for i in DAC_INFO.RERAM_ROW_VA:
+                    cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+            else:                                   # 从列读
+                for i in DAC_INFO.RERAM_COL_VA:
+                    cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+        elif self.deviceType==1:                    # ECRAM
+            if self.write_from_row:                  # 从行读
+                for i in DAC_INFO.ECRAM_ROW_VA:
+                    cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+            else:                                   # 从列读
+                for i in DAC_INFO.ECRAM_COL_VA:
+                    cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+        return cmd
+    
     #------------------------------------------------------------------------------------------
     # ************************************** 读相关函数 ****************************************
     #------------------------------------------------------------------------------------------
@@ -805,6 +830,7 @@ class CHIP():
     def send_din_ram2(self,row_index:list,col_index:list,din_ram_start=0,tia_flag=True):
         """
             发送配置行列latch需要的数据
+            tia_flag是否检查TIA的映射
         """
         # (k,v,bank,index,tia)
         din_ram_pos = din_ram_start
@@ -894,7 +920,7 @@ class CHIP():
         # 发送din_ram数据
         din_ram_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(len(din_ram_data))))      # 有多少条数据
         assert len(din_ram_data)+din_ram_start < 256,"send_din_ram：din_ram超过界限。"
-        din_ram_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(din_ram_pos)))             # 数据从哪开始
+        din_ram_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(din_ram_start)))             # 数据从哪开始
 
         pkts=Packet()
         pkts.append_single(din_ram_data,mode=5)
@@ -955,6 +981,8 @@ class CHIP():
         pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
         self.ps.send_packets(pkts)
 
+        time.sleep(num*0.01)
+
         vres,cres = self.adc.get_tia_out(num=len(res_col_bank),dout_ram_start=0,read_voltage=read_voltage)
         # vres = [[i for i in range(16)] for j in range(16)]
         # cres = [[i for i in range(16)] for j in range(16)]
@@ -971,3 +999,57 @@ class CHIP():
                     cres_list[v2[0]]=cres[i][v2[1]]
 
             return np.array(vres_list),np.array(cres_list)
+        
+    #------------------------------------------------------------------------------------------
+    # ************************************** 写相关操作 ****************************************
+    #------------------------------------------------------------------------------------------
+    def write2(self,row_index:list,col_index:list,write_voltage:float,tg:float = 5):
+        """
+            写器件，row_index为行索引，col_index为列索引
+        """
+        assert self.op_mode == "write","未设置为写模式。"
+
+        self.write_voltage = write_voltage
+        print(self.get_setting_info())
+        # ----------------------------------------------从行还是列去写
+        if self.write_from_row:
+            # 从行写
+            row_bank_ins, col_bank_ins =  PL_ROW_BANK, PL_COL_BANK
+            write_ins = PL_WRITE_ROW_PULSE
+        else:
+            # 从列读
+            row_index, col_index = col_index, row_index
+            row_bank_ins, col_bank_ins =  PL_COL_BANK, PL_ROW_BANK
+            write_ins = PL_WRITE_COL_PULSE
+
+        # ----------------------------------------------ins_ram,din_ram的地址
+        ins_ram_start = 0
+        din_ram_start = 0
+
+        # ----------------------------------------------发送要配置的bank的数据进去
+        res_row_bank,res_col_bank,_ = self.send_din_ram2(row_index,col_index,din_ram_start)
+
+        # ----------------------------------------------准备指令序列
+        ins_data = self.get_write_dac_ins2(v=write_voltage,tg=tg)                                      # 配置电压
+
+        for col in res_col_bank:
+            for bank,din_ram_pos in res_row_bank:
+                ins_data.append(CMD(row_bank_ins,command_data=CmdData(bank<<8|din_ram_pos)))        # 从din_ram的din_ram_pos位置取数据配置bank
+
+            for bank,din_ram_pos in col:
+                ins_data.append(CMD(col_bank_ins,command_data=CmdData(bank<<8|din_ram_pos)))        # 从din_ram的din_ram_pos位置取数据配置bank
+
+            ins_data.append(CMD(write_ins))                                                         # 写脉冲
+
+        num = len(ins_data)
+        ins_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(num)))
+        ins_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(ins_ram_start)))
+
+        # ----------------------------------------------发送指令序列并执行
+        pkts=Packet()
+        pkts.append_single(ins_data,mode=4)
+        pkts.append_single([CMD(INS_NUM,command_data=CmdData(num))],mode=1)
+        pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
+        self.ps.send_packets(pkts)
+
+        time.sleep(num*0.01)

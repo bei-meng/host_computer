@@ -890,7 +890,7 @@ PL_WRITE_ROW_PULSE=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
-#-------------------------------------------------------------------PL_WRITE_COL_PULSE:6
+#-------------------------------------------------------------------PL_WRITE_COL_PULSE:7
 PL_WRITE_COL_PULSE=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.PL,

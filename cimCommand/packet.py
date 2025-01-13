@@ -57,10 +57,13 @@ class Packet:
             for k in cmd["cmd"]:
                 max_cmd_name_len = max(max_cmd_name_len, len(k.command_name))
 
+        # res =  " ".join(f'{byte:02x}' for byte in self.header)
         res = ""
         for cmd in self.instruction_list:
             # 获取指令的模式和名字
             res += "模式："+str(cmd["mode"]) + "\n"
+            cmdbytes = self.header + cmd["mode"].to_bytes(1, BYTE_ORDER)
+            res += f"\t帧头: {'':<{max_cmd_name_len}}\t字节码: "+" ".join(f'{byte:02x}' for byte in cmdbytes) + "\n"
             for k in cmd["cmd"]:
                 if cmd["mode"]==3:
                     pass
