@@ -14,7 +14,7 @@
 
 from cimCommand.singleCmdData import CmdData
 #-------------------------------------------------------------------备选参数
-BYTE_ORDER   = "big"                        # 命令转换为字节后的字节序，or "big"
+BYTE_ORDER   = "big"                        # 命令转换为字节后的字节序，or "little"
 
 class COMMAND_TYPE():
     """
@@ -57,7 +57,7 @@ class FAST_COMMAND1_CONF():
     cfg_flt_le2 = 1<<8
     
     cfg_reg_clk = 1<<9
-    cfg_pos_reg_clk = 1<<9
+    cfg_pos_reg_clk = 1<<9                                      # 临时的指令
     
     cfg_latch_clk = 1<<10
     cfg_row_pulse = 1<<11
@@ -66,7 +66,7 @@ class FAST_COMMAND1_CONF():
     cfg_col_read = 1<<14
     cfg_ins_run = 1<<15
     
-    negative_reg_clk = 1<<31
+    negative_reg_clk = 1<<31                                    # 临时的指令
 
 class DAC_INFO():
     """
@@ -143,6 +143,7 @@ FAST_COMMAND_0=dict(
     command_description = 
     """触发PL运行某功能
         bit位   功能
+        15	cfg_ins_run	ins ram从地址0开始顺序执行，执行ins_num条指令后停止
         14	cfg_col_read	产生col read pulse脉冲，adc求平均返回寄存器
         13	cfg_row_read	产生row read pulse脉冲，adc求平均返回寄存器
         12	cfg_col_pulse	
@@ -169,7 +170,25 @@ FAST_COMMAND_1=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "fast_command_1",
     command_data = CmdData(0),
-    command_description = "触发PL运行某功能"
+    command_description = 
+    """触发PL运行某功能
+        bit位   功能
+        15	cfg_ins_run	ins ram从地址0开始顺序执行，执行ins_num条指令后停止
+        14	cfg_col_read	产生col read pulse脉冲，adc求平均返回寄存器
+        13	cfg_row_read	产生row read pulse脉冲，adc求平均返回寄存器
+        12	cfg_col_pulse	
+        11	cfg_row_pulse	
+        10	cfg_latch_clk	
+        9	cfg_reg_clk	
+        8	cfg_flt_le2	
+        7	cfg_flt_le1	
+        6	cfg_bank_sel	
+        5	cfg_cim_data_in	配置32bit data
+        4	cfg_adc3	配置ADC3
+        3	cfg_adc2	配置ADC2
+        2	cfg_adc1	配置ADC1
+        1	cfg_adc0	配置ADC0
+        0	cfg_dac	配置DAC"""
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 #-------------------------------------------------------------------DAC_IN:2
@@ -283,7 +302,7 @@ CIM_RESET=dict(
     n_addr_bytes = N_ADDR_BYTES.ONE,
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "cim_reset",
-    command_data = CmdData(0),
+    command_data = CmdData(1),
     command_description = "0或1"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
@@ -510,26 +529,28 @@ INS_NUM=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
-
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-
-
-COMMAND_ADDR=30
-#-------------------------------------------------------------------NEGTIVE_REG_CLK:30
-NEGTIVE_REG_CLK=dict(
+#-------------------------------------------------------------------INS_NUM:29
+SER_DATA=dict(
     command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "ser_data",
+    command_data = CmdData(0),
+    command_description = "指令数量：1~1024，cfg_ins_run前配置"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------NEGTIVE_REG_CLK:30(临时指令)
+NEGTIVE_REG_CLK=dict(
+    command_addr = 30,
     command_type = COMMAND_TYPE.RW,
     n_addr_bytes = N_ADDR_BYTES.ONE,
     n_data_bytes = N_DATA_BYTES.FOUR,
@@ -537,25 +558,10 @@ NEGTIVE_REG_CLK=dict(
     command_data = CmdData(0),
     command_description = ""
 )
-COMMAND_ADDR+=1         # 命令的地址自增1
 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
+
+
+
 
 
 COMMAND_ADDR =64
@@ -899,5 +905,17 @@ PL_WRITE_COL_PULSE=dict(
     command_name = "pl_write_col_pulse",
     command_data = CmdData(0),
     command_description = "产生col写pulse"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_CIM_RESET:8
+PL_CIM_RESET=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_cim_rstn",
+    command_data = CmdData(0),
+    command_description = "latch复位"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1

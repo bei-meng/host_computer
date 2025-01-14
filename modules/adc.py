@@ -133,9 +133,9 @@ class ADC():
             pkts=Packet()
             adc_out = CMD(dict(
                 command_addr = 65+TIA_num,
-                command_type = COMMAND_TYPE[1],
-                n_addr_bytes = N_ADDR_BYTES[0],
-                n_data_bytes = N_DATA_BYTES[0],
+                command_type = COMMAND_TYPE.RW,
+                n_addr_bytes = N_ADDR_BYTES.ONE,
+                n_data_bytes = N_DATA_BYTES.FOUR,
                 command_name = f"adc{adc_num}_out{channel_map[adc_channel]}",
                 command_data = CmdData(0),
                 command_description = "从ADC对应通道读取数据"

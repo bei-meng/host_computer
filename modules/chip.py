@@ -11,9 +11,10 @@ class CHIP():
         对chip进行的操作
     """
     deviceType = 0                  # 器件类型0: RERAM,1: ECRAM
-    latch_cyc = 2                   # PCB上锁存器的latch cycle树
-    reg_clk_cyc = 2                 # 高电平cycle数，1 cycle=10ns 0：翻转
-    latch_clk_cyc = 2               # 高电平cycle数，1 cycle=10ns 0：翻转
+    latch_cyc = 0xF                 # PCB上锁存器的latch cycle树
+    reg_clk_cyc = 0xF               # 高电平cycle数，1 cycle=10ns 0：翻转
+    latch_clk_cyc = 0xF             # 高电平cycle数，1 cycle=10ns 0：翻转
+    cim_rstn_cyc = 0xF              # cim
     pulse_cyc = 256                 # row/col pulse的cycle数 0：翻转"
 
 
@@ -61,7 +62,7 @@ class CHIP():
             chip的初始化操作
         """
         # 配置器件的初始化
-        self.set_device_cfg(deviceType=0,reg_clk_cyc=0xF,latch_clk_cyc=0xF)
+        # self.set_device_cfg(deviceType=0,reg_clk_cyc=0xF,latch_clk_cyc=0xF)
         pkts=Packet()
         pkts.append_cmdlist([
             CMD(FLT,command_data=CmdData(0x0FFF)),                  # 配置flt
@@ -82,7 +83,7 @@ class CHIP():
         if self.dac is not None:
             self.dac.initOp()
 
-    def set_device_cfg(self,deviceType = None,latch_cyc = None, reg_clk_cyc= None, latch_clk_cyc = None):
+    def set_device_cfg(self,deviceType = None,latch_cyc = None, reg_clk_cyc= None, latch_clk_cyc = None,cim_rstn_cyc = None):
         """
             设置device的cfg
         """
@@ -90,8 +91,9 @@ class CHIP():
         self.latch_cyc = self.latch_cyc if latch_cyc is None else latch_cyc
         self.reg_clk_cyc = self.reg_clk_cyc if reg_clk_cyc is None else reg_clk_cyc
         self.latch_clk_cyc = self.latch_clk_cyc if latch_clk_cyc is None else latch_clk_cyc
+        self.cim_rstn_cyc = self.cim_rstn_cyc if cim_rstn_cyc is None else cim_rstn_cyc
 
-        data = self.deviceType | self.latch_cyc<<1 | self. reg_clk_cyc<<3 | self.latch_clk_cyc<<7
+        data = self.deviceType | self.latch_cyc<<1 | self. reg_clk_cyc<<3 | self.latch_clk_cyc<<7 | self.cim_rstn_cyc<<11
         pkts=Packet()
         pkts.append_cmdlist([
             CMD(DEVICE_CFG,command_data=CmdData(data)),
@@ -378,19 +380,19 @@ class CHIP():
         if self.read_from_row:
             pkts=Packet()
             pkts.append_cmdlist([
-                CMD(PULSE_CYC,command_data=CmdData(0)),                                             # 翻转
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),         # cfg_col_pulse，配置列为常1
+                # CMD(PULSE_CYC,command_data=CmdData(0)),                                             # 翻转
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),         # cfg_col_pulse，配置列为常1
                 CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_read)),          # 然后开始读,行给电压
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),         # cfg_col_pulse，读完后，把列电压翻转为0
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),         # cfg_col_pulse，读完后，把列电压翻转为0
             ],mode=1)
             self.ps.send_packets(pkts)
         else:
             pkts=Packet()
             pkts.append_cmdlist([
-                CMD(PULSE_CYC,command_data=CmdData(0)),                                             # 翻转
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),         # cfg_row_pulse，配置行为常1
+                # CMD(PULSE_CYC,command_data=CmdData(0)),                                             # 翻转
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),         # cfg_row_pulse，配置行为常1
                 CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_read)),          # 然后开始读,列给电压
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),         # cfg_row_pulse，读完后，把行电压翻转为0
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),         # cfg_row_pulse，读完后，把行电压翻转为0
             ],mode=1)
             self.ps.send_packets(pkts)
 
@@ -536,11 +538,11 @@ class CHIP():
         if row_value is not None:
             self.set_bank_latch(row_bank_list,row=self.read_from_row,value=row_value)
         else:
-            self.set_latch(row_data,row=self.read_from_row,value=row_value)
+            self.set_latch(row_data,row=self.read_from_row,value=None)
         if col_value is not None:
             self.set_bank_latch(col_bank_list,row=not self.read_from_row,value=col_value)
         else:
-            self.set_latch(col_data,row=not self.read_from_row,value=col_value)
+            self.set_latch(col_data,row=not self.read_from_row,value=None)
         if debug:
             # (k,v,bank,index,tia)
             print("映射输入端的bank:",row_bank)
@@ -664,27 +666,27 @@ class CHIP():
         if self.write_from_row:
             pkts=Packet()
             pkts.append_cmdlist([
-                CMD(PULSE_CYC,command_data=CmdData(0)),                                                 # 翻转
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),             # cfg_col_pulse，配置列为常1
+                # CMD(PULSE_CYC,command_data=CmdData(0)),                                                 # 翻转
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),             # cfg_col_pulse，配置列为常1
                 
                 CMD(PULSE_CYC,command_data=CmdData(self.pulse_cyc)),            # 设置脉宽
                 CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),             # cfg_row_pulse, 给写脉冲
 
-                CMD(PULSE_CYC,command_data=CmdData(0)),                                                 # 翻转
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),             # cfg_col_pulse，读完后，把列电压翻转为0
+                # CMD(PULSE_CYC,command_data=CmdData(0)),                                                 # 翻转
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),             # cfg_col_pulse，读完后，把列电压翻转为0
             ],mode=1)
             self.ps.send_packets(pkts)
         else:
             pkts=Packet()
             pkts.append_cmdlist([
-                CMD(PULSE_CYC,command_data=CmdData(0)),                                                 # 翻转
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),             # cfg_row_pulse，配置行为常1
+                # CMD(PULSE_CYC,command_data=CmdData(0)),                                                 # 翻转
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),             # cfg_row_pulse，配置行为常1
 
                 CMD(PULSE_CYC,command_data=CmdData(self.pulse_cyc)),            # 设置脉宽
                 CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),             # cfg_col_pulse, 给写脉冲
 
-                CMD(PULSE_CYC,command_data=CmdData(0)),                                                 # 翻转
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),             # cfg_row_pulse，读完后，把行电压翻转为0
+                # CMD(PULSE_CYC,command_data=CmdData(0)),                                                 # 翻转
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),             # cfg_row_pulse，读完后，把行电压翻转为0
             ],mode=1)
             self.ps.send_packets(pkts)
 
@@ -703,31 +705,6 @@ class CHIP():
         self.set_latch([[row_index]],row=self.write_from_row,value=None)                             # 配置行
         self.set_latch([[col_index]],row=not self.write_from_row,value=None)                         # 配置列
         self.generate_write_pulse(pulse_width)                                                      # 产生写脉冲
-
-    def write_one_dG(self,x, y, write_voltage=5, pulsewidth=255*10*1e-9, dG=1e-3, dGperPulse=1e-5, eRate=0.01, maxWrite=10):
-        """
-            写一个器件
-            注意: x和y都是从0索引开始
-        """
-        # 设置为写模式
-        self.change_operation_mode("write")
-
-        # 配置行列的latch
-        self.cfg_row_col_one(x,y)
-
-        # 设置电压
-        self.set_voltage(write_voltage)
-
-        pkts=Packet()
-        pkts.append_cmdlist([
-            CMD(PULSE_CYC,command_data=CmdData(0)),                                                 # 翻转
-            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),             # cfg_col_pulse，常1
-            CMD(PULSE_CYC,command_data=CmdData(int(pulsewidth/self.pulse_cyc_length))),             # 设置脉宽
-            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),             # cfg_row_pulse, 给写脉冲
-            CMD(PULSE_CYC,command_data=CmdData(0)),                                                 # 翻转回来
-            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),             # cfg_col_pulse，写完后，把列电压置0
-        ],mode=1)
-        self.ps.send_packets(pkts)
     
 
     def close(self):
@@ -929,7 +906,8 @@ class CHIP():
 
         return res_row_bank,res_col_bank,res_col_tia
     
-    def read2(self,row_index:list,col_index:list,read_voltage:float,tg:float = 5,tia_flag = True, get_tia16 = False):
+    def read2(self,row_index:list,col_index:list,read_voltage:float,tg:float = 5,
+              tia_flag = True, get_tia16 = False):
         """
             读器件，row_index为行索引，col_index为列索引
         """
@@ -961,6 +939,7 @@ class CHIP():
         ins_data = self.get_read_dac_ins2(v=read_voltage,tg=tg)                                      # 配置电压
 
         for col in res_col_bank:
+            ins_data.append(CMD(PL_CIM_RESET))
             for bank,din_ram_pos in res_row_bank:
                 ins_data.append(CMD(row_bank_ins,command_data=CmdData(bank<<8|din_ram_pos)))        # 从din_ram的din_ram_pos位置取数据配置bank
 
@@ -1033,6 +1012,7 @@ class CHIP():
         ins_data = self.get_write_dac_ins2(v=write_voltage,tg=tg)                                      # 配置电压
 
         for col in res_col_bank:
+            ins_data.append(CMD(PL_CIM_RESET))
             for bank,din_ram_pos in res_row_bank:
                 ins_data.append(CMD(row_bank_ins,command_data=CmdData(bank<<8|din_ram_pos)))        # 从din_ram的din_ram_pos位置取数据配置bank
 
