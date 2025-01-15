@@ -9,12 +9,12 @@ class ADC():
     """
     channel_num = 4
     adc_spi_div = 2
+    adc_cs_gap = 0x0190
     adc_sample_times = 32
     adc_first_gap = 0xa
     adc_last_gap = 0xa
-    adc_cs_gap = 0x0190
+    
     gain = 0
-
     row_col_sw = 0 
 
     ps = None

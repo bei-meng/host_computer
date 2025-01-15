@@ -15,6 +15,10 @@
 from cimCommand.singleCmdData import CmdData
 #-------------------------------------------------------------------备选参数
 BYTE_ORDER   = "big"                        # 命令转换为字节后的字节序, or "little"
+PULSE_CYC_LENGTH = 10*1e-9                  # 单位s
+
+
+
 
 class COMMAND_TYPE():
     """
@@ -378,7 +382,6 @@ ROW_COL_SW=dict(
     command_description = "pcb上row或col的TIA, 0:row,1:col"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
-
 
 #-------------------------------------------------------------------DAC_CTR:18
 DAC_CTR=dict(
@@ -919,6 +922,20 @@ ADC3_OUT_D=dict(
     command_description = "ADC3 D通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -3,6 +3,7 @@ from cimCommand.singleCmdInfo import *
 from pc import PS
 from modules.adc import ADC
 from modules.dac import DAC
+from modules.clk_manager import CLK_MANAGER
 import numpy as np
 import time
 
@@ -11,13 +12,6 @@ class CHIP():
         对chip进行的操作
     """
     deviceType = 0                  # 器件类型0: RERAM,1: ECRAM
-
-    pulse_cyc_length = 10*1e-9      # 每个cycle的宽度为10ns
-    latch_cyc = 0x2                 # PCB上锁存器的latch cycle树
-    reg_clk_cyc = 0xF               # 高电平cycle数, 1 cycle=10ns 0: 翻转
-    latch_clk_cyc = 0xF             # 高电平cycle数, 1 cycle=10ns 0: 翻转
-    cim_rstn_cyc = 0xF              # cim
-    pulse_cyc = 256                 # row/col pulse的cycle数 0: 翻转"
 
     op_mode = None                  # 当前所处模式
     from_row = True                 # 从行/列读写
@@ -31,12 +25,14 @@ class CHIP():
     ps = None
     adc = None
     dac = None
+    clk_manager = None
 
     def __init__(self, ps:PS):
         self.ps = ps
         self.initOp()
         self.adc = ADC(ps)
         self.dac = DAC(ps)
+        self.clk_manager = CLK_MANAGER(ps)
 
     def get_setting_info(self):
         """
@@ -47,7 +43,7 @@ class CHIP():
         if self.op_mode == "read":
             res = f"操作模式: {self.op_mode}\t器件: {device}\t读电压: {self.read_voltage}v\t从行\列给电压: {row_col}\tTIA增益: {self.adc.gain}"
         elif self.op_mode == "write":
-            res = f"操作模式: {self.op_mode}\t器件: {device}\t写电压: {self.write_voltage}v\t从行\列给电压: {row_col}\t脉宽: {self.pulse_cyc}"
+            res = f"操作模式: {self.op_mode}\t器件: {device}\t写电压: {self.write_voltage}v\t从行\列给电压: {row_col}\t脉宽: {self.clk_manager.pulse_cyc}"
         else:
             res = f"未配置操作模式。"
         return res
@@ -108,14 +104,7 @@ class CHIP():
             Args:
                 pulsewidth: 设置cfg_row_pulse和cfg_col_pulse的脉宽
         """
-        pulse_cyc=int(pulsewidth/self.pulse_cyc_length)
-        assert pulse_cyc>=0 ,"set_pulse_width: 脉宽超过界限！"
-
-        pkts=Packet()
-        pkts.append_cmdlist([CMD(PULSE_CYC,command_data=CmdData(pulse_cyc)),],mode=1)
-        self.ps.send_packets(pkts)
-
-        self.pulse_cyc = pulse_cyc
+        self.clk_manager.set_pulse_cyc(pulsewidth)
 
     def set_op_mode(self,read=True,row=True):
         """
