@@ -14,15 +14,14 @@ class CHIP():
 
     pulse_cyc_length = 10*1e-9      # 每个cycle的宽度为10ns
     latch_cyc = 0x2                 # PCB上锁存器的latch cycle树
-    reg_clk_cyc = 0xF               # 高电平cycle数，1 cycle=10ns 0：翻转
-    latch_clk_cyc = 0xF             # 高电平cycle数，1 cycle=10ns 0：翻转
+    reg_clk_cyc = 0xF               # 高电平cycle数, 1 cycle=10ns 0: 翻转
+    latch_clk_cyc = 0xF             # 高电平cycle数, 1 cycle=10ns 0: 翻转
     cim_rstn_cyc = 0xF              # cim
-    pulse_cyc = 256                 # row/col pulse的cycle数 0：翻转"
+    pulse_cyc = 256                 # row/col pulse的cycle数 0: 翻转"
 
     op_mode = None                  # 当前所处模式
-    read_from_row = True            # 从行读的模式
-    read_voltage = None             # 读电压
-    write_from_row = True           # 从行写的模式
+    from_row = True                 # 从行/列读写
+    read_voltage = None             # 读写电压
     write_voltage = None            # 写电压
 
     chip_bank_num = 8
@@ -44,18 +43,17 @@ class CHIP():
             输出相关信息
         """
         device = "ECRAM" if self.deviceType else "ReRAM"
+        row_col = "行" if self.from_row else "列"
         if self.op_mode == "read":
-            row_col_read = "行" if self.read_from_row else "列"
-            res = f"操作模式：{self.op_mode}\t器件：{device}\t读电压：{self.read_voltage}v\t从行\列给电压：{row_col_read}\tTIA增益：{self.adc.gain}"
+            res = f"操作模式: {self.op_mode}\t器件: {device}\t读电压: {self.read_voltage}v\t从行\列给电压: {row_col}\tTIA增益: {self.adc.gain}"
         elif self.op_mode == "write":
-            row_col_write = "行" if self.write_from_row else "列"
-            res = f"操作模式：{self.op_mode}\t器件：{device}\t写电压：{self.write_voltage}v\t从行\列给电压：{row_col_write}\t脉宽：{self.pulse_cyc}"
+            res = f"操作模式: {self.op_mode}\t器件: {device}\t写电压: {self.write_voltage}v\t从行\列给电压: {row_col}\t脉宽: {self.pulse_cyc}"
         else:
             res = f"未配置操作模式。"
         return res
 
     #------------------------------------------------------------------------------------------
-    # ********************************** 器件初始化及相关配置 ***********************************
+    # ********************************** 器件初始化及其他操作 ***********************************
     #------------------------------------------------------------------------------------------
     def initOp(self):
         """
@@ -71,10 +69,7 @@ class CHIP():
             CMD(CIM_RESET,command_data=CmdData(1)),                 # reset指令
             CMD(CIM_SS,command_data=CmdData(1)),                    # reg写入数据打开
             CMD(SER_PARA_SEL,command_data=CmdData(1)),              # 切换到并行模式
-            # CMD(NEGTIVE_REG_CLK,command_data=CmdData(1)),                                       # negtive_reg_clk
         ],mode=1)
-
-        # 发送指令
         self.ps.send_packets(pkts)
 
         # 不为空就执行初始化
@@ -95,38 +90,63 @@ class CHIP():
 
         data = self.deviceType | self.latch_cyc<<1 | self. reg_clk_cyc<<3 | self.latch_clk_cyc<<7 | self.cim_rstn_cyc<<11
         pkts=Packet()
-        pkts.append_cmdlist([
-            CMD(DEVICE_CFG,command_data=CmdData(data)),
-        ],mode=1)
-
-        # 发送指令
+        pkts.append_cmdlist([CMD(DEVICE_CFG,command_data=CmdData(data)),],mode=1)
         self.ps.send_packets(pkts)
 
-    def set_pulse_width(self,pulsewidth):
+    def set_pulse_width(self,pulsewidth:float):
         """
-            设置施加的脉宽的宽度
+            Args:
+                pulsewidth: 设置cfg_row_pulse和cfg_col_pulse的脉宽
         """
         pulse_cyc=int(pulsewidth/self.pulse_cyc_length)
         assert pulse_cyc>=0 ,"set_pulse_width: 脉宽超过界限！"
 
         pkts=Packet()
-        pkts.append_cmdlist([
-            CMD(PULSE_CYC,command_data=CmdData(pulse_cyc)),
-        ],mode=1)
-
-        # 发送指令
+        pkts.append_cmdlist([CMD(PULSE_CYC,command_data=CmdData(pulse_cyc)),],mode=1)
         self.ps.send_packets(pkts)
 
         self.pulse_cyc = pulse_cyc
-    
-    #------------------------------------------------------------------------------------------
-    # ********************************* 配置latch，行列的映射 **********************************
-    #------------------------------------------------------------------------------------------
-    def numToBank_Index(self,num:int):
+
+    def set_op_mode(self,read=True,row=True):
         """
-            注意：num从0索引开始
-            将x,y译码为对应的bank和index
-            bank和index均从0开始，方便后面的位操作
+            Args:
+                read: True表示读模式, False表示写模式
+                row: True表示从行读/写, False表示从列读/写
+
+            Functions:
+                会记录读/写模式, 从行/列进行操作\n
+                会根据设置配置ROW_CTRL,COL_CTRL,ROW_COL_SW的选择
+        """
+        self.clear_dac_v()
+        self.op_mode = "read" if read else "write"
+        self.from_row = row
+        sign = 1 if row else 0
+        pkts=Packet()
+        pkts.append_cmdlist([
+            CMD(ROW_CTRL,command_data=CmdData(sign)),                                                  # 1配置行到施加电压,
+            CMD(COL_CTRL,command_data=CmdData(int(not sign))),                                         # 0配置列到TIA,
+            CMD(ROW_COL_SW,command_data=CmdData(sign)),                                                # 1PCB上的TIA接在列,
+        ],mode=1)
+        self.ps.send_packets(pkts)
+
+    #------------------------------------------------------------------------------------------
+    # ************************************** 各种索引映射 **************************************
+    #------------------------------------------------------------------------------------------
+    def set_cim_reset(self):
+        """
+            发送reset的指令
+        """
+        pkts=Packet()
+        pkts.append_cmdlist([CMD(CIM_RESET,command_data=CmdData(0)),CMD(CIM_RESET,command_data=CmdData(1)),],mode=1)
+        self.ps.send_packets(pkts)
+
+    def numToBank_Index(self,num:int) -> tuple[int,int]:
+        """
+            Args:
+                num: 行/列号, 从0开始
+
+            Returns:
+                tuple: (bank, index) 其中 bank 和 index 坐标从0开始
         """
         num += 1
         assert num > 0 and num < 257,"numToBank_Index: num超过范围!"
@@ -144,9 +164,13 @@ class CHIP():
 
         return bank, index
 
-    def bank_to_num(self,bank_data:list):
+    def bank_to_num(self,bank_data:list) -> list[int]:
         """
-            计算对应bank里面的行/列号
+            Args:
+                bank_data: 包含需要映射的bank坐标的列表, 例: [0, 1]
+
+            Returns:
+                list: [ row_num/col_num ], 返回对应bank包含的所有的行/列号, 因为行/列号与bank的对应关系相同
         """
         bank_list = [[] for i in range(self.chip_bank_num)]
         for i in range(self.chip_latch_num):
@@ -157,9 +181,28 @@ class CHIP():
             res = res + bank_list[i]
         return res
     
+    def bank_split(self,data:tuple[int,int,int,int,int]) -> list[list[int]]:
+        """
+            Args:
+                data: 数据为(pos, row_num/col_num, bank, index, tia_num)的列表
+
+            Returns:
+                list0 [ list1 [int] ], 将数据切分到对应的bank中, list1表示在一个bank中的行/列号
+                每个list1都不为空
+        """
+        bank_data = [[] for _ in range(self.chip_bank_num)]
+        for j in data:
+            bank_data[j[2]].append(j[1])
+        return [i for i in bank_data if len(i)>0]
+    
     def tia_to_num(self,tia_data:list,row=None):
         """
-            计算对应tia里面的行/列号
+            Args:
+                tia_data: 包含需要映射的tia坐标的列表, 例: [0, 1]
+                row: 因为不同device的 行/列tia映射不一样
+
+            Returns:
+                list: [ row_num/col_num ], 返回对应tia包含的所有的行/列号, 因为行/列号与tia的对应关系不相同
         """
         tia_list = [[] for i in range(self.chip_tia_num)]
         for i in range(self.chip_latch_num):
@@ -170,9 +213,45 @@ class CHIP():
             res = res + tia_list[i]
         return res
     
-    def get_data(self,num:list):
+    def tia_split(self,data:tuple[int,int,int,int,int],tia_flag = True) -> list[list[tuple[int,int,int,int,int]]]:
         """
-            返回已经切分好的行或列，对应的bank，index
+            Args:
+                data: 数据为(pos, row_num/col_num, bank, index, tia_num)的列表
+                tia_flag: 表示是否需要处理一路TIA只能映射一列的问题
+
+            Returns:
+                list0 [ list1 [tuple] ], 数据根据TIA数量, 切分到对应的处理批次中\n
+                每次读操作处理list1里面的数据,
+                每个list1都不为空
+        """
+        read_num = []
+        if tia_flag:
+            tia16 = [[] for _ in range(self.chip_tia_num)]
+            for i in data:
+                tia16[i[4]].append(i)
+            # ----------------------------------------------每路TIA选一路
+            flag = True
+            while flag:
+                flag = False
+                tmp = []
+                for i in tia16:
+                    if len(i)>0:
+                        tmp.append(i.pop())                 # 每路tia选一个值
+                        flag = True
+                if flag == True:
+                    read_num.append(tmp)
+        else:
+            read_num.append(data)
+
+        return read_num
+    
+    def get_bank_index32(self,num:list) -> tuple[int,int]:
+        """
+            Args:
+                num: 行/列号的列表, 必须都在同一个bank里面!
+
+            Returns:
+                tuple[int,int]: 经过处理过的bank,index的值,可以直接作为指令数据下发
         """
         bank,index = 0,0
         for i in num:
@@ -181,104 +260,79 @@ class CHIP():
             index = index | (1<<index_tmp)
         return bank,index
 
-    def get_bank_tia(self,num:list):
+    def get_bank_index_tia(self,num:list) -> list[tuple[int,int,int,int,int]]:
         """
-            对应行号列号，映射为bank，index，tia
+            Args:
+                num: 任意行/列号的列表
+
+            Returns:
+                list[tuple[int,int,int,int,int]]: 列表里面的每个数据都是对应行列号的映射结果
+                为元组(pos, row_num/col_num, bank, index, tia_num)的列表
         """
         res = []
         for k,v in enumerate(num):
             bank,index = self.numToBank_Index(v)
-            if self.op_mode=="read":
-                tia = self.adc.TIA_index_map(v,device=self.deviceType,col=self.read_from_row)
-            elif self.op_mode=="write":
-                tia = self.adc.TIA_index_map(v,device=self.deviceType,col=self.write_from_row)
-            else:
-                print("get_bank_tia：未设置模式。")
+            tia = self.adc.TIA_index_map(v,device=self.deviceType,col=self.from_row)
             res.append((k,v,bank,index,tia))
         return res
-            
-    def set_cim_reset(self):
-        """
-            发送reset的指令
-        """
-        pkts=Packet()
-        # reset指令
-        pkts.append_cmdlist([
-            CMD(CIM_RESET,command_data=CmdData(0)),
-            CMD(CIM_RESET,command_data=CmdData(1)),
-        ],mode=1)
-        self.ps.send_packets(pkts)
-
-    def temp_negative_reg_clk(self,data):
-        """
-            设置NEGTIVE_REG_CLK=data
-        """
-        pkts=Packet()
-        pkts.append_cmdlist([
-            CMD(NEGTIVE_REG_CLK,command_data=CmdData(self.data)),
-        ],mode=1)   
-        self.ps.send_packets(pkts)
 
     def set_latch(self,num:list,row=True,value=None):
         """
-            将对应的行或列配置成latch为1,
+            Args:
+                num: 任意行/列号的列表
+                value: 32bit的值或者None
+
+            Functions:
+                row为True表示行, row为False表示列
+                将对应的行/列号latch配置成1
+                如果value不为None,将会把这些行/列涉及的bank全配置成32bit的value值
         """
         row_col_sel = 1 if row else 0
-        # 获取bank的数据
-        data = self.get_bank_tia(num)
-        bank_data = [[] for _ in range(self.chip_bank_num)]
-        bank_list = []
-        for j in data:
-            bank_data[j[2]].append(j[1])
-            if j[2] not in bank_list: bank_list.append(j[2])
-        
-        if value is not None:
-            self.set_bank(banknum=bank_list,row=row,value=value)
-        else:
-            pkts=Packet()
-            # 配置行
-            for i in bank_data:
-                if len(i)>0:
-                    bank,index = self.get_data(i)
-                    pkts.append_cmdlist([
-                        # 行reg配置
-                        CMD(CIM_DATA_IN,command_data=CmdData(index)),                                       # 第index位置1
-                        CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_cim_data_in)),       # cfg_cim_data_in
-                        CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_reg_clk)),           # cfg_reg_clk
-                        # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.negative_reg_clk)),     # negative_reg_clk
-                        # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_pos_reg_clk)),      # negative_reg_clk
+        data = self.get_bank_index_tia(num)
+        bank_data = self.bank_split(data)
 
-                        # 行bank配置
-                        CMD(ROW_COL_SEL,command_data=CmdData(row_col_sel)),                                 # 设置为行/列模式
-                        CMD(CIM_BANK_SEL,command_data=CmdData(bank)),                                       # 行bank选择
-                        CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_bank_sel)),          # cfg_bank_sel
-                        CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_latch_clk)),         # cfg_latch_clk
-                    ],mode=1)   
-            self.ps.send_packets(pkts)
+        pkts=Packet()
+        for i in bank_data:
+            bank,index = self.get_bank_index32(i)
+            index = value if value is not None else index
+            pkts.append_cmdlist([
+                # 行reg配置
+                CMD(CIM_DATA_IN,command_data=CmdData(index)),                                       # 第index位置1
+                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_cim_data_in)),       # cfg_cim_data_in
+                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_reg_clk)),           # cfg_reg_clk
+
+                # 行bank配置
+                CMD(ROW_COL_SEL,command_data=CmdData(row_col_sel)),                                 # 设置为行/列模式
+                CMD(CIM_BANK_SEL,command_data=CmdData(bank)),                                       # 行bank选择
+                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_bank_sel)),          # cfg_bank_sel
+                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_latch_clk)),         # cfg_latch_clk
+            ],mode=1)   
+        self.ps.send_packets(pkts)
 
     def set_bank(self,banknum:list,row=True,value=0):
         """
-            将对应行/列的bank配置成对应的值
-            banknum: 为要修改的bank的列表, 从0开始
-            row: 表示是修改的row的,还是col的
-            value: 为对应要修改32bit的值
+            Args:
+                num: 任意bank号的列表
+                value: 32bit的值或者None
+
+            Functions:
+                row为True表示行, row为False表示列\n
+                将对应的bank号latch全配置成1\n
+                如果value不为None,将会把这些行/列涉及的bank全配置成32bit的value值
         """
-        assert len(banknum)>0,"set_bank：空列表。"
+        assert len(banknum)>0,"set_bank: 空列表。"
         row_col_sel = 1 if row else 0
 
         tmp = 0
-        pkts=Packet()
         # 配置行
         for i in banknum:
             tmp = tmp | (1<<i)
+        pkts=Packet()
         pkts.append_cmdlist([
             # 行reg配置
             CMD(CIM_DATA_IN,command_data=CmdData(value)),                                       # 第xindex位置1
             CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_cim_data_in)),       # cfg_cim_data_in
             CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_reg_clk)),           # cfg_reg_clk
-            # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.negative_reg_clk)),     # negative_reg_clk
-            # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_pos_reg_clk)),      # negative_reg_clk
-
             # 行bank配置
             CMD(ROW_COL_SEL,command_data=CmdData(row_col_sel)),                                 # 设置为行/列模式
             CMD(CIM_BANK_SEL,command_data=CmdData(tmp)),                                        # bank选择
@@ -287,9 +341,13 @@ class CHIP():
         ],mode=1)   
         self.ps.send_packets(pkts)
 
+    #------------------------------------------------------------------------------------------
+    # *********************************** debug版本dac配置 *************************************
+    #------------------------------------------------------------------------------------------
     def clear_dac_v(self):
         """
-            清空dac
+            Functions:
+                将dac的电压全部清0
         """
         self.dac.set_voltage(0,dac_num=0,dac_channel=0)             # ROW_Va电压
         self.dac.set_voltage(0,dac_num=0,dac_channel=1)             # ROW_Va电压
@@ -306,323 +364,174 @@ class CHIP():
         self.dac.set_voltage(0,dac_num=1,dac_channel=2)             # GL
         self.dac.set_voltage(0,dac_num=1,dac_channel=3)             # GR
 
-    def set_op_mode(self,read=True,row=True):
+    def set_dac_read_V(self,v:float,tg:float = 5):
         """
-            设置操作模式
+            Functions:
+                设置读电压,会自动根据设定的器件类型进行设置\n
+                ReRAM: 设置TG, ROW_Va和COL_Va都会设置为v\n
+                ECRAM: 行读, 设置ROW_Va为v; 列读, 设置COL_Va为v
         """
-        self.clear_dac_v()
-        if read:
-            self.op_mode = "read"
-            self.read_from_row = row
-        else:
-            self.op_mode = "write"
-            self.write_from_row = row
+        self.read_voltage = v
+        if self.deviceType==0:
+            if self.from_row:
+                self.dac.set_voltage(tg,dac_num=0,dac_channel=6)          # TG
+                self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
+                self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
+            else:   
+                self.dac.set_voltage(tg,dac_num=0,dac_channel=6)          # TG
+                self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
+                self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
+        elif self.deviceType==1:    
+            if self.from_row:  
+                self.dac.set_voltage(v,dac_num=0,dac_channel=0)             # ROW_Va电压
+                self.dac.set_voltage(v,dac_num=0,dac_channel=1)             # ROW_Va电压
+                self.dac.set_voltage(v,dac_num=0,dac_channel=2)             # ROW_Va电压
+                self.dac.set_voltage(v,dac_num=0,dac_channel=3)             # ROW_Va电压
+            else:   
+                self.dac.set_voltage(v,dac_num=0,dac_channel=4)             # COL_Va电压
+                self.dac.set_voltage(v,dac_num=0,dac_channel=5)             # COL_Va电压
+                self.dac.set_voltage(v,dac_num=0,dac_channel=6)             # COL_Va电压
+                self.dac.set_voltage(v,dac_num=0,dac_channel=7)             # COL_Va电压
 
-        if row:
-            pkts=Packet()
-            pkts.append_cmdlist([
-                CMD(ROW_CTRL,command_data=CmdData(1)),                                                  # 配置行到施加电压
-                CMD(COL_CTRL,command_data=CmdData(0)),                                                  # 配置列到TIA
-                CMD(ROW_COL_SW,command_data=CmdData(1)),                                                # PCB上的TIA接在列
-            ],mode=1)
-            self.ps.send_packets(pkts)
-        else:
-            pkts=Packet()
-            pkts.append_cmdlist([
-                CMD(ROW_CTRL,command_data=CmdData(0)),                                                  # 配置行到TIA
-                CMD(COL_CTRL,command_data=CmdData(1)),                                                  # 配置列到电压
-                CMD(ROW_COL_SW,command_data=CmdData(0)),                                                # PCB上的TIA接在行
-            ],mode=1)
-            self.ps.send_packets(pkts)
+    def set_dac_write_V(self,v:float,tg:float = 5):
+        """
+            Functions:
+                设置写电压,会自动根据设定的器件类型进行设置\n
+                ReRAM: 设置TG, ROW_Va和COL_Va都会设置为v\n
+        """
+        self.write_voltage = v
+        if self.deviceType==0:
+            if self.from_row:
+                self.dac.set_voltage(tg,dac_num=0,dac_channel=6)            # TG
+                self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
+                self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
+            else:   
+                self.dac.set_voltage(tg,dac_num=0,dac_channel=6)            # TG
+                self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
+                self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
+        elif self.deviceType==1:    
+            if self.from_row:  
+                self.dac.set_voltage(v,dac_num=0,dac_channel=0)             # ROW_Va电压
+                self.dac.set_voltage(v,dac_num=0,dac_channel=1)             # ROW_Va电压
+                self.dac.set_voltage(v,dac_num=0,dac_channel=2)             # ROW_Va电压
+                self.dac.set_voltage(v,dac_num=0,dac_channel=3)             # ROW_Va电压
+            else:   
+                self.dac.set_voltage(v,dac_num=0,dac_channel=4)             # COL_Va电压
+                self.dac.set_voltage(v,dac_num=0,dac_channel=5)             # COL_Va电压
+                self.dac.set_voltage(v,dac_num=0,dac_channel=6)             # COL_Va电压
+                self.dac.set_voltage(v,dac_num=0,dac_channel=7)             # COL_Va电压
 
     #------------------------------------------------------------------------------------------
     # ************************************** 读相关操作 ****************************************
     #------------------------------------------------------------------------------------------
-    def set_dac_read_V(self,v:float,tg_v:float = 5):
-        """
-            配置dac的读电压
-        """
-        self.read_voltage = v
-        if self.deviceType==0:
-            if self.read_from_row:
-                self.dac.set_voltage(tg_v,dac_num=0,dac_channel=6)          # TG
-                self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
-                self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
-            else:   
-                self.dac.set_voltage(tg_v,dac_num=0,dac_channel=6)          # TG
-                self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
-                self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
-        elif self.deviceType==1:    
-            if self.read_from_row:  
-                self.dac.set_voltage(v,dac_num=0,dac_channel=0)             # ROW_Va电压
-                self.dac.set_voltage(v,dac_num=0,dac_channel=1)             # ROW_Va电压
-                self.dac.set_voltage(v,dac_num=0,dac_channel=2)             # ROW_Va电压
-                self.dac.set_voltage(v,dac_num=0,dac_channel=3)             # ROW_Va电压
-            else:   
-                self.dac.set_voltage(v,dac_num=0,dac_channel=4)             # COL_Va电压
-                self.dac.set_voltage(v,dac_num=0,dac_channel=5)             # COL_Va电压
-                self.dac.set_voltage(v,dac_num=0,dac_channel=6)             # COL_Va电压
-                self.dac.set_voltage(v,dac_num=0,dac_channel=7)             # COL_Va电压
-
     def set_tia_gain(self,gain:int):
         """
-            设置TIA的增益
+            Args:
+                设置TIA的增益为gain
         """
         self.adc.set_gain(gain)
 
+    def get_tia_out(self,num:list) -> tuple[np.ndarray,np.ndarray]:
+        """
+            Args:
+                num: 包含要读取的tia号的列表
+
+            Returns:
+                tuple[np.ndarray0,np.ndarray1]: 返回一个元组\n
+                np.ndarray0为电压(v), np.ndarray1为电导(us)
+        """
+        voltage,cond = self.adc.get_out(num,self.read_voltage)
+        return voltage,cond
+
     def generate_read_pulse(self):
         """
-            产生读脉冲的指令
+            Functions:
+                根据设定的从行/列读，产生读脉冲的指令
+                这里FPGA把行列的脉冲都连在一起了,所以去掉了翻转
+                且不用主动给列脉冲
         """
-        if self.read_from_row:
-            pkts=Packet()
-            pkts.append_cmdlist([
-                # CMD(PULSE_CYC,command_data=CmdData(0)),                                             # 翻转
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),         # cfg_col_pulse，配置列为常1
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_read)),          # 然后开始读,行给电压
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),         # cfg_col_pulse，读完后，把列电压翻转为0
-            ],mode=1)
-            self.ps.send_packets(pkts)
-        else:
-            pkts=Packet()
-            pkts.append_cmdlist([
-                # CMD(PULSE_CYC,command_data=CmdData(0)),                                             # 翻转
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),         # cfg_row_pulse，配置行为常1
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_read)),          # 然后开始读,列给电压
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),         # cfg_row_pulse，读完后，把行电压翻转为0
-            ],mode=1)
-            self.ps.send_packets(pkts)
+        read_ins_data = FAST_COMMAND1_CONF.cfg_row_read if self.from_row else FAST_COMMAND1_CONF.cfg_col_read
+        pkts=Packet()
+        pkts.append_cmdlist([CMD(FAST_COMMAND_1,command_data=CmdData(read_ins_data))],mode=1)
+        self.ps.send_packets(pkts)
 
-    def get_tia_out(self,num:list):
+    def read(self,row_index:list,col_index:list, row_value = None, col_value = None, tia_flag=True) -> tuple[np.ndarray,np.ndarray]:
         """
-           得到tia的输出 
-        """
-        assert self.op_mode == "read","未设置为读模式。"
-        assert self.read_voltage is not None,"未设置读电压。"
-        cond,voltage = self.adc.get_out(num,self.read_voltage)
-        
-        return np.array(cond),np.array(voltage)
-    
-    def read_one(self,row_index:int,col_index:int):
-        """
-            读某一个器件，row_index为行索引，col_index为列索引
+            Args:
+                row_index: 要配置的任意行索引
+                col_index: 要配置的任意列索引
+                row_value: 如果row_value不为None,将会把这些行涉及的bank全配置成32bit的row_value值
+                col_value: 如果col_value不为None,将会把这些列涉及的bank全配置成32bit的col_value值
+                tia_flag: 表示是否需要处理一路TIA只能映射一列的问题
+
+            Returns:
+                tuple[np.ndarray0,np.ndarray1]: 返回一个元组\n
+                np.ndarray0为电压(v), np.ndarray1为电导(us)
         """
         print(self.get_setting_info())
         assert self.op_mode == "read","未设置为读模式。"
         assert self.read_voltage is not None,"未设置读电压。"
 
-        if not self.read_from_row:
+        if not self.from_row:
             row_index, col_index = col_index, row_index
-        self.set_cim_reset()                                                                        # 先reset 
-        self.set_latch([[row_index]],row=self.read_from_row,value=None)                             # 配置行
-        self.set_latch([[col_index]],row=not self.read_from_row,value=None)                         # 配置列
-        self.generate_read_pulse()                                                                  # 产生读脉冲
-        
-        tia_index = self.adc.TIA_index_map(col_index,self.deviceType,self.read_from_row)
-        cond,voltage = self.adc.get_out([tia_index],read_voltage=self.read_voltage)
-        
-        return cond,voltage
-
-    def read(self,row_index:list,col_index:list,debug = False):
-        """
-            读器件，row_index为行索引，col_index为列索引
-        """
-        print(self.get_setting_info())
-        assert self.op_mode == "read","未设置为读模式。"
-        assert self.read_voltage is not None,"未设置读电压。"
-
-        if not self.read_from_row:
-            row_index, col_index = col_index, row_index
-
         # ----------------------------------------------行数据映射
-        index_data_row = self.get_bank_tia(row_index)
-        bank8_row = [[] for _ in range(self.chip_bank_num)]
-        for j in index_data_row:
-            bank8_row[j[2]].append(j[1])
-        if debug:
-            print("映射输入端的bank:",bank8_row)
-        # ----------------------------------------------列数据映射
-        index_data = self.get_bank_tia(col_index)                                                 # 映射得到i,num,bank，index，tia
-        # print(index_data)
+        row_data = self.get_bank_index_tia(row_index)
+        col_data = self.get_bank_index_tia(col_index)                                                 # 映射得到i,num,bank, index, tia
         # ----------------------------------------------映射16路tia
-        tia16 = [[] for _ in range(self.chip_tia_num)]
-        for i in index_data:
-            # print(i)
-            tia16[i[4]].append(i)
-        # print("tia16",tia16)
-        # ----------------------------------------------每路TIA选一路
-        flag = True
-        read_num = []
-        while flag:
-            flag = False
-            tmp = []
-            for i in tia16:
-                if len(i)>0:
-                    tmp.append(i.pop())                 # 每路tia选一个值
-                    flag = True
-            if flag == True:
-                read_num.append(tmp)
-        # print("选择16路tia")
-        # for i in read_num:
-        #     print(i)
+        read_num = self.tia_split(col_data,tia_flag = tia_flag)
         # ----------------------------------------------循环去读
-        read_res_cond = []
-        read_res_voltage = []
+        res = []
         for i in read_num:
             # ------------------------------------------reset然后配置行
-            self.set_cim_reset()                                                                      # 先reset 
-            self.set_latch(bank8_row,row=self.read_from_row,value=None)                             # 配置行
-            # ------------------------------------------映射8个bank
-            bank8 = [[] for _ in range(self.chip_bank_num)]
-            for j in i:
-                bank8[j[2]].append(j[1])
-            if debug:
-                print("映射读出端的bank:",bank8)
-                print("映射读出端的TIA:",[j[4] for j in i])
-            # ------------------------------------------开始配置列latch,如果从行读，row=False，从列读，row=True
-            self.set_latch(bank8,row=not self.read_from_row,value=None)
+            self.set_cim_reset()
+            self.set_latch([j[1] for j in row_data],row=self.from_row,value=row_value)
+            self.set_latch([j[1] for j in i],row=not self.from_row,value=col_value)
             # ------------------------------------------给读脉冲
             self.generate_read_pulse() 
             # ------------------------------------------读出结果
-            cond,voltage = self.adc.get_out([j[4] for j in i],read_voltage=self.read_voltage)
-            read_res_cond.append(cond)
-            read_res_voltage.append(voltage)
+            res.append(self.adc.get_out([j[4] for j in i],read_voltage=self.read_voltage))
+
         # ----------------------------------------------将结果映射回原来的顺序
         result_cond = [0]*len(col_index)
         result_v = [0]*len(col_index)
         for i,v1 in enumerate(read_num):
+            # 第i个批次读, v2为(pos, row_num/col_num, bank, index, tia_num)
             for j,v2 in enumerate(v1):
-                result_cond[v2[0]]=read_res_cond[i][j]
-                result_v[v2[0]]=read_res_voltage[i][j]
+                result_cond[v2[0]]=res[i][0][j]
+                result_v[v2[0]]=res[i][1][j]
+
         return np.array(result_cond),np.array(result_v)
-
-    def read_all(self,row_index: list, col_index: list,
-                 row_value  = None, col_value = None,
-                 all_tia = True, debug = False):
-        """
-            不检查TIA映射的问题
-        """
-        print(self.get_setting_info())
-        assert self.op_mode == "read","未设置为读模式。"
-        assert self.read_voltage is not None,"未设置读电压。"
-        if not self.read_from_row:
-            row_index, col_index = col_index, row_index
-            row_value, col_value = col_value, row_value
-        # ----------------------------------------------行列数据映射
-        row_data = self.get_bank_tia(row_index)
-        # (k,v,bank,index,tia)
-        row_bank = [[] for _ in range(self.chip_bank_num)]
-        row_bank_list = []
-        for j in row_data:
-            row_bank[j[2]].append(j[1])
-            if j[2] not in row_bank_list: row_bank_list.append(j[2])
-
-        col_data = self.get_bank_tia(col_index)
-        col_bank = [[] for _ in range(self.chip_bank_num)]
-        col_bank_list = []
-        for j in col_data:
-            col_bank[j[2]].append(j[1])
-            if j[2] not in col_bank_list: col_bank_list.append(j[2])
-        # ----------------------------------------------配置行列bank,因为bank配同样的值能加速
-        self.set_cim_reset()
-        if row_value is not None:
-            self.set_bank_latch(row_bank_list,row=self.read_from_row,value=row_value)
-        else:
-            self.set_latch(row_data,row=self.read_from_row,value=None)
-        if col_value is not None:
-            self.set_bank_latch(col_bank_list,row=not self.read_from_row,value=col_value)
-        else:
-            self.set_latch(col_data,row=not self.read_from_row,value=None)
-        if debug:
-            # (k,v,bank,index,tia)
-            print("映射输入端的bank:",row_bank)
-            print("映射输出端的bank:",col_bank)
-            print("映射读出端的TIA:",[j[4] for j in col_bank])
-        # ----------------------------------------------读操作
-        self.generate_read_pulse()
-        if all_tia:
-            cond,voltage = self.adc.get_out([i for i in range(self.chip_tia_num)],read_voltage=self.read_voltage)
-        else:
-            cond,voltage = self.adc.get_out([j[4] for j in col_data],read_voltage=self.read_voltage)
-        return cond,voltage
 
     #------------------------------------------------------------------------------------------
     # ************************************** 写相关操作 ****************************************
     #------------------------------------------------------------------------------------------
-    def set_dac_write_V(self,v:float,tg_v:float = 5):
+    def generate_write_pulse(self):
         """
-            配置dac的读电压
+            Functions:
+                根据设定的从行/列写，产生写脉冲的指令
+                这里FPGA把行列的脉冲都连在一起了,所以去掉了翻转
+                从行写只用给行脉冲, 从列写只用给列脉冲(对应方向会自动跟着给脉冲)
         """
-        self.write_voltage = v
-        if self.deviceType==0:
-            if self.write_from_row:
-                self.dac.set_voltage(tg_v,dac_num=0,dac_channel=6)          # TG
-                self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
-                self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
-            else:   
-                self.dac.set_voltage(tg_v,dac_num=0,dac_channel=6)             # TG
-                self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
-                self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
-        elif self.deviceType==1:    
-            if self.write_from_row:  
-                self.dac.set_voltage(v,dac_num=0,dac_channel=0)             # ROW_Va电压
-                self.dac.set_voltage(v,dac_num=0,dac_channel=1)             # ROW_Va电压
-                self.dac.set_voltage(v,dac_num=0,dac_channel=2)             # ROW_Va电压
-                self.dac.set_voltage(v,dac_num=0,dac_channel=3)             # ROW_Va电压
-            else:   
-                self.dac.set_voltage(v,dac_num=0,dac_channel=4)             # COL_Va电压
-                self.dac.set_voltage(v,dac_num=0,dac_channel=5)             # COL_Va电压
-                self.dac.set_voltage(v,dac_num=0,dac_channel=6)             # COL_Va电压
-                self.dac.set_voltage(v,dac_num=0,dac_channel=7)             # COL_Va电压
-
-    def generate_write_pulse(self, pulse_width = 1e-6):
-        """
-            产生写脉冲
-        """
-        self.pulse_cyc = int(pulse_width/self.pulse_cyc_length)
-        if self.write_from_row:
-            pkts=Packet()
-            pkts.append_cmdlist([
-                # CMD(PULSE_CYC,command_data=CmdData(0)),                                                 # 翻转
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),             # cfg_col_pulse，配置列为常1
-                
-                CMD(PULSE_CYC,command_data=CmdData(self.pulse_cyc)),            # 设置脉宽
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),             # cfg_row_pulse, 给写脉冲
-
-                # CMD(PULSE_CYC,command_data=CmdData(0)),                                                 # 翻转
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),             # cfg_col_pulse，读完后，把列电压翻转为0
-            ],mode=1)
-            self.ps.send_packets(pkts)
-        else:
-            pkts=Packet()
-            pkts.append_cmdlist([
-                # CMD(PULSE_CYC,command_data=CmdData(0)),                                                 # 翻转
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),             # cfg_row_pulse，配置行为常1
-
-                CMD(PULSE_CYC,command_data=CmdData(self.pulse_cyc)),            # 设置脉宽
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_col_pulse)),             # cfg_col_pulse, 给写脉冲
-
-                # CMD(PULSE_CYC,command_data=CmdData(0)),                                                 # 翻转
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_row_pulse)),             # cfg_row_pulse，读完后，把行电压翻转为0
-            ],mode=1)
-            self.ps.send_packets(pkts)
+        write_ins_data = FAST_COMMAND1_CONF.cfg_row_pulse if self.from_row else FAST_COMMAND1_CONF.cfg_col_pulse
+        pkts=Packet()
+        pkts.append_cmdlist([CMD(FAST_COMMAND_1,command_data=CmdData(write_ins_data))],mode=1)
+        self.ps.send_packets(pkts)
 
     def write_one(self,row_index:int,col_index:int,pulse_width:float):
         """
-            读某一个器件，row_index为行索引，col_index为列索引
+            读某一个器件, row_index为行索引, col_index为列索引
         """
-        self.pulse_cyc = int(pulse_width/self.pulse_cyc_length)
+        self.set_pulse_width(pulsewidth=pulse_width)
         print(self.get_setting_info())
         assert self.op_mode == "write","未设置为写模式。"
         assert self.write_voltage is not None,"未设置写电压。"
 
-        if not self.write_from_row:
+        if not self.from_row:
             row_index, col_index = col_index, row_index
 
-        self.set_pulse_width(pulsewidth=pulse_width)
         self.set_cim_reset()                                                                        # 先reset 
-        self.set_latch([[row_index]],row=self.write_from_row,value=None)                             # 配置行
-        self.set_latch([[col_index]],row=not self.write_from_row,value=None)                         # 配置列
+        self.set_latch([row_index],row=self.from_row,value=None)                             # 配置行
+        self.set_latch([col_index],row=not self.from_row,value=None)                         # 配置列
         self.generate_write_pulse(pulse_width)                                                      # 产生写脉冲
 
     def close(self):
@@ -645,10 +554,10 @@ class CHIP():
         self.clear_dac_v2()
         if read:
             self.op_mode = "read"
-            self.read_from_row = row
+            self.from_row = row
         else:
             self.op_mode = "write"
-            self.write_from_row = row
+            self.from_row = row
     
     #------------------------------------------------------------------------------------------
     # *************************************** DAC配置 *****************************************
@@ -679,14 +588,14 @@ class CHIP():
             if self.deviceType==0:                      # ReRAM
                 for i in DAC_INFO.RERAM_TG:
                     cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(tg))))
-                if self.read_from_row:                  # 从行读
+                if self.from_row:                  # 从行读
                     for i in DAC_INFO.RERAM_ROW_VA:
                         cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
                 else:                                   # 从列读
                     for i in DAC_INFO.RERAM_COL_VA:
                         cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
             elif self.deviceType==1:                    # ECRAM
-                if self.read_from_row:                  # 从行读
+                if self.from_row:                  # 从行读
                     for i in DAC_INFO.ECRAM_ROW_VA:
                         cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
                 else:                                   # 从列读
@@ -696,14 +605,14 @@ class CHIP():
             if self.deviceType==0:                      # ReRAM
                 for i in DAC_INFO.RERAM_TG:
                     cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(tg))))
-                if self.write_from_row:                 # 从行写
+                if self.from_row:                 # 从行写
                     for i in DAC_INFO.RERAM_ROW_VA:
                         cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
                 else:                                   # 从列写
                     for i in DAC_INFO.RERAM_COL_VA:
                         cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
             elif self.deviceType==1:                    # ECRAM
-                if self.write_from_row:                 # 从行写
+                if self.from_row:                 # 从行写
                     for i in DAC_INFO.ECRAM_ROW_VA:
                         cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
                 else:                                   # 从列写
@@ -714,120 +623,66 @@ class CHIP():
     #------------------------------------------------------------------------------------------
     # ************************************** 读相关函数 ****************************************
     #------------------------------------------------------------------------------------------
-
     def send_din_ram2(self,row_index:list,col_index:list,din_ram_start=0,tia_flag=True):
         """
             发送配置行列latch需要的数据
             tia_flag是否检查TIA的映射
         """
-        # (k,v,bank,index,tia)
         din_ram_pos = din_ram_start
         # --------------------------------------------------准备din_ram的数据
         din_ram_data = []                                   # 要发送下去的数据
-        res_row_bank = []                                   # 等会配行bank指令执行需要的数据，单层list
-        res_col_bank = []                                   # 等会配列bank指令执行需要的数据，双层list
-        res_col_tia  = []                                   # 需要读出tia的值，双层list
+        res_row_bank = []                                   # 等会配行bank指令执行需要的数据, 单层list
+        res_col_bank = []                                   # 等会配列bank指令执行需要的数据, 双层list
+        res_col_tia  = []                                   # 需要读出tia的值, 双层list
 
         # --------------------------------------------------行数据映射--------------------------------------------------
-        row_data = self.get_bank_tia(row_index)
-        # --------------------------------------------------映射8个bank
-        row_bank = [[] for _ in range(self.chip_bank_num)]
-        for i in row_data:
-            row_bank[i[2]].append(i[1])
-        row_bank = [i for i in row_bank if len(i)>0]
-        # --------------------------------------------------填入数据
+        row_data = self.get_bank_index_tia(row_index)
+        row_bank = self.bank_split(row_data)
         for i in row_bank:
-            bank,index = self.get_data(i)
+            bank,index = self.get_bank_index32(i)
             din_ram_data.append(CMD(PL_DATA,command_data=CmdData(index)))
-            # 对应bank，以及对应的din_ram的地址
-            res_row_bank.append((bank,din_ram_pos))       # bank，对应的32值存在din_ram_start位置
+            res_row_bank.append((bank,din_ram_pos))
             din_ram_pos = din_ram_pos+1
 
         # (k,v,bank,index,tia)
         # --------------------------------------------------列数据映射--------------------------------------------------
-        col_data = self.get_bank_tia(col_index)
-        if not tia_flag:
+        col_data = self.get_bank_index_tia(col_index)
+        read_num = self.tia_split(col_data,tia_flag=tia_flag)
+        # ----------------------------------------------循环去读, 也就是循环去配置列的latch
+        for i in read_num:
             col_tmp = []
-            # ----------------------------------------------映射8个bank
-            col_bank = [[] for _ in range(self.chip_bank_num)]
-            for i in col_data:
-                col_bank[i[2]].append(i[1])
-            col_bank = [i for i in col_bank if len(i)>0]
-            # ----------------------------------------------填入数据
-            for i in col_bank:
-                bank,index = self.get_data(i)
+            col_bank = self.bank_split(row_data)
+            for j in col_bank:
+                bank,index = self.get_bank_index32(j)
                 din_ram_data.append(CMD(PL_DATA,command_data=CmdData(index)))
-                # 对应bank，以及对应的din_ram的地址
-                col_tmp.append((bank,din_ram_pos))        # bank，对应的32值存在din_ram_start位置
+                col_tmp.append((bank,din_ram_pos))
                 din_ram_pos = din_ram_pos+1
-            # ----------------------------------------------返回的数据，用于指令的执行
             res_col_bank.append(col_tmp)
-
-            # ----------------------------------------------返回的数据，用于TIA的输出映射
-            res_col_tia.append([(i[0],i[4]) for i in col_data])         # 第i[0]列，第i[4]路TIA 
-        else:
-            # (k,v,bank,index,tia)
-            # ----------------------------------------------映射16路tia
-            tia16 = [[] for _ in range(self.chip_tia_num)]
-            for i in col_data:
-                tia16[i[4]].append(i)
-            # ----------------------------------------------每路TIA选一路
-            flag = True
-            read_num = []                                   # 两层list，每个元素为list，表示一列对应一路tia的数据
-            while flag:
-                flag = False
-                tmp = []
-                for i in tia16:
-                    if len(i)>0:
-                        tmp.append(i.pop())                     # 每路tia选一个值
-                        flag = True
-                if flag == True:                            # 有值才加进去
-                    read_num.append(tmp)
-            # ----------------------------------------------循环去读，也就是循环去配置列的latch
-            for i in read_num:
-                col_tmp = []
-                # (k,v,bank,index,tia)
-                # ------------------------------------------映射8个bank
-                col_bank = [[] for _ in range(self.chip_bank_num)]
-                for j in i:
-                    col_bank[j[2]].append(j[1])
-                col_bank = [j for j in col_bank if len(j)>0]
-                # ------------------------------------------填入数据
-                for j in col_bank:
-                    bank,index = self.get_data(j)
-                    din_ram_data.append(CMD(PL_DATA,command_data=CmdData(index)))
-                    # 对应bank，以及对应的din_ram的地址
-                    col_tmp.append((bank,din_ram_pos))
-                    din_ram_pos = din_ram_pos+1
-                # ------------------------------------------返回的数据，用于指令的执行
-                res_col_bank.append(col_tmp)
-
-                # ------------------------------------------返回的数据，用于TIA的输出映射
-                res_col_tia.append([(j[0],j[4]) for j in i] )       # 第j[0]列，第j[4]路TIA
+            # (pos, row_num/col_num, bank, index, tia_num)
+            res_col_tia.append([(j[0],j[4]) for j in i] )       # 第j[0]列, 第j[4]路TIA
 
         # 发送din_ram数据
         din_ram_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(len(din_ram_data))))      # 有多少条数据
-        assert len(din_ram_data)+din_ram_start < 256,"send_din_ram：din_ram超过界限。"
+        assert len(din_ram_data)+din_ram_start < 256,"send_din_ram: din_ram超过界限。"
         din_ram_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(din_ram_start)))             # 数据从哪开始
 
         pkts=Packet()
         pkts.append_single(din_ram_data,mode=5)
         self.ps.send_packets(pkts)
-        # 然后根据返回的信息，构建读/写指令
 
         return res_row_bank,res_col_bank,res_col_tia
     
     def read2(self,row_index:list,col_index:list,read_voltage:float,tg:float = 5,
               tia_flag = True, get_tia16 = False,):
         """
-            读器件，row_index为行索引，col_index为列索引
+            读器件, row_index为行索引, col_index为列索引
         """
         assert self.op_mode == "read","未设置为读模式。"
 
         self.read_voltage = read_voltage
         print(self.get_setting_info())
         # ----------------------------------------------从行还是列去读
-        if self.read_from_row:
+        if self.from_row:
             # 从行读
             row_bank_ins, col_bank_ins =  PL_ROW_BANK, PL_COL_BANK
             read_ins = PL_READ_ROW_PULSE
@@ -857,7 +712,7 @@ class CHIP():
             for bank,din_ram_pos in col:
                 ins_data.append(CMD(col_bank_ins,command_data=CmdData(bank<<8|din_ram_pos)))        # 从din_ram的din_ram_pos位置取数据配置bank
 
-            ins_data.append(CMD(read_ins,command_data=CmdData(dout_ram_pos)))                       # 读脉冲，并将16路TIA的值存在dout_ram的dout_ram_pos位置
+            ins_data.append(CMD(read_ins,command_data=CmdData(dout_ram_pos)))                       # 读脉冲, 并将16路TIA的值存在dout_ram的dout_ram_pos位置
             dout_ram_pos = dout_ram_pos + 1
 
         num = len(ins_data)
@@ -873,9 +728,9 @@ class CHIP():
 
         time.sleep(num*0.01)
 
-        vres,cres = self.adc.get_tia_out(num=len(res_col_bank),dout_ram_start=0,read_voltage=read_voltage)
-        # vres = [[i for i in range(self.chip_tia_num)] for j in range(self.chip_tia_num)]
-        # cres = [[i for i in range(self.chip_tia_num)] for j in range(self.chip_tia_num)]
+        vres,cres = self.adc.get_out2(num=len(res_col_bank),dout_ram_start=0,read_voltage=read_voltage)
+        # vres = [[i for i in range(16)] for j in range(16)]
+        # cres = [[i for i in range(16)] for j in range(16)]
         if get_tia16:
             return np.array(vres),np.array(cres)                                # 直接返回16路TIA的值
         else:
@@ -883,7 +738,7 @@ class CHIP():
             # ----------------------------------------------读TIA的值
             for i,v in enumerate(res_col_tia):
                 for _,v2 in enumerate(v):
-                    # v2中数据 (第j[0]列，第j[4]路TIA)
+                    # v2中数据 (第j[0]列, 第j[4]路TIA)
                     vres_list[v2[0]]=vres[i][v2[1]]
                     cres_list[v2[0]]=cres[i][v2[1]]
 
@@ -894,14 +749,14 @@ class CHIP():
     #------------------------------------------------------------------------------------------
     def write2(self,row_index:list,col_index:list,write_voltage:float,tg:float = 5):
         """
-            写器件，row_index为行索引，col_index为列索引
+            写器件, row_index为行索引, col_index为列索引
         """
         assert self.op_mode == "write","未设置为写模式。"
 
         self.write_voltage = write_voltage
         print(self.get_setting_info())
         # ----------------------------------------------从行还是列去写
-        if self.write_from_row:
+        if self.from_row:
             # 从行写
             row_bank_ins, col_bank_ins =  PL_ROW_BANK, PL_COL_BANK
             write_ins = PL_WRITE_ROW_PULSE

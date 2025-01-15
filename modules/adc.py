@@ -149,7 +149,7 @@ class ADC():
             message = self.ps.receive_packet(f"adc读取:{adc_out.command_name}")
             cond.append(self.adc_to_cond(message, read_voltage))
             voltage.append(self.adc_to_voltage(message))
-        return np.array(cond),np.array(voltage)
+        return np.array(voltage),np.array(cond)
     
     def adc_to_voltage(self,message, vref=1.25):
         """
@@ -243,7 +243,7 @@ class ADC():
         elif self.gain == 3:
             return voltage/((read_voltage+1e-10)*1*200)*1e6
         
-    def get_tia_out(self,num,dout_ram_start,read_voltage):
+    def get_out2(self,num,dout_ram_start,read_voltage):
         """
             从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的16路tia的值
         """
