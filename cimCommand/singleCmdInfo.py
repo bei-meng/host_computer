@@ -14,7 +14,7 @@
 
 from cimCommand.singleCmdData import CmdData
 #-------------------------------------------------------------------备选参数
-BYTE_ORDER   = "big"                        # 命令转换为字节后的字节序，or "little"
+BYTE_ORDER   = "big"                        # 命令转换为字节后的字节序, or "little"
 
 class COMMAND_TYPE():
     """
@@ -143,9 +143,9 @@ FAST_COMMAND_0=dict(
     command_description = 
     """触发PL运行某功能
         bit位   功能
-        15	cfg_ins_run	ins ram从地址0开始顺序执行，执行ins_num条指令后停止
-        14	cfg_col_read	产生col read pulse脉冲，adc求平均返回寄存器
-        13	cfg_row_read	产生row read pulse脉冲，adc求平均返回寄存器
+        15	cfg_ins_run	ins ram从地址0开始顺序执行, 执行ins_num条指令后停止
+        14	cfg_col_read	产生col read pulse脉冲, adc求平均返回寄存器
+        13	cfg_row_read	产生row read pulse脉冲, adc求平均返回寄存器
         12	cfg_col_pulse	
         11	cfg_row_pulse	
         10	cfg_latch_clk	
@@ -173,9 +173,9 @@ FAST_COMMAND_1=dict(
     command_description = 
     """触发PL运行某功能
         bit位   功能
-        15	cfg_ins_run	ins ram从地址0开始顺序执行，执行ins_num条指令后停止
-        14	cfg_col_read	产生col read pulse脉冲，adc求平均返回寄存器
-        13	cfg_row_read	产生row read pulse脉冲，adc求平均返回寄存器
+        15	cfg_ins_run	ins ram从地址0开始顺序执行, 执行ins_num条指令后停止
+        14	cfg_col_read	产生col read pulse脉冲, adc求平均返回寄存器
+        13	cfg_row_read	产生row read pulse脉冲, adc求平均返回寄存器
         12	cfg_col_pulse	
         11	cfg_row_pulse	
         10	cfg_latch_clk	
@@ -199,7 +199,7 @@ DAC_IN=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "dac_in",
     command_data = CmdData(0),
-    command_description = "高8bit：0或1，选择dac。低24bit：spi写入DAC寄存器的24bit值"
+    command_description = "高8bit: 0或1, 选择dac。低24bit: spi写入DAC寄存器的24bit值"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 #-------------------------------------------------------------------ADC0_IN:3
@@ -210,7 +210,7 @@ ADC0_IN=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc0_in",
     command_data = CmdData(0),
-    command_description = "高16bit：0，低16bit，spi写入ADC寄存器的16bit值"
+    command_description = "高16bit: 0, 低16bit, spi写入ADC寄存器的16bit值"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 #-------------------------------------------------------------------ADC1_IN:4
@@ -221,7 +221,7 @@ ADC1_IN=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc1_in",
     command_data = CmdData(0),
-    command_description = "高16bit：0，低16bit，spi写入ADC寄存器的16bit值"
+    command_description = "高16bit: 0, 低16bit, spi写入ADC寄存器的16bit值"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 #-------------------------------------------------------------------ADC2_IN:5
@@ -232,7 +232,7 @@ ADC2_IN=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc2_in",
     command_data = CmdData(0),
-    command_description = "高16bit：0，低16bit，spi写入ADC寄存器的16bit值"
+    command_description = "高16bit: 0, 低16bit, spi写入ADC寄存器的16bit值"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 #-------------------------------------------------------------------ADC3_IN:6
@@ -243,7 +243,7 @@ ADC3_IN=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc3_in",
     command_data = CmdData(0),
-    command_description = "高16bit：0，低16bit，spi写入ADC寄存器的16bit值"
+    command_description = "高16bit: 0, 低16bit, spi写入ADC寄存器的16bit值"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -255,7 +255,7 @@ DEVICE_CFG=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "device_cfg",
     command_data = CmdData(4),
-    command_description = "见sheet：device_cfg"
+    command_description = "见sheet: device_cfg"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -339,7 +339,7 @@ SER_PARA_SEL=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "ser_para_sel",
     command_data = CmdData(1),
-    command_description = "0或1，0:串行,1:并行"
+    command_description = "0或1, 0:串行,1:并行"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -375,7 +375,7 @@ ROW_COL_SW=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "row_col_sw",
     command_data = CmdData(0),
-    command_description = "pcb上row或col的TIA，0:row,1:col"
+    command_description = "pcb上row或col的TIA, 0:row,1:col"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -437,7 +437,7 @@ DAC_SPI_DIV=dict(
     command_data = CmdData(4),
     command_description = """spi_clk_freq = 100MHz / spi_div,默认25MHz。
         dac最快50MHz
-        Spi_div最大值：1023"""
+        Spi_div最大值: 1023"""
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -451,7 +451,7 @@ ADC_SPI_DIV=dict(
     command_data = CmdData(2),
     command_description = """spi_clk_freq = 100MHz / spi_div,默认25MHz。
         adc最快50MHz
-        Spi_div最大值：1023"""
+        Spi_div最大值: 1023"""
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -463,7 +463,7 @@ ADC_CS_GAP=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc_cs_gap",
     command_data = CmdData(0x0190),
-    command_description = """adc连续采样时，cs下降沿的间隔，最小250ns。
+    command_description = """adc连续采样时, cs下降沿的间隔, 最小250ns。
         adc默认cs宽度20ns X 16=320ns
         adc_cs_gap默认值400ns"""
 )
@@ -477,7 +477,7 @@ ADC_SAMPLE_TIMES=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc_sample_times",
     command_data = CmdData(32),
-    command_description = "触发1次adc连续采样，adc采样的次数：1，2，4，8，16，32"
+    command_description = "触发1次adc连续采样, adc采样的次数: 1, 2, 4, 8, 16, 32"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -489,7 +489,7 @@ ADC_FIRST_GAP=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc_first_gap",
     command_data = CmdData(0x000a),
-    command_description = "adc的第一个cs下降沿和read pulse上升沿的间隔，默认100ns，10个cycle"
+    command_description = "adc的第一个cs下降沿和read pulse上升沿的间隔, 默认100ns, 10个cycle"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -501,7 +501,7 @@ ADC_LAST_GAP=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc_last_gap",
     command_data = CmdData(0x000a),
-    command_description = "adc的最后一个cs下降沿和read pulse下降沿升沿的间隔，默认100ns，10个cycle"
+    command_description = "adc的最后一个cs下降沿和read pulse下降沿升沿的间隔, 默认100ns, 10个cycle"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -513,7 +513,7 @@ PULSE_CYC=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "pulse_cyc",
     command_data = CmdData(256),
-    command_description = "row/col pulse的cycle数（不和adc采样关联），0：翻转"
+    command_description = "row/col pulse的cycle数（不和adc采样关联）, 0: 翻转"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -525,7 +525,7 @@ INS_NUM=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "ins_num",
     command_data = CmdData(0),
-    command_description = "指令数量：1~1024，cfg_ins_run前配置"
+    command_description = "指令数量: 1~1024, cfg_ins_run前配置"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -537,7 +537,163 @@ SER_DATA=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "ser_data",
     command_data = CmdData(0),
-    command_description = "指令数量：1~1024，cfg_ins_run前配置"
+    command_description = "指令数量: 1~1024, cfg_ins_run前配置"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------OP_BANK_CFG_DONE_DELAY_CYC:30
+OP_BANK_CFG_DONE_DELAY_CYC=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "op_bank_cfg_done_delay_cyc",
+    command_data = CmdData(1000),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------OP_CIM_DATA_CFG_DONE_DELAY_CYC:31
+OP_CIM_DATA_CFG_DONE_DELAY_CYC=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "op_cim_data_cfg_done_delay_cyc",
+    command_data = CmdData(1000),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------REG_CLK_DONE_DELAY_CYC:32
+REG_CLK_DONE_DELAY_CYC=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "reg_clk_done_delay_cyc",
+    command_data = CmdData(1000),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------LATCH_CLK_DONE_DELAY_CYC:33
+LATCH_CLK_DONE_DELAY_CYC=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "latch_clk_done_delay_cyc",
+    command_data = CmdData(1000),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------OP_ADC_AVRG_DONE_DELAY_CYC:34
+OP_ADC_AVRG_DONE_DELAY_CYC=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "op_adc_avrg_done_delay_cyc",
+    command_data = CmdData(1000),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------OP_DAC_AVRG_DONE_DELAY_CYC:35
+OP_DAC_AVRG_DONE_DELAY_CYC=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "op_dac_cfg_done_delay_cyc",
+    command_data = CmdData(1000),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------OP_ROW_PULSE_DONE_DELAY_CYC:36
+OP_ROW_PULSE_DONE_DELAY_CYC=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "op_row_pulse_done_delay_cyc",
+    command_data = CmdData(1000),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------OP_COL_PULSE_DONE_DELAY_CYC:37
+OP_COL_PULSE_DONE_DELAY_CYC=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "op_col_pulse_done_delay_cyc",
+    command_data = CmdData(1000),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------OP_CIM_RSTN_DONE_DELAY_CYC:38
+OP_CIM_RSTN_DONE_DELAY_CYC=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "op_cim_rstn_done_delay_cyc",
+    command_data = CmdData(1000),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------CIM_RSTN_CYC:39
+CIM_RSTN_CYC=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "cim_rstn_cyc",
+    command_data = CmdData(1000),
+    command_description = "负脉冲, 低电平cycle数, 1 cycle=10ns, 指令模式下reset的宽度0: 翻转"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------LATCH_CLK_CYC:40
+LATCH_CLK_CYC=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "latch_clk_cyc",
+    command_data = CmdData(1000),
+    command_description = "正脉冲, 高电平cycle数, 1 cycle=10ns 0: 翻转"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------REG_CLK_CYC:41
+REG_CLK_CYC=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "reg_clk_cyc",
+    command_data = CmdData(1000),
+    command_description = "正脉冲, 高电平cycle数, 1 cycle=10ns 0: 翻转"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------LATCH_CYC:42
+LATCH_CYC=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "latch_cyc",
+    command_data = CmdData(1000),
+    command_description = "正脉冲, PCB上锁存器的latch cycle数"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -548,16 +704,11 @@ COMMAND_ADDR+=1         # 命令的地址自增1
 
 
 
-#-------------------------------------------------------------------NEGTIVE_REG_CLK:30(临时指令)
-NEGTIVE_REG_CLK=dict(
-    command_addr = 30,
-    command_type = COMMAND_TYPE.RW,
-    n_addr_bytes = N_ADDR_BYTES.ONE,
-    n_data_bytes = N_DATA_BYTES.FOUR,
-    command_name = "negtive_reg_clk",
-    command_data = CmdData(0),
-    command_description = ""
-)
+
+
+
+
+
 
 
 
@@ -573,7 +724,7 @@ DAC_OUT=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "dac_out",
     command_data = CmdData(0x000a),
-    command_description = "DAC寄存器回读值。高8bit：0,低24bit：DAC寄存器的24bit值"
+    command_description = "DAC寄存器回读值。高8bit: 0,低24bit: DAC寄存器的24bit值"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -585,7 +736,7 @@ ADC0_OUT_A=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc0_out_A",
     command_data = CmdData(0),
-    command_description = "ADC0 A通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。Multi read时为平均值。"
+    command_description = "ADC0 A通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。Multi read时为平均值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -597,7 +748,7 @@ ADC0_OUT_B=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc0_out_B",
     command_data = CmdData(0),
-    command_description = "ADC0 B通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC0 B通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -609,7 +760,7 @@ ADC0_OUT_C=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc0_out_C",
     command_data = CmdData(0),
-    command_description = "ADC0 C通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC0 C通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -621,7 +772,7 @@ ADC0_OUT_D=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc0_out_D",
     command_data = CmdData(0),
-    command_description = "ADC0 D通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC0 D通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -633,7 +784,7 @@ ADC1_OUT_A=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc1_out_A",
     command_data = CmdData(0),
-    command_description = "ADC1 A通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC1 A通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -645,7 +796,7 @@ ADC1_OUT_B=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc1_out_B",
     command_data = CmdData(0),
-    command_description = "ADC1 B通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC1 B通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -657,7 +808,7 @@ ADC1_OUT_C=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc1_out_C",
     command_data = CmdData(0),
-    command_description = "ADC1 C通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC1 C通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -669,7 +820,7 @@ ADC1_OUT_D=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc1_out_D",
     command_data = CmdData(0),
-    command_description = "ADC1 D通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC1 D通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -681,7 +832,7 @@ ADC2_OUT_A=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc2_out_A",
     command_data = CmdData(0),
-    command_description = "ADC2 A通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC2 A通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -693,7 +844,7 @@ ADC2_OUT_B=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc2_out_B",
     command_data = CmdData(0),
-    command_description = "ADC2 B通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC2 B通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -705,7 +856,7 @@ ADC2_OUT_C=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc2_out_C",
     command_data = CmdData(0),
-    command_description = "ADC2 C通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC2 C通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -717,7 +868,7 @@ ADC2_OUT_D=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc2_out_D",
     command_data = CmdData(0),
-    command_description = "ADC2 D通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC2 D通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -729,7 +880,7 @@ ADC3_OUT_A=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc3_out_A",
     command_data = CmdData(0),
-    command_description = "ADC3 A通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC3 A通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -741,7 +892,7 @@ ADC3_OUT_B=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc3_out_B",
     command_data = CmdData(0),
-    command_description = "ADC3 B通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC3 B通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -753,7 +904,7 @@ ADC3_OUT_C=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc3_out_C",
     command_data = CmdData(0),
-    command_description = "ADC3 C通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC3 C通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -765,7 +916,7 @@ ADC3_OUT_D=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "adc3_out_D",
     command_data = CmdData(0),
-    command_description = "ADC3 D通道寄存器回读值。高16bit：0，低16bit：寄存器的16bit值。"
+    command_description = "ADC3 D通道寄存器回读值。高16bit: 0, 低16bit: 寄存器的16bit值。"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -832,7 +983,7 @@ PL_ROW_BANK=dict(
     n_data_bytes = N_DATA_BYTES.THREE,
     command_name = "pl_row_bank",
     command_data = CmdData(0),
-    command_description = "从din_ram读数据，配置32bit行寄存器"
+    command_description = "从din_ram读数据, 配置32bit行寄存器"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -844,7 +995,7 @@ PL_COL_BANK=dict(
     n_data_bytes = N_DATA_BYTES.THREE,
     command_name = "pl_col_bank",
     command_data = CmdData(0),
-    command_description = "从din_ram读数据，配置32bit列寄存器"
+    command_description = "从din_ram读数据, 配置32bit列寄存器"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -856,7 +1007,7 @@ PL_DAC_V=dict(
     n_data_bytes = N_DATA_BYTES.THREE,
     command_name = "pl_dac_v",
     command_data = CmdData(0),
-    command_description = "从din_ram读数据，配置32bit列寄存器"
+    command_description = "从din_ram读数据, 配置32bit列寄存器"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -868,7 +1019,7 @@ PL_READ_ROW_PULSE=dict(
     n_data_bytes = N_DATA_BYTES.THREE,
     command_name = "pl_read_row_pulse",
     command_data = CmdData(0),
-    command_description = "产生row读pulse，求平均，16路并行写入dout_ram"
+    command_description = "产生row读pulse, 求平均, 16路并行写入dout_ram"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -880,7 +1031,7 @@ PL_READ_COL_PULSE=dict(
     n_data_bytes = N_DATA_BYTES.THREE,
     command_name = "pl_read_col_pulse",
     command_data = CmdData(0),
-    command_description = "产生col读pulse，求平均，16路并行写入dout_ram"
+    command_description = "产生col读pulse, 求平均, 16路并行写入dout_ram"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 

@@ -12,8 +12,8 @@ class Packet:
     
     def get_bytes_list(self):
         """
-            得到需要发送的所有上位机指令的字节，
-            返回一个列表，每个元素都是一条上位机指令
+            得到需要发送的所有上位机指令的字节, 
+            返回一个列表, 每个元素都是一条上位机指令
         """
         res=[]
         for k in self.instruction_list:
@@ -61,7 +61,7 @@ class Packet:
         res = ""
         for cmd in self.instruction_list:
             # 获取指令的模式和名字
-            res += "模式："+str(cmd["mode"]) + "\n"
+            res += "模式: "+str(cmd["mode"]) + "\n"
             cmdbytes = self.header + cmd["mode"].to_bytes(1, BYTE_ORDER)
             res += f"\t帧头: {'':<{max_cmd_name_len}}\t字节码: "+" ".join(f'{byte:02x}' for byte in cmdbytes) + "\n"
             for k in cmd["cmd"]:

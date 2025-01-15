@@ -49,7 +49,7 @@ class ADC():
 
     def set_row_col_sw(self,row_col_sw = 0):
         """
-            pcb上row或col的TIA，0:row,1:col
+            pcb上row或col的TIA, 0:row,1:col
         """
         pkts=Packet()
         pkts.append_cmdlist([
@@ -145,7 +145,7 @@ class ADC():
             # 发送指令
             self.ps.send_packets(pkts,delay=delay)
             # 接收信息
-            # 高16bit：0，低16bit：寄存器的16bit值
+            # 高16bit: 0, 低16bit: 寄存器的16bit值
             message = self.ps.receive_packet(f"adc读取:{adc_out.command_name}")
             cond.append(self.adc_to_cond(message, read_voltage))
             voltage.append(self.adc_to_voltage(message))
@@ -161,7 +161,7 @@ class ADC():
         # 确保数据在16位范围内
         data &= 0xFFFF
         # 将16位有符号数转换为Python整数
-        if data & 0x8000:  # 若符号位为1，则表示负数
+        if data & 0x8000:  # 若符号位为1, 则表示负数
             data -= 0x10000
 
         # 将数据转换为电压
@@ -186,7 +186,7 @@ class ADC():
 
     def TIA_index_map(self,num,device=0,col=True):
         """
-            注意：num从0索引开始
+            注意: num从0索引开始
             将对应的行或列索引映射为对应的TIA偏移
         """
         num += 1
@@ -221,7 +221,7 @@ class ADC():
         # 确保数据在16位范围内
         data &= 0xFFFF
         # 将16位有符号数转换为Python整数
-        if data & 0x8000:  # 若符号位为1，则表示负数
+        if data & 0x8000:  # 若符号位为1, 则表示负数
             data -= 0x10000
 
         # 将数据转换为电压
@@ -267,7 +267,7 @@ class ADC():
         for tia16 in message:
             tmp = []
             for i in range(0,tia_num,2):
-                # tia顺序为：1, 0, 3, 2, 5, 4... 需要转换为0,1,2,3,4,5...
+                # tia顺序为: 1, 0, 3, 2, 5, 4... 需要转换为0,1,2,3,4,5...
                 tmp.append(tia16[(i+1)*tia_length:(i+2)*tia_length])
                 tmp.append(tia16[i*tia_length:(i+1)*tia_length])
             voltage = []

@@ -29,7 +29,7 @@ class CMD:
 
     def __init__(self, data:dict,**kwargs)->None:
         """
-            初始化命令的名字，类型，命令的地址长度，命令的数据长度
+            初始化命令的名字, 类型, 命令的地址长度, 命令的数据长度
         """
         self.command_addr = data["command_addr"]
         self.command_type = data["command_type"]
@@ -47,7 +47,7 @@ class CMD:
 
     def __bytes__(self):
         """
-            将命令的地址和数据组合，转为对应长度的字节序列，字节序位小端"little"
+            将命令的地址和数据组合, 转为对应长度的字节序列, 字节序位小端"little"
         """
         return self.concatenate().to_bytes((self.n_addr_bytes + self.n_data_bytes), BYTE_ORDER)
     

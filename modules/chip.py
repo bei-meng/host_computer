@@ -78,20 +78,30 @@ class CHIP():
         if self.dac is not None:
             self.dac.initOp()
 
-    def set_device_cfg(self,deviceType = None,latch_cyc = None, reg_clk_cyc= None, latch_clk_cyc = None,cim_rstn_cyc = None):
+    # def set_device_cfg(self,deviceType = None,latch_cyc = None, reg_clk_cyc= None, latch_clk_cyc = None,cim_rstn_cyc = None):
+    #     """
+    #         设置device的cfg
+    #     """
+    #     self.deviceType = self.deviceType if deviceType is None else deviceType
+    #     self.latch_cyc = self.latch_cyc if latch_cyc is None else latch_cyc
+    #     self.reg_clk_cyc = self.reg_clk_cyc if reg_clk_cyc is None else reg_clk_cyc
+    #     self.latch_clk_cyc = self.latch_clk_cyc if latch_clk_cyc is None else latch_clk_cyc
+    #     self.cim_rstn_cyc = self.cim_rstn_cyc if cim_rstn_cyc is None else cim_rstn_cyc
+
+    #     data = self.deviceType | self.latch_cyc<<1 | self. reg_clk_cyc<<3 | self.latch_clk_cyc<<7 | self.cim_rstn_cyc<<11
+    #     pkts=Packet()
+    #     pkts.append_cmdlist([CMD(DEVICE_CFG,command_data=CmdData(data)),],mode=1)
+    #     self.ps.send_packets(pkts)
+
+    def set_device_cfg(self,deviceType = 0):
         """
             设置device的cfg
         """
-        self.deviceType = self.deviceType if deviceType is None else deviceType
-        self.latch_cyc = self.latch_cyc if latch_cyc is None else latch_cyc
-        self.reg_clk_cyc = self.reg_clk_cyc if reg_clk_cyc is None else reg_clk_cyc
-        self.latch_clk_cyc = self.latch_clk_cyc if latch_clk_cyc is None else latch_clk_cyc
-        self.cim_rstn_cyc = self.cim_rstn_cyc if cim_rstn_cyc is None else cim_rstn_cyc
-
-        data = self.deviceType | self.latch_cyc<<1 | self. reg_clk_cyc<<3 | self.latch_clk_cyc<<7 | self.cim_rstn_cyc<<11
+        self.deviceType = deviceType
         pkts=Packet()
-        pkts.append_cmdlist([CMD(DEVICE_CFG,command_data=CmdData(data)),],mode=1)
+        pkts.append_cmdlist([CMD(DEVICE_CFG,command_data=CmdData(self.deviceType)),],mode=1)
         self.ps.send_packets(pkts)
+
 
     def set_pulse_width(self,pulsewidth:float):
         """
@@ -446,7 +456,7 @@ class CHIP():
     def generate_read_pulse(self):
         """
             Functions:
-                根据设定的从行/列读，产生读脉冲的指令
+                根据设定的从行/列读, 产生读脉冲的指令
                 这里FPGA把行列的脉冲都连在一起了,所以去掉了翻转
                 且不用主动给列脉冲
         """
@@ -455,7 +465,10 @@ class CHIP():
         pkts.append_cmdlist([CMD(FAST_COMMAND_1,command_data=CmdData(read_ins_data))],mode=1)
         self.ps.send_packets(pkts)
 
-    def read(self,row_index:list,col_index:list, row_value = None, col_value = None, tia_flag=True) -> tuple[np.ndarray,np.ndarray]:
+    def read(self,row_index:list,col_index:list, 
+             row_value = None, col_value = None, 
+             all_tia = False,
+             tia_flag=True) -> tuple[np.ndarray,np.ndarray]:
         """
             Args:
                 row_index: 要配置的任意行索引
@@ -489,16 +502,25 @@ class CHIP():
             # ------------------------------------------给读脉冲
             self.generate_read_pulse() 
             # ------------------------------------------读出结果
-            res.append(self.adc.get_out([j[4] for j in i],read_voltage=self.read_voltage))
-
-        # ----------------------------------------------将结果映射回原来的顺序
-        result_cond = [0]*len(col_index)
-        result_v = [0]*len(col_index)
-        for i,v1 in enumerate(read_num):
-            # 第i个批次读, v2为(pos, row_num/col_num, bank, index, tia_num)
-            for j,v2 in enumerate(v1):
-                result_cond[v2[0]]=res[i][0][j]
-                result_v[v2[0]]=res[i][1][j]
+            if all_tia:
+                res.append(self.adc.get_out([i for i in range(self.chip_tia_num)],read_voltage=self.read_voltage))
+            else:
+                res.append(self.adc.get_out([j[4] for j in i],read_voltage=self.read_voltage))
+        if all_tia:
+            result_v = []
+            result_cond = []
+            for i in range(len(read_num)):
+                result_v.append(res[i][0])
+                result_cond.append(res[i][1])
+        else:
+            # ----------------------------------------------将结果映射回原来的顺序
+            result_v = [0]*len(col_index)
+            result_cond = [0]*len(col_index)
+            for i,v1 in enumerate(read_num):
+                # 第i个批次读, v2为(pos, row_num/col_num, bank, index, tia_num)
+                for j,v2 in enumerate(v1):
+                    result_v[v2[0]]=res[i][0][j]
+                    result_cond[v2[0]]=res[i][1][j]
 
         return np.array(result_cond),np.array(result_v)
 
@@ -508,7 +530,7 @@ class CHIP():
     def generate_write_pulse(self):
         """
             Functions:
-                根据设定的从行/列写，产生写脉冲的指令
+                根据设定的从行/列写, 产生写脉冲的指令
                 这里FPGA把行列的脉冲都连在一起了,所以去掉了翻转
                 从行写只用给行脉冲, 从列写只用给列脉冲(对应方向会自动跟着给脉冲)
         """
@@ -673,7 +695,7 @@ class CHIP():
         return res_row_bank,res_col_bank,res_col_tia
     
     def read2(self,row_index:list,col_index:list,read_voltage:float,tg:float = 5,
-              tia_flag = True, get_tia16 = False,):
+              tia_flag = True, all_tia = False,):
         """
             读器件, row_index为行索引, col_index为列索引
         """

@@ -23,14 +23,14 @@ class DAC():
 
     def initOp(self):
         """
-            两个DAC，需要关broadcast,以及将gain置2
+            两个DAC, 需要关broadcast,以及将gain置2
         """
         pkts=Packet()
         pkts.append_cmdlist([
             CMD(DAC_IN,command_data=CmdData(0<<24|0x020000)),       # 关闭DAC的broadcast
             CMD(FAST_COMMAND_1,command_data=CmdData(1)),            # cfg_dac
 
-            CMD(DAC_IN,command_data=CmdData(0<<24|0x0400ff)),       # DAC的每个通道gain都置2，1表示增益为2,0表示增益为1
+            CMD(DAC_IN,command_data=CmdData(0<<24|0x0400ff)),       # DAC的每个通道gain都置2, 1表示增益为2,0表示增益为1
             CMD(FAST_COMMAND_1,command_data=CmdData(1)),            # cfg_dac
 
             CMD(DAC_IN,command_data=CmdData(1<<24|0x020000)),       # 关闭DAC的broadcast
@@ -110,13 +110,13 @@ class DAC():
     #     # 发送指令
     #     self.ps.send_packets(pkts)
     #     # 接收信息
-    #     # DAC寄存器回读值。高8bit：0,低24bit：DAC寄存器的24bit值
+    #     # DAC寄存器回读值。高8bit: 0,低24bit: DAC寄存器的24bit值
     #     meessage = self.ps.receive_packet()
     #     return meessage
 
     def VToBytes(self,v):
         """
-            将需求的DAC电压转成16bit，对应的电压bit
+            将需求的DAC电压转成16bit, 对应的电压bit
         """
         assert v <= self.referenceVoltage*self.gain,"VToBytes: 电压超过范围!"
         res = v/self.referenceVoltage/self.gain*self.base
