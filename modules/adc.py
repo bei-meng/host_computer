@@ -124,6 +124,7 @@ class ADC():
         """
             从adc_num的adc的adc_channel读数据
         """
+        # return num,num
         cond = []
         voltage = []
         for TIA_num in num:
@@ -146,7 +147,7 @@ class ADC():
             self.ps.send_packets(pkts,delay=delay)
             # 接收信息
             # 高16bit: 0, 低16bit: 寄存器的16bit值
-            message = self.ps.receive_packet(f"adc读取:{adc_out.command_name}")
+            message = self.ps.receive_packet(bytes_num=4)
             cond.append(self.adc_to_cond(message, read_voltage))
             voltage.append(self.adc_to_voltage(message))
         return np.array(voltage),np.array(cond)
@@ -258,8 +259,9 @@ class ADC():
         tia16_length = 64
         tia_num = 16
         tia_length = 4
-        # 接收信息
-        message = self.ps.receive_packet()
+        # 接收信息, num条dout_ram值, 每条dout_ram长为256/8=32B
+        message = self.ps.receive_packet(num*32)
+        # 切分数据为16路TIA, 转成16进制后, 每条dout_ram长32*2个16进制宽度(4bit)
         message = [message.hex()[i*tia16_length:(i+1)*tia16_length] for i in range(num)]
 
         vres = []
@@ -278,5 +280,5 @@ class ADC():
 
             vres.append(voltage)
             cres.append(cond)
-        return vres,cres
+        return np.array(vres),np.array(cres) 
         

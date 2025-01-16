@@ -111,7 +111,7 @@ class DAC():
     #     self.ps.send_packets(pkts)
     #     # 接收信息
     #     # DAC寄存器回读值。高8bit: 0,低24bit: DAC寄存器的24bit值
-    #     meessage = self.ps.receive_packet()
+    #     meessage = self.ps.receive_packet(bytes_num=4)
     #     return meessage
 
     def VToBytes(self,v):

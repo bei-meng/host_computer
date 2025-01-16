@@ -28,6 +28,8 @@ class PS():
             self.local_ip, self.local_port = s.getsockname()
             print(f"Connected to {self.host}:{self.port}\nlocal ip: {self.local_ip} local port: {self.local_port}")
             self.enable = True
+
+            self.socket.settimeout(5)
         except Exception as e:
             print(f"Failed to connect: {e}")
             self.enable = False
@@ -39,21 +41,21 @@ class PS():
     def set_debug(self,debug):
         self.debug = debug
 
-    def receive_packet(self,name=""):
+    def receive_packet(self, bytes_num):
         if self.enable:
+            packet = ""
             with self.lock:
-                packet = ""
                 try:
-                    # pass
-                    packet = self.socket.recv(2048)  # 每次最多接收 1024 字节
+                    packet = self.socket.recv(bytes_num)
+                    res = "".join(f'{byte:02x}' for byte in packet)
+                    print(res)
                     if not packet:
                         print("empty packet")
                     if self.debug:
                         print(f"Received: {packet}\n")
-                    self.history.append(dict(
-                        name = name,
-                        message = packet
-                    ))
+
+                except socket.timeout:
+                    print("接收超时!")
                 except socket.error:
                     print(f"Failed to recv message")
             return packet
@@ -62,6 +64,7 @@ class PS():
         """
             将packer里面的所有上位机指令按顺序有间隔的发送下去
         """
+        res = ""
         if self.enable or self.debug:
             with self.lock:
                 try:
@@ -71,14 +74,20 @@ class PS():
                     for cmd in pkts.get_bytes_list():
                         self.socket.sendall(cmd)
                         if recv:
-                            packet = self.socket.recv(2048)
+                            packet = self.socket.recv(1024)
                             res = "".join(f'{byte:02x}' for byte in packet)
-                            # print(res)
-                            if res == "bb550000":
+                            print(res)
+                            if (len(packet) == 4 and res == "bb550000"):
                                 pass
-                        
+                            elif (len(packet) == 4 and res == "cc550000"):
+                                pass
+                            # else:
+                            #     print("发送指令:返回信息错误!",packet)
+                except socket.timeout:
+                    print("发送/接收超时!")
                 except socket.error:
                     print(f"Failed to send message:")
+        return res
 
     def close(self):
         with self.lock:
