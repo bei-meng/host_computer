@@ -252,7 +252,7 @@ class ADC():
             CMD(PL_RAM_ADDR,command_data=CmdData(dout_ram_start)),
             CMD(PL_DATA_LENGTH,command_data=CmdData(num))
         ],mode=6)
-        self.ps.send_packets(pkts)
+        self.ps.send_packets(pkts,recv=False)
         
 
         tia16_length = 64

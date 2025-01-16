@@ -511,7 +511,7 @@ class CHIP():
                     result_v[v2[0]]=res[i][0][j]
                     result_cond[v2[0]]=res[i][1][j]
 
-        return np.array(result_cond),np.array(result_v)
+        return np.array(result_v),np.array(result_cond)
 
     #------------------------------------------------------------------------------------------
     # ************************************** 写相关操作 ****************************************
@@ -528,11 +528,10 @@ class CHIP():
         pkts.append_cmdlist([CMD(FAST_COMMAND_1,command_data=CmdData(write_ins_data))],mode=1)
         self.ps.send_packets(pkts)
 
-    def write_one(self,row_index:int,col_index:int,pulse_width:float):
+    def write_one(self,row_index:int,col_index:int):
         """
             读某一个器件, row_index为行索引, col_index为列索引
         """
-        self.set_pulse_width(pulsewidth=pulse_width)
         print(self.get_setting_info())
         assert self.op_mode == "write","未设置为写模式。"
         assert self.write_voltage is not None,"未设置写电压。"
@@ -540,10 +539,10 @@ class CHIP():
         if not self.from_row:
             row_index, col_index = col_index, row_index
 
-        self.set_cim_reset()                                                                        # 先reset 
-        self.set_latch([row_index],row=self.from_row,value=None)                             # 配置行
-        self.set_latch([col_index],row=not self.from_row,value=None)                         # 配置列
-        self.generate_write_pulse(pulse_width)                                                      # 产生写脉冲
+        self.set_cim_reset()                                                                # 先reset 
+        self.set_latch([row_index],row=self.from_row,value=None)                            # 配置行
+        self.set_latch([col_index],row=not self.from_row,value=None)                        # 配置列
+        self.generate_write_pulse()                                                         # 产生写脉冲
 
     def close(self):
         """
@@ -662,7 +661,7 @@ class CHIP():
         # ----------------------------------------------循环去读, 也就是循环去配置列的latch
         for i in read_num:
             col_tmp = []
-            col_bank = self.bank_split(row_data)
+            col_bank = self.bank_split(i)
             for j in col_bank:
                 bank,index = self.get_bank_index32(j)
                 din_ram_data.append(CMD(PL_DATA,command_data=CmdData(index)))
@@ -737,12 +736,12 @@ class CHIP():
         pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
         self.ps.send_packets(pkts)
 
-        time.sleep(num*0.01)
+        time.sleep(num*0.001)
 
         vres,cres = self.adc.get_out2(num=len(res_col_bank),dout_ram_start=0,read_voltage=read_voltage)
         # vres = [[i for i in range(16)] for j in range(16)]
         # cres = [[i for i in range(16)] for j in range(16)]
-        if get_tia16:
+        if all_tia:
             return np.array(vres),np.array(cres)                                # 直接返回16路TIA的值
         else:
             vres_list,cres_list = [0]*len(col_index),[0]*len(col_index)
@@ -808,4 +807,4 @@ class CHIP():
         pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
         self.ps.send_packets(pkts)
 
-        time.sleep(num*0.01)
+        time.sleep(num*0.001)

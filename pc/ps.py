@@ -31,7 +31,7 @@ class PS():
         except Exception as e:
             print(f"Failed to connect: {e}")
             self.enable = False
-        time.sleep(1)
+        # time.sleep(1)
 
     def set_delay(self,delay):
         self.delay = delay
@@ -58,7 +58,7 @@ class PS():
                     print(f"Failed to recv message")
             return packet
 
-    def send_packets(self, pkts: Packet,delay = None):
+    def send_packets(self, pkts: Packet,delay = None,recv = True):
         """
             将packer里面的所有上位机指令按顺序有间隔的发送下去
         """
@@ -70,10 +70,13 @@ class PS():
                         print(pkts)
                     for cmd in pkts.get_bytes_list():
                         self.socket.sendall(cmd)
-                        if delay is not None:
-                            time.sleep(delay)
-                        else:
-                            time.sleep(self.delay)
+                        if recv:
+                            packet = self.socket.recv(2048)
+                            res = "".join(f'{byte:02x}' for byte in packet)
+                            # print(res)
+                            if res == "bb550000":
+                                pass
+                        
                 except socket.error:
                     print(f"Failed to send message:")
 
