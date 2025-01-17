@@ -22,6 +22,10 @@ class CHIP():
     chip_tia_num = 16
     chip_latch_num = 256
 
+    din_ram_threshold = 256
+    dout_ram_threshold = 256
+    ins_ram_threshold = 1024
+
     ps = None
     adc = None
     dac = None
@@ -113,6 +117,7 @@ class CHIP():
                 row: True表示从行读/写, False表示从列读/写
 
             Functions:
+                会把所有的DAC通道电压清0
                 会记录读/写模式, 从行/列进行操作\n
                 会根据设置配置ROW_CTRL,COL_CTRL,ROW_COL_SW的选择
         """
@@ -529,7 +534,12 @@ class CHIP():
 
     def write_one(self,row_index:int,col_index:int):
         """
-            读某一个器件, row_index为行索引, col_index为列索引
+            Args:
+                row_index: 要配置的任意行索引
+                col_index: 要配置的任意列索引
+
+            Functions:
+                写某一个器件
         """
         print(self.get_setting_info())
         assert self.op_mode == "write","未设置为写模式。"
@@ -545,7 +555,8 @@ class CHIP():
 
     def close(self):
         """
-            关闭TCP连接
+            Functions:
+                关闭TCP连接
         """
         self.ps.close()
 
@@ -558,7 +569,12 @@ class CHIP():
     #------------------------------------------------------------------------------------------
     def set_op_mode2(self,read=True,row=True):
         """
-            设置操作模式
+            Args:
+                read: True配置为读模式, False配置为写模式
+                row: True配置为从行读/写, False配置为从列读/写
+
+            Functions:
+                同时会将所有的DAC通道电压设置为0
         """
         self.clear_dac_v2()
         if read:
@@ -573,7 +589,8 @@ class CHIP():
     #------------------------------------------------------------------------------------------
     def clear_dac_v2(self):
         """
-            清除dac的电压
+            Functions:
+                将16路DAC通道电压设置为0
         """
         pkts=Packet()
 
@@ -590,7 +607,12 @@ class CHIP():
 
     def get_dac_ins2(self,v,tg=5):
         """
-            得到读器件的配置dac的指令
+            Args:
+                read: True配置为读模式, False配置为写模式
+                row: True配置为从行读/写, False配置为从列读/写
+
+            Functions:
+                同时会将所有的DAC通道电压设置为0
         """
         cmd=[]
         if self.op_mode == "read":
@@ -677,9 +699,10 @@ class CHIP():
             # (pos, row_num/col_num, bank, index, tia_num)
             res_col_tia.append([(j[0],j[4]) for j in i] )       # 第j[0]个需要读的列, 第j[4]路TIA
 
+        num = len(din_ram_data)
         # 发送din_ram数据
-        din_ram_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(len(din_ram_data))))      # 有多少条数据
-        assert len(din_ram_data)+din_ram_start < 256,"send_din_ram: din_ram超过界限。"
+        din_ram_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(num)))      # 有多少条数据
+        assert num+din_ram_start <= self.din_ram_threshold,f"send_din_ram2: din_ram:{num+din_ram_start}超过界限。"
         din_ram_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(din_ram_start)))             # 数据从哪开始
 
         pkts=Packet()
@@ -695,7 +718,7 @@ class CHIP():
         """
         assert self.op_mode == "read","未设置为读模式。"
         self.read_voltage = read_voltage
-        print(self.get_setting_info())
+        # print(self.get_setting_info())
         # ----------------------------------------------从行还是列去读
         if self.from_row:
             # 从行读
@@ -718,51 +741,54 @@ class CHIP():
             # 所有行求和
             res_row_bank,res_col_bank,res_col_tia = self.send_din_ram2([row_index],col_index,din_ram_start,check_tia)
         else:
-            # 每行单独读,to do:做个优化,相同bank的行放在一起,读16行能减少255条指令
+            # 每行单独读,to do:做个优化,相同bank的行放在一起
             res_row_bank,res_col_bank,res_col_tia = self.send_din_ram2([[i] for i in row_index],col_index,din_ram_start,check_tia)
 
         # ----------------------------------------------准备指令序列
-        ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)                                              # 配置电压
+        ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)                                              # 得到配置电压的指令序列
         
         # ----------------------------------------------记录数据映射，最后用于TIA的映射输出
         record = []
-        for col_batch,col in enumerate(res_col_bank):
-            # 切换col的配置
+        for col_batch,col in enumerate(res_col_bank):                                                   # 因为只有16路TIA, 所以可能会有多个列的batch, 每个batch最大读16路TIA
             ins_data.append(CMD(PL_CIM_RESET))
-            for bank,din_ram_pos in col:
+            for bank,din_ram_pos in col:                                                                # 每个col_batch, 可能需要配置多个bank
                 ins_data.append(CMD(col_bank_ins,command_data=CmdData(bank<<8|din_ram_pos)))            # 从din_ram的din_ram_pos位置取数据配置bank
 
-            # 每切换一次col的配置, 可以多次切行读
-            for row_num,row in enumerate(res_row_bank):
-                # 切换row的配置
-                for bank,din_ram_pos in row:
+            row_bank_record = [[],[]]                                                                   # 用于优化多行单独读的情况, 如果前后bank相同, 后面就不需要手动清0
+            for row_pos,row in enumerate(res_row_bank):                                                 # 如果是所有行求和的情况, res_row_bank里面只会有一个元素, 每行单独读, 就是行数
+                
+                if not sum and len(row_bank_record[0])>0:                                               # 每行单独读的情况
+                    for bank,din_ram_pos in row:                                                        # 得到新的行bank号
+                        row_bank_record[1].append(bank)
+
+                    for bank in row_bank_record[0]:                                                     # 如果新旧的行bank号不一样, 就手动重置一下不一样的bank
+                        if bank not in row_bank_record[1]:
+                            ins_data.append(CMD(row_bank_ins,command_data=CmdData(bank<<8|0)))          # 从din_ram的0位置取32bit的0配置bank
+
+                row_bank_record = [[],[]]
+
+                for bank,din_ram_pos in row:                                                            # 切换row的配置
                     ins_data.append(CMD(row_bank_ins,command_data=CmdData(bank<<8|din_ram_pos)))        # 从din_ram的din_ram_pos位置取数据配置bank
+                    row_bank_record[0].append(bank)                                                     # 记录上一次读的行bank号
 
                 ins_data.append(CMD(read_ins,command_data=CmdData(dout_ram_pos)))                       # 读脉冲, 并将16路TIA的值存在dout_ram的dout_ram_pos位置
-                record.append((col_batch,row_num))                                                      # 记录是第几行, 是读列的几个batch, 读出的数据存在哪
+                record.append((col_batch,row_pos))                                                      # 记录是读列的几个batch, 是第几行, 读出的数据存在哪
                 dout_ram_pos = dout_ram_pos + 1
 
-                # 不求和的情况下，可能需要多次切换行，需要还原
-                if not sum:
-                    # 
-                    # 还原row的配置
-                    for bank,din_ram_pos in row:
-                        ins_data.append(CMD(row_bank_ins,command_data=CmdData(bank<<8|0)))              # 从din_ram的0位置取32bit的0配置bank
-
-        num = len(ins_data)
-        ins_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(num)))
-        ins_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(ins_ram_start)))
+        num = len(ins_data)                                                                             # 指令长度
+        assert num+ins_ram_start < self.ins_ram_threshold,f"read2: ins_ram:{num+ins_ram_start}超过界限。"
+        assert dout_ram_pos <= self.dout_ram_threshold,f"read2: dout_ram:{dout_ram_pos}超过界限。"
+        ins_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(num)))                                # 告诉上面要执行多少指令
+        ins_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(ins_ram_start)))                         # 告诉上面指令放在哪
 
         # ----------------------------------------------发送指令序列并执行
         pkts=Packet()
         pkts.append_single(ins_data,mode=4)
         pkts.append_single([CMD(INS_NUM,command_data=CmdData(num))],mode=1)
-        self.ps.send_packets(pkts)
-        pkts=Packet()
         pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
         self.ps.send_packets(pkts)
-        time.sleep(num*0.01)
 
+        # print(dout_ram_pos-dout_ram_start)
         voltage,cond = self.adc.get_out2(num=dout_ram_pos-dout_ram_start,dout_ram_start=0,read_voltage=read_voltage)
         
         # voltage = np.array([[i for i in range(16)] for j in range(dout_ram_pos)])
@@ -770,14 +796,14 @@ class CHIP():
         if not check_tia:
             return voltage,cond                                # 直接返回16路TIA的值
         else:
-            row_num = 1 if sum else len(row_index)
-            vres,cres = np.zeros((row_num,len(col_index))),np.zeros((row_num,len(col_index)))
+            row_pos = 1 if sum else len(row_index)
+            vres,cres = np.zeros((row_pos,len(col_index))),np.zeros((row_pos,len(col_index)))
             # 每个record对应一个dout_ram_pos,并且是按顺序的
-            for i,(col_batch,row_num) in enumerate(record):
+            for i,(col_batch,row_pos) in enumerate(record):
                 # 遍历这个batch对应的列和tia
-                for v in res_col_tia[col_batch]:
-                    vres[row_num,v[0]]=voltage[i, v[1]]
-                    cres[row_num,v[0]]=cond[i, v[1]]
+                for col_pos,tia_num in res_col_tia[col_batch]:
+                    vres[row_pos,col_pos]=voltage[i, tia_num]
+                    cres[row_pos,col_pos]=cond[i, tia_num]
 
             return vres,cres
         
@@ -791,7 +817,7 @@ class CHIP():
         assert self.op_mode == "write","未设置为写模式。"
 
         self.write_voltage = write_voltage
-        print(self.get_setting_info())
+        # print(self.get_setting_info())
         # ----------------------------------------------从行还是列去写
         if self.from_row:
             # 从行写
@@ -832,5 +858,3 @@ class CHIP():
         pkts.append_single([CMD(INS_NUM,command_data=CmdData(num))],mode=1)
         pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
         self.ps.send_packets(pkts)
-
-        time.sleep(num*0.001)

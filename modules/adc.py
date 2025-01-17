@@ -144,7 +144,7 @@ class ADC():
             pkts.append_cmdlist([adc_out],mode=2)
 
             # 发送指令
-            self.ps.send_packets(pkts,delay=delay)
+            self.ps.send_packets(pkts,recv=False)
             # 接收信息
             # 高16bit: 0, 低16bit: 寄存器的16bit值
             message = self.ps.receive_packet(bytes_num=4)

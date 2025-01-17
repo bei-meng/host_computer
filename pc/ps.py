@@ -4,7 +4,7 @@ import socket
 from cimCommand import CMD,CmdData,Packet
 
 class PS():
-    def __init__(self, host, port, delay=10*1e-3, debug = False):
+    def __init__(self, host, port, delay=10*1e-3, debug = 0):
         self.host = host
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -33,7 +33,6 @@ class PS():
         except Exception as e:
             print(f"Failed to connect: {e}")
             self.enable = False
-        # time.sleep(1)
 
     def set_delay(self,delay):
         self.delay = delay
@@ -43,51 +42,56 @@ class PS():
 
     def receive_packet(self, bytes_num):
         if self.enable:
-            packet = ""
+            res = b''
             with self.lock:
                 try:
-                    packet = self.socket.recv(bytes_num)
-                    res = "".join(f'{byte:02x}' for byte in packet)
-                    print(res)
+                    while len(res)< bytes_num:
+                        packet = self.socket.recv(min(bytes_num-len(res),256))
+                        res = res + packet
+
+                        if self.debug&2>0:
+                            print(f"收到信息: {len(res)}","".join(f'{byte:02x}' for byte in res))
+
                     if not packet:
                         print("empty packet")
-                    if self.debug:
-                        print(f"Received: {packet}\n")
-
                 except socket.timeout:
-                    print("接收超时!")
+                    print("receive_packet:接收超时!")
                 except socket.error:
                     print(f"Failed to recv message")
-            return packet
+            return res
 
     def send_packets(self, pkts: Packet,delay = None,recv = True):
         """
             将packer里面的所有上位机指令按顺序有间隔的发送下去
         """
-        res = ""
-        if self.enable or self.debug:
+        if self.enable or self.debug>0:
             with self.lock:
                 try:
                     # pass
-                    if self.debug:
+                    if self.debug & 1>0:
                         print(pkts)
+                        for cmd in pkts.get_bytes_list():
+                            print("指令完整字节码: ","".join(f'{byte:02x}' for byte in cmd))
                     for cmd in pkts.get_bytes_list():
                         self.socket.sendall(cmd)
+                        # ------------------------------------------------------------------------
                         if recv:
-                            packet = self.socket.recv(1024)
-                            res = "".join(f'{byte:02x}' for byte in packet)
-                            print(res)
-                            if (len(packet) == 4 and res == "bb550000"):
+                            res = b''
+                            while len(res)< 4:
+                                packet = self.socket.recv(4-len(res))
+                                res = res + packet
+                                if self.debug&2>0: print(f"收到信息: {len(packet)}","".join(f'{byte:02x}' for byte in packet))
+
+                            tmp = "".join(f'{byte:02x}' for byte in res)
+                            if (len(res) == 4 and tmp == "bb550000") or (len(res) == 4 and tmp == "cc550000"):
                                 pass
-                            elif (len(packet) == 4 and res == "cc550000"):
-                                pass
-                            # else:
-                            #     print("发送指令:返回信息错误!",packet)
+                            else:
+                                print("send_packets: 返回信息错误!",res)
+                        # ------------------------------------------------------------------------
                 except socket.timeout:
-                    print("发送/接收超时!")
+                    print("send_packets:接收超时!")
                 except socket.error:
                     print(f"Failed to send message:")
-        return res
 
     def close(self):
         with self.lock:
