@@ -18,9 +18,11 @@ class ADC():
     row_col_sw = 0 
 
     ps = None
+    init = True
 
-    def __init__(self,ps:PS):
+    def __init__(self,ps:PS,init = True):
         self.ps = ps
+        self.init = init
         # DAC的初始化操作
         self.initOp()
 
@@ -28,24 +30,25 @@ class ADC():
         """
             将ADC配置为4通道
         """
-        pkts=Packet()
-        pkts.append_cmdlist([
-            CMD(ADC0_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc0)),              # cfg_adc0
+        if self.init:
+            pkts=Packet()
+            pkts.append_cmdlist([
+                CMD(ADC0_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
+                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc0)),              # cfg_adc0
 
-            CMD(ADC1_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc1)),              # cfg_adc1
+                CMD(ADC1_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
+                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc1)),              # cfg_adc1
 
-            CMD(ADC2_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc2)),              # cfg_adc2
+                CMD(ADC2_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
+                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc2)),              # cfg_adc2
 
-            CMD(ADC3_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc3)),              # cfg_adc3
-        ],mode=1)
+                CMD(ADC3_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
+                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc3)),              # cfg_adc3
+            ],mode=1)
 
-        # 发送指令
-        self.ps.send_packets(pkts)
-        self.channel_num = 4
+            # 发送指令
+            # self.ps.send_packets(pkts)
+            self.channel_num = 4
 
     def set_row_col_sw(self,row_col_sw = 0):
         """

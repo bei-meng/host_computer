@@ -16,8 +16,11 @@ class DAC():
 
     ps = None
 
-    def __init__(self,ps:PS):
+    init = True
+
+    def __init__(self,ps:PS,init = True):
         self.ps = ps
+        self.init = init
         # DAC的初始化操作
         self.initOp()
 
@@ -25,26 +28,27 @@ class DAC():
         """
             两个DAC, 需要关broadcast,以及将gain置2
         """
-        pkts=Packet()
-        pkts.append_cmdlist([
-            CMD(DAC_IN,command_data=CmdData(0<<24|0x020000)),       # 关闭DAC的broadcast
-            CMD(FAST_COMMAND_1,command_data=CmdData(1)),            # cfg_dac
+        if self.init:
+            pkts=Packet()
+            pkts.append_cmdlist([
+                CMD(DAC_IN,command_data=CmdData(0<<24|0x020000)),       # 关闭DAC的broadcast
+                CMD(FAST_COMMAND_1,command_data=CmdData(1)),            # cfg_dac
 
-            CMD(DAC_IN,command_data=CmdData(0<<24|0x0400ff)),       # DAC的每个通道gain都置2, 1表示增益为2,0表示增益为1
-            CMD(FAST_COMMAND_1,command_data=CmdData(1)),            # cfg_dac
+                CMD(DAC_IN,command_data=CmdData(0<<24|0x0400ff)),       # DAC的每个通道gain都置2, 1表示增益为2,0表示增益为1
+                CMD(FAST_COMMAND_1,command_data=CmdData(1)),            # cfg_dac
 
-            CMD(DAC_IN,command_data=CmdData(1<<24|0x020000)),       # 关闭DAC的broadcast
-            CMD(FAST_COMMAND_1,command_data=CmdData(1)),            # cfg_dac
+                CMD(DAC_IN,command_data=CmdData(1<<24|0x020000)),       # 关闭DAC的broadcast
+                CMD(FAST_COMMAND_1,command_data=CmdData(1)),            # cfg_dac
 
-            CMD(DAC_IN,command_data=CmdData(1<<24|0x0400ff)),       # DAC的每个通道gain都置2
-            CMD(FAST_COMMAND_1,command_data=CmdData(1)),            # cfg_dac
-        ],mode=1)
+                CMD(DAC_IN,command_data=CmdData(1<<24|0x0400ff)),       # DAC的每个通道gain都置2
+                CMD(FAST_COMMAND_1,command_data=CmdData(1)),            # cfg_dac
+            ],mode=1)
 
-        # 发送指令
-        self.ps.send_packets(pkts)
+            # 发送指令
+            self.ps.send_packets(pkts)
 
-        self.broadcast = False
-        self.gain = 2
+            self.broadcast = False
+            self.gain = 2
 
     def set_voltage(self,v,dac_num:int,dac_channel:int):
         """

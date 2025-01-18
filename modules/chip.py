@@ -31,12 +31,15 @@ class CHIP():
     dac = None
     clk_manager = None
 
-    def __init__(self, ps:PS):
+    init = True
+
+    def __init__(self, ps:PS,init = True):
         self.ps = ps
+        self.init = init
         self.initOp()
-        self.adc = ADC(ps)
-        self.dac = DAC(ps)
-        self.clk_manager = CLK_MANAGER(ps)
+        self.adc = ADC(ps,init)
+        self.dac = DAC(ps,init)
+        self.clk_manager = CLK_MANAGER(ps,init)
 
     def get_setting_info(self):
         """
@@ -61,22 +64,23 @@ class CHIP():
         """
         # 配置器件的初始化
         # self.set_device_cfg(deviceType=0,reg_clk_cyc=0xF,latch_clk_cyc=0xF)
-        pkts=Packet()
-        pkts.append_cmdlist([
-            CMD(FLT,command_data=CmdData(0x0FFF)),                  # 配置flt
-            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le1)),         # cfg_flt_le1
-            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le2)),         # cfg_flt_le2
-            CMD(CIM_RESET,command_data=CmdData(1)),                 # reset指令
-            CMD(CIM_SS,command_data=CmdData(1)),                    # reg写入数据打开
-            CMD(SER_PARA_SEL,command_data=CmdData(1)),              # 切换到并行模式
-        ],mode=1)
-        self.ps.send_packets(pkts)
+        if self.init:
+            pkts=Packet()
+            pkts.append_cmdlist([
+                CMD(FLT,command_data=CmdData(0x0FFF)),                  # 配置flt
+                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le1)),         # cfg_flt_le1
+                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le2)),         # cfg_flt_le2
+                CMD(CIM_RESET,command_data=CmdData(1)),                 # reset指令
+                CMD(CIM_SS,command_data=CmdData(1)),                    # reg写入数据打开
+                CMD(SER_PARA_SEL,command_data=CmdData(1)),              # 切换到并行模式
+            ],mode=1)
+            self.ps.send_packets(pkts)
 
-        # 不为空就执行初始化
-        if self.adc is not None:
-            self.adc.initOp()
-        if self.dac is not None:
-            self.dac.initOp()
+            # 不为空就执行初始化
+            if self.adc is not None:
+                self.adc.initOp()
+            if self.dac is not None:
+                self.dac.initOp()
 
     # def set_device_cfg(self,deviceType = None,latch_cyc = None, reg_clk_cyc= None, latch_clk_cyc = None,cim_rstn_cyc = None):
     #     """

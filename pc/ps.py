@@ -92,7 +92,7 @@ class PS():
                     print("send_packets:接收超时!")
                 except socket.error:
                     print(f"Failed to send message:")
-
+                    
     def close(self):
         with self.lock:
             if self.socket:
