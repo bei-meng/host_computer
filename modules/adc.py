@@ -47,7 +47,7 @@ class ADC():
             ],mode=1)
 
             # 发送指令
-            # self.ps.send_packets(pkts)
+            self.ps.send_packets(pkts)
             self.channel_num = 4
 
     def set_row_col_sw(self,row_col_sw = 0):

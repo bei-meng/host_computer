@@ -114,7 +114,7 @@ class CHIP():
         """
         self.clk_manager.set_pulse_cyc(pulsewidth)
 
-    def set_op_mode(self,read=True,row=True):
+    def set_op_mode(self,read=True,row=True,clearv = True):
         """
             Args:
                 read: True表示读模式, False表示写模式
@@ -125,7 +125,8 @@ class CHIP():
                 会记录读/写模式, 从行/列进行操作\n
                 会根据设置配置ROW_CTRL,COL_CTRL,ROW_COL_SW的选择
         """
-        self.clear_dac_v()
+        if clearv:
+            self.clear_dac_v2()
         self.op_mode = "read" if read else "write"
         self.from_row = row
         sign = 1 if row else 0
@@ -571,7 +572,7 @@ class CHIP():
     #------------------------------------------------------------------------------------------
     # *************************************** 其他操作 *****************************************
     #------------------------------------------------------------------------------------------
-    def set_op_mode2(self,read=True,row=True):
+    def set_op_mode2(self,read=True,row=True,clearv = True):
         """
             Args:
                 read: True配置为读模式, False配置为写模式
@@ -580,7 +581,8 @@ class CHIP():
             Functions:
                 同时会将所有的DAC通道电压设置为0
         """
-        self.clear_dac_v2()
+        if clearv:
+            self.clear_dac_v2()
         if read:
             self.op_mode = "read"
             self.from_row = row
@@ -795,13 +797,13 @@ class CHIP():
         # print(dout_ram_pos-dout_ram_start)
         voltage,cond = self.adc.get_out2(num=dout_ram_pos-dout_ram_start,dout_ram_start=0,read_voltage=read_voltage)
         
-        # voltage = np.array([[i for i in range(16)] for j in range(dout_ram_pos)])
-        # cond = np.array([[i for i in range(16)] for j in range(dout_ram_pos)])
+        # voltage = np.array([[j for i in range(16)] for j in range(dout_ram_pos)])
+        # cond = np.array([[j for i in range(16)] for j in range(dout_ram_pos)])
         if not check_tia:
             return voltage,cond                                # 直接返回16路TIA的值
         else:
-            row_pos = 1 if sum else len(row_index)
-            vres,cres = np.zeros((row_pos,len(col_index))),np.zeros((row_pos,len(col_index)))
+            row_len = 1 if sum else len(row_index)
+            vres,cres = np.zeros((row_len,len(col_index))),np.zeros((row_len,len(col_index)))
             # 每个record对应一个dout_ram_pos,并且是按顺序的
             for i,(col_batch,row_pos) in enumerate(record):
                 # 遍历这个batch对应的列和tia
