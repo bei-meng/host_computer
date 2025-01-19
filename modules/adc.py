@@ -123,71 +123,6 @@ class ADC():
         self.ps.send_packets(pkts,delay=delay)
         self.gain=gain
 
-    def get_out(self,num:list,read_voltage:float,delay=None):
-        """
-            从adc_num的adc的adc_channel读数据
-        """
-        # return num,num
-        cond = []
-        voltage = []
-        for TIA_num in num:
-            adc_num, adc_channel = int(TIA_num/4),TIA_num%4
-
-            channel_map = {0: 'A', 1: 'B', 2: 'C', 3: 'D'}
-            pkts=Packet()
-            adc_out = CMD(dict(
-                command_addr = 65+TIA_num,
-                command_type = COMMAND_TYPE.RW,
-                n_addr_bytes = N_ADDR_BYTES.ONE,
-                n_data_bytes = N_DATA_BYTES.FOUR,
-                command_name = f"adc{adc_num}_out{channel_map[adc_channel]}",
-                command_data = CmdData(0),
-                command_description = "从ADC对应通道读取数据"
-            ))
-            pkts.append_cmdlist([adc_out],mode=2)
-
-            # 发送指令
-            self.ps.send_packets(pkts,recv=False)
-            # 接收信息
-            # 高16bit: 0, 低16bit: 寄存器的16bit值
-            message = self.ps.receive_packet(bytes_num=4)
-            cond.append(self.adc_to_cond(message, read_voltage))
-            voltage.append(self.adc_to_voltage(message))
-        return np.array(voltage),np.array(cond)
-    
-    def adc_to_voltage(self,message, vref=1.25):
-        """
-            读取的值换算成电压
-        """
-        voltage_sample_hex = message.hex()[2:4] + message.hex()[0:2]
-        # 将十六进制字符串转换为整数
-        data = int(voltage_sample_hex, 16)
-        # 确保数据在16位范围内
-        data &= 0xFFFF
-        # 将16位有符号数转换为Python整数
-        if data & 0x8000:  # 若符号位为1, 则表示负数
-            data -= 0x10000
-
-        # 将数据转换为电压
-        voltage = (data / (2**15-1)) * vref  # 32767 是0x7FFF对应的正最大值
-        return voltage
-    
-    def adc_to_cond(self,message,read_voltage,vref=1.25):
-        """
-            读取的值换算成电导(单位:us)
-        """
-        voltage = self.adc_to_voltage(message,vref)
-        # 返回的单位是us
-        if self.gain == 0:
-            return voltage/((read_voltage+1e-10)*6.0241*(10e3+200))*1e6
-        elif self.gain == 2:
-            return voltage/((read_voltage+1e-10)*1*(10e3+200))*1e6  
-        elif self.gain == 1:
-            return voltage/((read_voltage+1e-10)*6.0241*200)*1e6
-        elif self.gain == 3:
-            return voltage/((read_voltage+1e-10)*1*200)*1e6
-    
-
     def TIA_index_map(self,num,device=0,col=True):
         """
             注意: num从0索引开始
@@ -232,21 +167,66 @@ class ADC():
         voltage = (data / (2**15-1)) * vref  # 32767 是0x7FFF对应的正最大值
         return voltage
     
-    def hex_to_cond(self,message_hex,read_voltage,vref=1.25):
+    def voltage_to_cond(self,voltage,read_voltage):
         """
-            读取的16进制值换算成电导(单位:us)
+            读取的电压值换算成电导(单位:us)
+            voltage为np数组
         """
-        voltage = self.hex_to_voltage(message_hex,vref)
-        # 返回的单位是us
         if self.gain == 0:
-            return voltage/((read_voltage+1e-10)*6.0241*(10e3+200))*1e6
+            return voltage/((read_voltage+1e-20)*6.0241*(10e3+200))*1e6
         elif self.gain == 2:
-            return voltage/((read_voltage+1e-10)*1*(10e3+200))*1e6  
+            return voltage/((read_voltage+1e-20)*1*(10e3+200))*1e6  
         elif self.gain == 1:
-            return voltage/((read_voltage+1e-10)*6.0241*200)*1e6
+            return voltage/((read_voltage+1e-20)*6.0241*200)*1e6
         elif self.gain == 3:
-            return voltage/((read_voltage+1e-10)*1*200)*1e6
+            return voltage/((read_voltage+1e-20)*1*200)*1e6
         
+    def voltage_to_resistor(self,voltage,read_voltage):
+        """
+            读取的电压值换算成电阻(单位:kΩ)
+            voltage为np数组
+        """
+        if self.gain == 0:
+            return (read_voltage*6.0241*(10e3+200))/(voltage+1e-20)*1e-3
+        elif self.gain == 2:
+            return (read_voltage*1*(10e3+200))/(voltage+1e-20)*1e-3
+        elif self.gain == 1:
+            return (read_voltage*6.0241*200)/(voltage+1e-20)*1e-3
+        elif self.gain == 3:
+            return (read_voltage*1*200)/(voltage+1e-20)*1e-3
+        
+    def get_out(self,num:list,read_voltage:float,delay=None):
+        """
+            从adc_num的adc的adc_channel读数据
+            返回的是电压对应的np数组
+        """
+        # return num
+        voltage = []
+        for TIA_num in num:
+            adc_num, adc_channel = int(TIA_num/4),TIA_num%4
+
+            channel_map = {0: 'A', 1: 'B', 2: 'C', 3: 'D'}
+            pkts=Packet()
+            adc_out = CMD(dict(
+                command_addr = 65+TIA_num,
+                command_type = COMMAND_TYPE.RW,
+                n_addr_bytes = N_ADDR_BYTES.ONE,
+                n_data_bytes = N_DATA_BYTES.FOUR,
+                command_name = f"adc{adc_num}_out{channel_map[adc_channel]}",
+                command_data = CmdData(0),
+                command_description = "从ADC对应通道读取数据"
+            ))
+            pkts.append_cmdlist([adc_out],mode=2)
+
+            # 发送指令
+            self.ps.send_packets(pkts,recv=False)
+            # 接收信息
+            # 高16bit: 0, 低16bit: 寄存器的16bit值
+            message = self.ps.receive_packet(bytes_num=4)
+            voltage_hex = message.hex()[2:4] + message.hex()[0:2]
+            voltage.append(self.hex_to_voltage(voltage_hex))
+        return np.array(voltage)
+    
     def get_out2(self,num,dout_ram_start,read_voltage):
         """
             从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的16路tia的值
@@ -258,7 +238,6 @@ class ADC():
         ],mode=6)
         self.ps.send_packets(pkts,recv=False)
         
-
         tia16_length = 64
         tia_num = 16
         tia_length = 4
@@ -268,20 +247,13 @@ class ADC():
         message = [message.hex()[i*tia16_length:(i+1)*tia16_length] for i in range(num)]
 
         vres = []
-        cres = []
         for tia16 in message:
             tmp = []
             for i in range(0,tia_num,2):
                 # tia顺序为: 1, 0, 3, 2, 5, 4... 需要转换为0,1,2,3,4,5...
                 tmp.append(tia16[(i+1)*tia_length:(i+2)*tia_length])
                 tmp.append(tia16[i*tia_length:(i+1)*tia_length])
-            voltage = []
-            cond = []
-            for i in tmp:
-                voltage.append(self.hex_to_voltage(i))
-                cond.append(self.hex_to_cond(i,read_voltage=read_voltage))
 
-            vres.append(voltage)
-            cres.append(cond)
-        return np.array(vres),np.array(cres) 
+            vres.append([self.hex_to_voltage(i) for i in tmp])
+        return np.array(vres)
         
