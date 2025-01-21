@@ -123,16 +123,16 @@ class ADC():
         self.ps.send_packets(pkts,delay=delay)
         self.gain=gain
 
-    def TIA_index_map(self,num,device=0,col=True):
+    def TIA_index_map(self,index,device=0,col=True):
         """
             注意: num从0索引开始
             将对应的行或列索引映射为对应的TIA偏移
         """
-        num += 1
-        assert num > 0 and num < 257,"numToBank_Index: num超过范围!"
+        index += 1
+        assert index > 0 and index < 257,"numToBank_Index: num超过范围!"
         if device==0 and col:
             # 先判断奇数偶数
-            if num&1:
+            if index&1:
                 index_base,index_offset = 32,1
                 TIA_base = 8
             else:
@@ -140,14 +140,14 @@ class ADC():
                 TIA_base = 0
         else:
             # 先判断奇数偶数
-            if num&1:
+            if index&1:
                 index_base,index_offset = 32,1
                 TIA_base = 0
             else:
                 index_base,index_offset = 32,2
                 TIA_base = 8
                 
-        TIA_offset = int((num-index_offset)/index_base)
+        TIA_offset = int((index-index_offset)/index_base)
 
         return TIA_base+TIA_offset
 
@@ -195,7 +195,7 @@ class ADC():
         elif self.gain == 3:
             return (read_voltage*1*200)/(voltage+1e-20)*1e-3
         
-    def get_out(self,num:list,read_voltage:float,delay=None):
+    def get_out(self,num:list,delay=None):
         """
             从adc_num的adc的adc_channel读数据
             返回的是电压对应的np数组
@@ -227,14 +227,21 @@ class ADC():
             voltage.append(self.hex_to_voltage(voltage_hex))
         return np.array(voltage)
     
-    def get_out2(self,num,dout_ram_start,read_voltage):
+    def get_out2(self,data_length:int,dout_ram_start:int) -> np.ndarray:
         """
             从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的16路tia的值
+            Args:
+                data_length: 要从dout_ram里面读多少条数据
+                dout_ram_start: dout_ram_start的起始地址
+
+            Returns:
+                vres: data_length*16的一个np矩阵
         """
+        # return np.array([[j  for j in range(16)] for i in range(data_length)])
         pkts=Packet()
         pkts.append_single([
             CMD(PL_RAM_ADDR,command_data=CmdData(dout_ram_start)),
-            CMD(PL_DATA_LENGTH,command_data=CmdData(num))
+            CMD(PL_DATA_LENGTH,command_data=CmdData(data_length))
         ],mode=6)
         self.ps.send_packets(pkts,recv=False)
         
@@ -242,9 +249,9 @@ class ADC():
         tia_num = 16
         tia_length = 4
         # 接收信息, num条dout_ram值, 每条dout_ram长为256/8=32B
-        message = self.ps.receive_packet(num*32)
+        message = self.ps.receive_packet(data_length*32)
         # 切分数据为16路TIA, 转成16进制后, 每条dout_ram长32*2个16进制宽度(4bit)
-        message = [message.hex()[i*tia16_length:(i+1)*tia16_length] for i in range(num)]
+        message = [message.hex()[i*tia16_length:(i+1)*tia16_length] for i in range(data_length)]
 
         vres = []
         for tia16 in message:

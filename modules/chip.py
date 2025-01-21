@@ -26,7 +26,7 @@ class CHIP():
 
     din_ram_threshold = 256
     dout_ram_threshold = 256
-    ins_ram_threshold = 300#1024
+    ins_ram_threshold = 280#1024
 
     ps = None
     adc = None
@@ -116,11 +116,11 @@ class CHIP():
         """
         self.clk_manager.set_pulse_cyc(pulsewidth)
 
-    def set_op_mode(self,read=True,row=True,clearv = True):
+    def set_op_mode(self,read=True,from_row=True,clearv = True):
         """
             Args:
                 read: True表示读模式, False表示写模式
-                row: True表示从行读/写, False表示从列读/写
+                from_row: True表示从行读/写, False表示从列读/写
 
             Functions:
                 会把所有的DAC通道电压清0
@@ -130,8 +130,8 @@ class CHIP():
         if clearv:
             self.clear_dac_v2()
         self.op_mode = "read" if read else "write"
-        self.from_row = row
-        sign = 1 if row else 0
+        self.from_row = from_row
+        sign = 1 if from_row else 0
         pkts=Packet()
         pkts.append_cmdlist([
             CMD(ROW_CTRL,command_data=CmdData(sign)),                                                  # 1配置行到施加电压,
@@ -455,10 +455,10 @@ class CHIP():
             Returns:
                 np.ndarray为电压(v)
         """
-        voltage = self.adc.get_out(num,self.read_voltage)
+        voltage = self.adc.get_out(num)
         return voltage
     
-    def voltage_to_cond(self,voltage,read_voltage = None) -> np.ndarray:
+    def voltage_to_cond(self,voltage:np.ndarray,read_voltage:float = None) -> np.ndarray:
         """
             Args:
                 voltage: TIA读出的电压值
@@ -529,9 +529,9 @@ class CHIP():
             self.generate_read_pulse() 
             # ------------------------------------------读出结果
             if not check_tia:
-                res.append(self.adc.get_out([i for i in range(self.chip_tia_num)],read_voltage=self.read_voltage))
+                res.append(self.adc.get_out([i for i in range(self.chip_tia_num)]))
             else:
-                res.append(self.adc.get_out([j[4] for j in i],read_voltage=self.read_voltage))
+                res.append(self.adc.get_out([j[4] for j in i]))
         if not check_tia:
             result_v = [res[i] for i in range(len(col_batch))]
         else:
@@ -593,11 +593,11 @@ class CHIP():
     #------------------------------------------------------------------------------------------
     # *************************************** 其他操作 *****************************************
     #------------------------------------------------------------------------------------------
-    def set_op_mode2(self,read=True,row=True,clearv = True):
+    def set_op_mode2(self,read=True,from_row=True,clearv = True):
         """
             Args:
                 read: True配置为读模式, False配置为写模式
-                row: True配置为从行读/写, False配置为从列读/写
+                from_row: True配置为从行读/写, False配置为从列读/写
 
             Functions:
                 同时会将所有的DAC通道电压设置为0
@@ -606,10 +606,52 @@ class CHIP():
             self.clear_dac_v2()
         if read:
             self.op_mode = "read"
-            self.from_row = row
+            self.from_row = from_row
         else:
             self.op_mode = "write"
-            self.from_row = row
+            self.from_row = from_row
+
+    def execute_ins(self,ins_data:list,ins_ram_start:int):
+        """
+            Args:
+                ins_data: 需要执行的指令的list
+
+            Functions:
+                自动检查指令长度,配置,然后执行
+                并会清空指令列表
+        """
+        ins_num = len(ins_data)
+        assert ins_num+ins_ram_start < self.ins_ram_threshold,f"execute_ins: ins_ram:{ins_num+ins_ram_start}超过界限。"
+        ins_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(ins_num)))
+        ins_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(ins_ram_start)))
+
+        pkts=Packet()
+        pkts.append_single(ins_data,mode=4)
+        pkts.append_single([CMD(INS_NUM,command_data=CmdData(ins_num))],mode=1)
+        pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
+        self.ps.send_packets(pkts)
+        # packet添加指令时都会对指令进行浅拷贝
+        ins_data.clear()
+
+    def execute_send_din_data(self,din_ram_data:list,din_ram_start:int):
+        """
+            Args:
+                din_ram_data: 需要下发到din_ram的数据list
+
+            Functions:
+                自动检查指令长度,配置,然后执行
+                并会清空数据列表
+        """
+        num = len(din_ram_data)
+        assert num+din_ram_start <= self.din_ram_threshold,f"send_din_ram2: din_ram:{num+din_ram_start}超过界限。"
+        din_ram_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(num)))                
+        din_ram_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(din_ram_start)))
+
+        pkts=Packet()
+        pkts.append_single(din_ram_data,mode=5)
+        self.ps.send_packets(pkts)
+        # packet添加指令时都会对指令进行浅拷贝
+        din_ram_data.clear()
     
     #------------------------------------------------------------------------------------------
     # *************************************** DAC配置 *****************************************
@@ -679,7 +721,7 @@ class CHIP():
         return cmd
     
     #------------------------------------------------------------------------------------------
-    # ************************************** 读相关函数 ****************************************
+    # ********************************* 块读写相关函数(并行) ***********************************
     #------------------------------------------------------------------------------------------
     def send_din_ram2(self,row_index_list:list[list[int]],col_index:list[int],din_ram_start=0,
                           check_tia=True) -> tuple[list[list],list[list],list[list]]:
@@ -737,14 +779,7 @@ class CHIP():
                 res_col_bank.append(col_tmp)
 
         # --------------------------------------------------指令发送--------------------------------------------------
-        num = len(din_ram_data)                                                                         # 有多少条数据
-        din_ram_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(num)))                
-        assert num+din_ram_start <= self.din_ram_threshold,f"send_din_ram2: din_ram:{num+din_ram_start}超过界限。"
-        din_ram_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(din_ram_start)))                     # 数据从哪开始
-
-        pkts=Packet()
-        pkts.append_single(din_ram_data,mode=5)
-        self.ps.send_packets(pkts)
+        self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
 
         return res_row_bank,res_col_bank,res_col_tia
     
@@ -820,7 +855,7 @@ class CHIP():
         pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
         self.ps.send_packets(pkts)
 
-        voltage = self.adc.get_out2(num=dout_ram_pos-dout_ram_start,dout_ram_start=0,read_voltage=read_voltage)
+        voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
         
         # voltage = np.array([[j for i in range(16)] for j in range(dout_ram_pos)])
         # cond = np.array([[j for i in range(16)] for j in range(dout_ram_pos)])
@@ -841,7 +876,7 @@ class CHIP():
                 return vres.T
     
     def read_crossbar2(self,row_index:list,col_index:list,read_voltage:float,tg:float = 5,gain:int = 1,
-                       row:bool = True,out_type:int = 0):
+                       from_row:bool = True,out_type:int = 0):
         """
             out_type: 0为电压, 1为电导(uS), 2为电阻(KΩ)
         """
@@ -849,11 +884,11 @@ class CHIP():
         assert len(row_index)>0, "read_crossbar2: row_index不能为空"
         assert len(col_index)>0, "read_crossbar2: col_index不能为空"
         self.set_tia_gain(gain=gain)
-        self.set_op_mode2(read=True,row=row)
+        self.set_op_mode2(read=True,from_row=from_row)
         
 
         resv = np.zeros((len(row_index),len(col_index)))
-        if row:
+        if from_row:
             row_data = self.get_bank_index_tia(num = row_index)
             row_bank_data = self.bank_split(data = row_data,all_data = True)                # (pos, row_num/col_num, bank, index, tia_num)
             for bank_data in row_bank_data:                                                 # 因为下位机TCP容量限制, 从行读, 每次最多4行, 切分到同一个bank会减少切bank的次数
@@ -944,23 +979,13 @@ class CHIP():
 
                 ins_data.append(CMD(write_ins))                                                     # 写脉冲
 
-        num = len(ins_data)
-        assert num+ins_ram_start < self.ins_ram_threshold,f"write2: ins_ram:{num+ins_ram_start}超过界限。"
-        ins_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(num)))
-        ins_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(ins_ram_start)))
-
-        # ----------------------------------------------发送指令序列并执行
-        pkts=Packet()
-        pkts.append_single(ins_data,mode=4)
-        pkts.append_single([CMD(INS_NUM,command_data=CmdData(num))],mode=1)
-        pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
-        self.ps.send_packets(pkts)
+        self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
 
     def write_crossbar2(self,row_index:list,col_index:list,write_voltage:float,tg:float,pulse_width:float,
                        set_device:bool = True):
         assert len(row_index)>0, "read_crossbar2: row_index不能为空"
         assert len(col_index)>0, "read_crossbar2: col_index不能为空"
-        self.set_op_mode2(read=False,row=set_device)
+        self.set_op_mode2(read=False,from_row=set_device)
         self.set_pulse_width(pulse_width)
         # 现在由于容量限制,每次最多写128个器件,切分到同一个bank会减少切bank的次数
         if len(row_index)<len(col_index):
@@ -994,23 +1019,45 @@ class CHIP():
                 if len(chunk1)>0:
                     self.write2(row_index=chunk1,col_index=[i],write_voltage=write_voltage,tg=tg)
 
-    def send_point_din_ram2(self,points:tuple[int,int],din_ram_start=0) -> tuple[list[tuple[int,int]],list[tuple[int,int]]]:
+    #------------------------------------------------------------------------------------------
+    # ******************************** 点读写相关操作(非并行) **********************************
+    #------------------------------------------------------------------------------------------    
+    def send_point_din_ram2(self,crossbar:np.ndarray,din_ram_start:int = 0,) -> Union[
+                                tuple[list[tuple[int,int]],list[tuple[int,int]]]|
+                                tuple[list[tuple[int,int]],list[tuple[int,int]],list[tuple[int,int]],list[tuple[int,int]]]
+                                ]:
         """
-            发送配置行列latch需要的数据
-            check_tia是否检查TIA的映射
+            Args:
+                crossbar: bool的np数组, True表示需要配置这个点,False表示不需要配置这个点
+                din_ram_start: 下发数据的din_ram的起始地址,默认为0
+
+            Returns:
+                读写模式均会返回:
+                res_row_bank: 一个个点需要配置的行bank和din_ram_data里面的index的映射
+                res_col_bank: 一个个点需要配置的列bank和din_ram_data里面的index的映射
+
+                设置为读模式还会返回: 
+                res_tia_map: 每个点的TIA映射
+                points: 点的行列
         """
-        din_ram_pos = din_ram_start
+        # --------------------------------------------------配置写的点的数据, 因为行/列对应的bank是间隔1, 所以为了避免更多的切行列bank, 尽量使得一个bank的挨在一起
+        row,col = crossbar.shape
+        points = []
+        for i_start in range(2):
+            for i in range(i_start,row,2):
+                col_index = [j for j in range(0,col,2) if crossbar[i,j]] + [j for j in range(1,col,2) if crossbar[i,j]]
+                points += [(i,j) for j in col_index]  
+
         # --------------------------------------------------准备din_ram的数据
-        din_ram_data = []                                   # 要发送下去的数据
-        res_row_bank = []                                   # 等会配行bank指令执行需要的数据, 单层list
-        res_col_bank = []                                   # 等会配列bank指令执行需要的数据, 单词list
-        din_ram_bank_index_map = {}                         # 用于节约din空间
+        din_ram_pos = din_ram_start+1                                                                   # 因为32bit的0在din_ram_data里面, 所以需要+1
+        din_ram_data = [CMD(PL_DATA,command_data=CmdData(0))]                                           # 要发送下去的数据, din_ram的开始存0,用于恢复
+        res_row_bank = []                                                                               # 等会配行bank指令执行需要的数据, 单层list
+        res_col_bank = []                                                                               # 等会配列bank指令执行需要的数据, 单层list
+        res_tia_map  = []                                                                               # 每个点对应的TIA映射,需要提前选好从行列读, 单层list
+        din_ram_bank_index_map = {}                                                                     # 用于节约din空间
 
         # --------------------------------------------------增加映射
-        def add_map(res_bank:list,index:int) -> None:
-            """
-                将对应的映射填入
-            """
+        def add_map(res_bank:list,index:int) -> None:                                                   # 增加bank和din_ram_data里面的index的映射
             nonlocal din_ram_pos
             bank32,index32 = self.get_bank_index32([index])
             if din_ram_bank_index_map.get(index32,None) is None:
@@ -1019,96 +1066,173 @@ class CHIP():
                 din_ram_pos = din_ram_pos+1
             res_bank.append((bank32,din_ram_bank_index_map[index32]))
 
-        # --------------------------------------------------din_ram的开始存0,用于恢复 
-        din_ram_data.append(CMD(PL_DATA,command_data=CmdData(0)))
-        din_ram_pos = din_ram_pos+1
-
         for row,col in points:
             add_map(res_row_bank,row)
             add_map(res_col_bank,col)
-
-        # --------------------------------------------------发送数据 
-        num = len(din_ram_data)                                                                         # 有多少条数据
-        din_ram_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(num)))                
-        assert num+din_ram_start <= self.din_ram_threshold,f"send_din_ram2: din_ram:{num+din_ram_start}超过界限。"
-        din_ram_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(din_ram_start)))                     # 数据从哪开始
-
-        pkts=Packet()
-        pkts.append_single(din_ram_data,mode=5)
-        self.ps.send_packets(pkts)
-
-        return res_row_bank,res_col_bank
-
-    def write_point2(self,device_array:np.ndarray,write_voltage:float,tg:float,pulse_width:float,
-                       set_device:bool = True):
+            if self.op_mode == "read":
+                if self.from_row:
+                    res_tia_map.append(self.adc.TIA_index_map(index = col,device = self.deviceType,col = True))
+                else:
+                    res_tia_map.append(self.adc.TIA_index_map(index = row,device = self.deviceType,col = False))
+                
+        # --------------------------------------------------发送数据
+        self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
         
-        self.write_voltage = write_voltage
-        self.set_op_mode2(read=False,row=set_device)
-        self.set_pulse_width(pulse_width)
-        write_ins = PL_WRITE_ROW_PULSE if set_device else PL_WRITE_COL_PULSE
+        if self.op_mode == "read":
+            return res_row_bank,res_col_bank,res_tia_map,points
+        else:
+            return res_row_bank,res_col_bank
+        
+    def read_point2(self,crossbar:np.ndarray,read_voltage:float,tg:float = 5,from_row:bool = True, out_type = 0):
+        """
+            读器件, row_index为行索引, col_index为列索引
+        """
+        self.read_voltage = read_voltage
+        self.set_op_mode2(read=True,from_row=from_row)
 
-        # ----------------------------------------------配置写的点的数据
-        row,col = device_array.shape
-        points = []
-        # 因为行/列bank都是间隔2, 所以为了避免更多的切行列bank, 尽量使得一个bank的挨在一起
-        for i_start in range(2):
-            for i in range(i_start,row,2):
-                col_index = [j for j in range(0,col,2) if device_array[i][j]>0.5] + [j for j in range(1,col,2) if device_array[i][j]>0.5]
-                points += [(i,j) for j in col_index]  
-
-        # ----------------------------------------------ins_ram,din_ram的地址
+        # ----------------------------------------------ins_ram,din_ram,dout_ram的地址
+        read_ins = PL_READ_ROW_PULSE if from_row else PL_READ_COL_PULSE
         ins_ram_start = 0
         din_ram_start = 0
-        # ----------------------------------------------发送要配置的bank的数据进去
-        res_row_bank,res_col_bank = self.send_point_din_ram2(points,din_ram_start)
-        # ----------------------------------------------准备指令序列
-        ins_data = self.get_dac_ins2(v=write_voltage,tg=tg)                                             # 配置电压
+        dout_ram_start = 0
+        dout_ram_pos = dout_ram_start
+        res_row_bank,res_col_bank,res_tia_map,points = self.send_point_din_ram2(crossbar > 0,din_ram_start)
 
-        row_bank_data_last = (0,0)
-        col_bank_data_last = (0,0)
+        res = np.zeros(crossbar.shape)
+        # ----------------------------------------------准备指令序列
+        ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)                                              # 得到配置电压的指令序列
+        
+        row_bank_data_last, col_bank_data_last = (0,0),(0,0)
         point_nums = len(res_row_bank)
+        print(f"需要读{point_nums}个点")
+        last_point_pos = 0
         for k in range(point_nums):
-            # 如果行列bank都不一样, 就reset, 否则
+            # 是否需要清空原来的bank
             if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last != res_col_bank[k][0]):
                 ins_data.append( CMD(PL_CIM_RESET) )
             elif row_bank_data_last[0] != res_row_bank[k][0]:
                 ins_data.append( CMD(PL_ROW_BANK,command_data=CmdData(row_bank_data_last[0]<<8|0)) )
             elif col_bank_data_last[0] != res_col_bank[k][0]:
                 ins_data.append( CMD(PL_COL_BANK,command_data=CmdData(col_bank_data_last[0]<<8|0)) )
-            
-            
+            # 是否需要重新配置bank
             if row_bank_data_last!=res_row_bank[k]:
                 ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(res_row_bank[k][0]<<8|res_row_bank[k][1])))
             if col_bank_data_last!=res_col_bank[k]:
                 ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(res_col_bank[k][0]<<8|res_col_bank[k][1])))
 
-            ins_data.append(CMD(write_ins))
             row_bank_data_last,col_bank_data_last = res_row_bank[k],res_col_bank[k]
+
+            ins_data.append(CMD(read_ins,command_data=CmdData(dout_ram_pos)))
+            dout_ram_pos += 1
             
-            num = len(ins_data)
-            if num >= self.ins_ram_threshold-5:
-                ins_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(num)))
-                ins_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(ins_ram_start)))
-
-                # ----------------------------------------------发送指令序列并执行
-                pkts=Packet()
-                pkts.append_single(ins_data,mode=4)
-                pkts.append_single([CMD(INS_NUM,command_data=CmdData(num))],mode=1)
-                pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
-                self.ps.send_packets(pkts)
-
-                ins_data = []
+            if len(ins_data) >= self.ins_ram_threshold-5 or dout_ram_pos >= self.dout_ram_threshold:
+                self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
+                voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
+                for i in range(last_point_pos,k+1):
+                    res[points[i]] = voltage[i-last_point_pos,res_tia_map[i]]
+                dout_ram_pos = dout_ram_start
+                last_point_pos = k+1
 
         if len(ins_data)>0:
-            ins_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(num)))
-            ins_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(ins_ram_start)))
+            self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
+            voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
+            for i in range(last_point_pos,point_nums):
+                res[points[i]] = voltage[i-last_point_pos,res_tia_map[i]]
 
-            # ----------------------------------------------发送指令序列并执行
-            pkts=Packet()
-            pkts.append_single(ins_data,mode=4)
-            pkts.append_single([CMD(INS_NUM,command_data=CmdData(num))],mode=1)
-            pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
-            self.ps.send_packets(pkts)
+        if out_type == 0:
+            return res
+        elif out_type == 1:
+            return self.voltage_to_cond(voltage=res, read_voltage=read_voltage)
+        elif out_type == 2:
+            return self.voltage_to_resistor(voltage=res, read_voltage=read_voltage)
+        
+            
+    def write_point2(self,crossbar:np.ndarray,write_voltage:float,tg:float,pulse_width:float,
+                       set_device:bool = True):
+        
+        self.write_voltage = write_voltage
+        self.set_op_mode2(read=False,from_row=set_device)
+        self.set_pulse_width(pulse_width)
+
+        # ----------------------------------------------ins_ram,din_ram的地址
+        write_ins = PL_WRITE_ROW_PULSE if set_device else PL_WRITE_COL_PULSE
+        ins_ram_start = 0
+        din_ram_start = 0
+
+        res_row_bank,res_col_bank = self.send_point_din_ram2(crossbar = crossbar>0,din_ram_start = din_ram_start)
+        # ----------------------------------------------准备指令序列
+        ins_data = self.get_dac_ins2(v=write_voltage,tg=tg)                                             # 配置电压
+
+        row_bank_data_last, col_bank_data_last = (0,0),(0,0)
+        point_nums = len(res_row_bank)
+        print(f"需要写{point_nums}个点")
+        for k in range(point_nums):
+            # 是否需要清空原来的bank
+            if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last != res_col_bank[k][0]):
+                ins_data.append( CMD(PL_CIM_RESET) )
+            elif row_bank_data_last[0] != res_row_bank[k][0]:
+                ins_data.append( CMD(PL_ROW_BANK,command_data=CmdData(row_bank_data_last[0]<<8|0)) )
+            elif col_bank_data_last[0] != res_col_bank[k][0]:
+                ins_data.append( CMD(PL_COL_BANK,command_data=CmdData(col_bank_data_last[0]<<8|0)) )
+            # 是否需要重新配置bank
+            if row_bank_data_last!=res_row_bank[k]:
+                ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(res_row_bank[k][0]<<8|res_row_bank[k][1])))
+            if col_bank_data_last!=res_col_bank[k]:
+                ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(res_col_bank[k][0]<<8|res_col_bank[k][1])))
+
+            row_bank_data_last,col_bank_data_last = res_row_bank[k],res_col_bank[k]
+
+            ins_data.append(CMD(write_ins))
+            
+            if len(ins_data) >= self.ins_ram_threshold-5:
+                self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
+
+        if len(ins_data)>0:
+            self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     # def write2(self,row_index:list,col_index:list,write_voltage:float,tg:float = 5):
     #     """
     #         写器件, row_index为行索引, col_index为列索引

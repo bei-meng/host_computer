@@ -30,11 +30,15 @@ class Packet:
         
     def append_single(self, cmd:list[CMD], mode:int = 1,):
         """
-            增加单条上位机命令
+            Args:
+                cmd: 需要发送的单条指令(可能包含多条小指令)
+
+            Functions:
+                往packet添加单条指令的浅拷贝数据
         """
         self.instruction_list.append(dict(
             mode = mode,
-            cmd = cmd,
+            cmd = cmd.copy(),
         ))
     
     def append_cmdlist(self,cmdlist:list[CMD], mode:int = 1):
@@ -42,8 +46,10 @@ class Packet:
             cmd列表里面都是相同mode模式的单条指令
         """
         for cmd in cmdlist:
-            self.append_single([cmd],mode=mode)
-            
+            self.instruction_list.append(dict(
+                mode = mode,
+                cmd = [cmd],
+            ))
 
     def clear(self):
         """
