@@ -140,6 +140,19 @@ class CHIP():
         ],mode=1)
         self.ps.send_packets(pkts)
 
+    def send_cmd(self,cmd:list,mode:int):
+        """
+            Args:
+                cmd: 单条上位机指令, 为一个列表
+                mode: 这条指令对应的模式
+
+            Functions:
+                将指令发送出去
+        """
+        pkts=Packet()
+        pkts.append_single(cmd,mode=mode)
+        self.ps.send_packets(pkts)
+
     #------------------------------------------------------------------------------------------
     # ************************************** 各种索引映射 **************************************
     #------------------------------------------------------------------------------------------
@@ -398,12 +411,13 @@ class CHIP():
                 self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
                 self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
         elif self.deviceType==1:    
+            # 新版1T1E需要ROW, COL的Va电压都加
             if self.from_row:  
                 self.dac.set_voltage(v,dac_num=0,dac_channel=0)             # ROW_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=1)             # ROW_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=2)             # ROW_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=3)             # ROW_Va电压
-            else:   
+
                 self.dac.set_voltage(v,dac_num=0,dac_channel=4)             # COL_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=5)             # COL_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=6)             # COL_Va电压
@@ -426,12 +440,13 @@ class CHIP():
                 self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
                 self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
         elif self.deviceType==1:    
+            # 写不确定怎么弄
             if self.from_row:  
                 self.dac.set_voltage(v,dac_num=0,dac_channel=0)             # ROW_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=1)             # ROW_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=2)             # ROW_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=3)             # ROW_Va电压
-            else:   
+            else:
                 self.dac.set_voltage(v,dac_num=0,dac_channel=4)             # COL_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=5)             # COL_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=6)             # COL_Va电压
@@ -610,6 +625,9 @@ class CHIP():
         else:
             self.op_mode = "write"
             self.from_row = from_row
+            if self.deviceType == 1:
+                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(1))])
+
 
     def execute_ins(self,ins_data:list,ins_ram_start:int):
         """
@@ -695,10 +713,8 @@ class CHIP():
                     for i in DAC_INFO.RERAM_COL_VA:
                         cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
             elif self.deviceType==1:                    # ECRAM
-                if self.from_row:                  # 从行读
                     for i in DAC_INFO.ECRAM_ROW_VA:
                         cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
-                else:                                   # 从列读
                     for i in DAC_INFO.ECRAM_COL_VA:
                         cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
         elif self.op_mode == "write":

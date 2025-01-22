@@ -170,6 +170,13 @@ class ADC():
         voltage = (data / (2**15-1)) * vref  # 32767 是0x7FFF对应的正最大值
         return voltage
     
+    def set_gain_resistor(self,big_resistor = 10e3, small_resistor = 200):
+        """
+            修改TIA增益的阻值
+        """
+        self.big_resistor = big_resistor
+        self.small_resistor = 200
+
     def voltage_to_cond(self,voltage,read_voltage):
         """
             读取的电压值换算成电导(单位:us)
