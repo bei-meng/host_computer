@@ -14,8 +14,8 @@ class ADC():
     adc_first_gap = 0xa
     adc_last_gap = 0xa
 
-    big_resistor = 10e3                             # 单位: Ω
-    small_resistor = 200                            # 单位: Ω
+    big_resistance = 10e3                             # 单位: Ω
+    small_resistance = 200                            # 单位: Ω
     
     gain = 0
     row_col_sw = 0 
@@ -170,12 +170,12 @@ class ADC():
         voltage = (data / (2**15-1)) * vref  # 32767 是0x7FFF对应的正最大值
         return voltage
     
-    def set_gain_resistor(self,big_resistor = 10e3, small_resistor = 200):
+    def set_gain_resistor(self,big_resistance = 10e3, small_resistance = 200):
         """
             修改TIA增益的阻值
         """
-        self.big_resistor = big_resistor
-        self.small_resistor = 200
+        self.big_resistance = big_resistance
+        self.small_resistance = 200
 
     def voltage_to_cond(self,voltage,read_voltage):
         """
@@ -183,13 +183,13 @@ class ADC():
             voltage为np数组
         """
         if self.gain == 0:
-            return voltage/((read_voltage+1e-20)*6.0241*(self.big_resistor+self.small_resistor))*1e6
+            return voltage/((read_voltage+1e-20)*6.0241*(self.big_resistance+self.small_resistance))*1e6
         elif self.gain == 2:
-            return voltage/((read_voltage+1e-20)*1*(self.big_resistor+self.small_resistor))*1e6  
+            return voltage/((read_voltage+1e-20)*1*(self.big_resistance+self.small_resistance))*1e6  
         elif self.gain == 1:
-            return voltage/((read_voltage+1e-20)*6.0241*self.small_resistor)*1e6
+            return voltage/((read_voltage+1e-20)*6.0241*self.small_resistance)*1e6
         elif self.gain == 3:
-            return voltage/((read_voltage+1e-20)*1*self.small_resistor)*1e6
+            return voltage/((read_voltage+1e-20)*1*self.small_resistance)*1e6
         
     def voltage_to_resistor(self,voltage,read_voltage):
         """
@@ -197,13 +197,13 @@ class ADC():
             voltage为np数组
         """
         if self.gain == 0:
-            return (read_voltage*6.0241*(self.big_resistor+self.small_resistor))/(voltage+1e-20)*1e-3
+            return (read_voltage*6.0241*(self.big_resistance+self.small_resistance))/(voltage+1e-20)*1e-3
         elif self.gain == 2:
-            return (read_voltage*1*(self.big_resistor+self.small_resistor))/(voltage+1e-20)*1e-3
+            return (read_voltage*1*(self.big_resistance+self.small_resistance))/(voltage+1e-20)*1e-3
         elif self.gain == 1:
-            return (read_voltage*6.0241*self.small_resistor)/(voltage+1e-20)*1e-3
+            return (read_voltage*6.0241*self.small_resistance)/(voltage+1e-20)*1e-3
         elif self.gain == 3:
-            return (read_voltage*1*self.small_resistor)/(voltage+1e-20)*1e-3
+            return (read_voltage*1*self.small_resistance)/(voltage+1e-20)*1e-3
         
     def get_out(self,num:list,delay=None):
         """

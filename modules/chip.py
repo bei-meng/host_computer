@@ -25,7 +25,7 @@ class CHIP():
     chip_latch_num = 256
 
     din_ram_threshold = 256
-    dout_ram_threshold = 256
+    dout_ram_threshold = 128
     ins_ram_threshold = 280#1024
 
     ps = None
