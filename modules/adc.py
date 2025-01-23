@@ -191,7 +191,7 @@ class ADC():
         elif self.gain == 3:
             return voltage/((read_voltage+1e-20)*1*self.small_resistance)*1e6
         
-    def voltage_to_resistor(self,voltage,read_voltage):
+    def voltage_to_resistance(self,voltage,read_voltage):
         """
             读取的电压值换算成电阻(单位:kΩ)
             voltage为np数组

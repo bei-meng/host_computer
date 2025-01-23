@@ -139,6 +139,11 @@ class CHIP():
             CMD(ROW_COL_SW,command_data=CmdData(sign)),                                                # 1PCB上的TIA接在列,
         ],mode=1)
         self.ps.send_packets(pkts)
+        if self.deviceType == 1:
+            if self.op_mode == "read":
+                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(0))])
+            else:
+                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(1))])
 
     def send_cmd(self,cmd:list,mode:int):
         """
@@ -485,7 +490,7 @@ class CHIP():
         read_voltage = self.read_voltage if read_voltage is None else read_voltage
         return self.adc.voltage_to_cond(voltage=voltage,read_voltage=read_voltage)
 
-    def voltage_to_resistor(self,voltage,read_voltage = None) -> np.ndarray:
+    def voltage_to_resistance(self,voltage,read_voltage = None) -> np.ndarray:
         """
             Args:
                 voltage: TIA读出的电压值
@@ -495,7 +500,7 @@ class CHIP():
                 电压值对应的电阻(单位:KΩ)
         """
         read_voltage = self.read_voltage if read_voltage is None else read_voltage
-        return self.adc.voltage_to_resistor(voltage=voltage,read_voltage=read_voltage)
+        return self.adc.voltage_to_resistance(voltage=voltage,read_voltage=read_voltage)
     
     def generate_read_pulse(self):
         """
@@ -622,6 +627,8 @@ class CHIP():
         if read:
             self.op_mode = "read"
             self.from_row = from_row
+            if self.deviceType == 1:
+                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(0))])
         else:
             self.op_mode = "write"
             self.from_row = from_row
@@ -926,7 +933,7 @@ class CHIP():
         elif out_type == 1:
             return self.voltage_to_cond(voltage=resv, read_voltage=read_voltage)
         elif out_type == 2:
-            return self.voltage_to_resistor(voltage=resv, read_voltage=read_voltage)
+            return self.voltage_to_resistance(voltage=resv, read_voltage=read_voltage)
     
     #------------------------------------------------------------------------------------------
     # ************************************** 写相关操作 ****************************************
@@ -1099,11 +1106,12 @@ class CHIP():
         else:
             return res_row_bank,res_col_bank
         
-    def read_point2(self,crossbar:np.ndarray,read_voltage:float,tg:float = 5,from_row:bool = True, out_type = 0):
+    def read_point2(self,crossbar:np.ndarray,read_voltage:float,tg:float = 5,gain:int = 1,from_row:bool = True, out_type = 0):
         """
             读器件, row_index为行索引, col_index为列索引
         """
         self.read_voltage = read_voltage
+        self.set_tia_gain(gain)
         self.set_op_mode2(read=True,from_row=from_row)
 
         # ----------------------------------------------ins_ram,din_ram,dout_ram的地址
@@ -1160,7 +1168,7 @@ class CHIP():
         elif out_type == 1:
             return self.voltage_to_cond(voltage=res, read_voltage=read_voltage)
         elif out_type == 2:
-            return self.voltage_to_resistor(voltage=res, read_voltage=read_voltage)
+            return self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
         
             
     def write_point2(self,crossbar:np.ndarray,write_voltage:float,tg:float,pulse_width:float,
