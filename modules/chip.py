@@ -561,8 +561,10 @@ class CHIP():
                 # 第i个批次读, v2为(pos, row_num/col_num, bank, index, tia_num)
                 for j,v2 in enumerate(v1):
                     result_v[v2[0]]=res[i][j]
-
-        return np.array(result_v)
+        if not self.from_row:
+            return np.array(result_v).T
+        else:
+            return np.array(result_v)
 
     #------------------------------------------------------------------------------------------
     # ************************************** 写相关操作 ****************************************
@@ -713,7 +715,7 @@ class CHIP():
             if self.deviceType==0:                      # ReRAM
                 for i in DAC_INFO.RERAM_TG:
                     cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(tg))))
-                if self.from_row:                  # 从行读
+                if self.from_row:                       # 从行读
                     for i in DAC_INFO.RERAM_ROW_VA:
                         cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
                 else:                                   # 从列读
@@ -728,14 +730,14 @@ class CHIP():
             if self.deviceType==0:                      # ReRAM
                 for i in DAC_INFO.RERAM_TG:
                     cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(tg))))
-                if self.from_row:                 # 从行写
+                if self.from_row:                       # 从行写
                     for i in DAC_INFO.RERAM_ROW_VA:
                         cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
                 else:                                   # 从列写
                     for i in DAC_INFO.RERAM_COL_VA:
                         cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
             elif self.deviceType==1:                    # ECRAM
-                if self.from_row:                 # 从行写
+                if self.from_row:                       # 从行写
                     for i in DAC_INFO.ECRAM_ROW_VA:
                         cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
                 else:                                   # 从列写
@@ -1045,31 +1047,17 @@ class CHIP():
     #------------------------------------------------------------------------------------------
     # ******************************** 点读写相关操作(非并行) **********************************
     #------------------------------------------------------------------------------------------    
-    def send_point_din_ram2(self,crossbar:np.ndarray,din_ram_start:int = 0,) -> Union[
-                                tuple[list[tuple[int,int]],list[tuple[int,int]]]|
-                                tuple[list[tuple[int,int]],list[tuple[int,int]],list[tuple[int,int]],list[tuple[int,int]]]
-                                ]:
+    def send_point_din_ram2(self,points:list[tuple[int,int]],din_ram_start:int = 0,) -> tuple[list[tuple[int,int]],list[tuple[int,int]],list[int]]:
         """
             Args:
-                crossbar: bool的np数组, True表示需要配置这个点,False表示不需要配置这个点
+                points: 需要配置的点的数据, 行列数据
                 din_ram_start: 下发数据的din_ram的起始地址,默认为0
 
             Returns:
-                读写模式均会返回:
-                res_row_bank: 一个个点需要配置的行bank和din_ram_data里面的index的映射
-                res_col_bank: 一个个点需要配置的列bank和din_ram_data里面的index的映射
-
-                设置为读模式还会返回: 
-                res_tia_map: 每个点的TIA映射
-                points: 点的行列
+                res_row_bank: 一个个点需要配置的行bank和din_ram_data里面的index的映射\n
+                res_col_bank: 一个个点需要配置的列bank和din_ram_data里面的index的映射\n
+                res_tia_map: 每个点的TIA映射(写模式返回为空)
         """
-        # --------------------------------------------------配置写的点的数据, 因为行/列对应的bank是间隔1, 所以为了避免更多的切行列bank, 尽量使得一个bank的挨在一起
-        row,col = crossbar.shape
-        points = []
-        for i_start in range(2):
-            for i in range(i_start,row,2):
-                col_index = [j for j in range(0,col,2) if crossbar[i,j]] + [j for j in range(1,col,2) if crossbar[i,j]]
-                points += [(i,j) for j in col_index]  
 
         # --------------------------------------------------准备din_ram的数据
         din_ram_pos = din_ram_start+1                                                                   # 因为32bit的0在din_ram_data里面, 所以需要+1
@@ -1101,10 +1089,7 @@ class CHIP():
         # --------------------------------------------------发送数据
         self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
         
-        if self.op_mode == "read":
-            return res_row_bank,res_col_bank,res_tia_map,points
-        else:
-            return res_row_bank,res_col_bank
+        return res_row_bank,res_col_bank,res_tia_map
         
     def read_point2(self,crossbar:np.ndarray,read_voltage:float,tg:float = 5,gain:int = 1,from_row:bool = True, out_type = 0):
         """
@@ -1114,15 +1099,24 @@ class CHIP():
         self.set_tia_gain(gain)
         self.set_op_mode2(read=True,from_row=from_row)
 
+        # --------------------------------------------------配置写的点的数据, 因为行/列对应的bank是间隔1, 所以为了避免更多的切行列bank, 尽量使得一个bank的挨在一起
+        # crossbar为0时, if会自动转成False
+        row,col = crossbar.shape
+        points = []
+        for i_start in range(2):
+            for i in range(i_start,row,2):
+                col_index = [j for j in range(0,col,2) if crossbar[i,j]] + [j for j in range(1,col,2) if crossbar[i,j]]
+                points += [(i,j) for j in col_index]  
+
         # ----------------------------------------------ins_ram,din_ram,dout_ram的地址
         read_ins = PL_READ_ROW_PULSE if from_row else PL_READ_COL_PULSE
         ins_ram_start = 0
         din_ram_start = 0
         dout_ram_start = 0
         dout_ram_pos = dout_ram_start
-        res_row_bank,res_col_bank,res_tia_map,points = self.send_point_din_ram2(crossbar > 0,din_ram_start)
+        res_row_bank,res_col_bank,res_tia_map = self.send_point_din_ram2(points,din_ram_start)
 
-        res = np.zeros(crossbar.shape)
+        res = np.zeros((row,col))
         # ----------------------------------------------准备指令序列
         ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)                                              # 得到配置电压的指令序列
         
@@ -1132,7 +1126,7 @@ class CHIP():
         last_point_pos = 0
         for k in range(point_nums):
             # 是否需要清空原来的bank
-            if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last != res_col_bank[k][0]):
+            if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last[0] != res_col_bank[k][0]):
                 ins_data.append( CMD(PL_CIM_RESET) )
             elif row_bank_data_last[0] != res_row_bank[k][0]:
                 ins_data.append( CMD(PL_ROW_BANK,command_data=CmdData(row_bank_data_last[0]<<8|0)) )
@@ -1149,6 +1143,7 @@ class CHIP():
             ins_data.append(CMD(read_ins,command_data=CmdData(dout_ram_pos)))
             dout_ram_pos += 1
             
+            # 检测是否超过阈值, 超过就先执行命令
             if len(ins_data) >= self.ins_ram_threshold-5 or dout_ram_pos >= self.dout_ram_threshold:
                 self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
                 voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
@@ -1171,19 +1166,27 @@ class CHIP():
             return self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
         
             
-    def write_point2(self,crossbar:np.ndarray,write_voltage:float,tg:float,pulse_width:float,
-                       set_device:bool = True):
+    def write_point2(self,crossbar:np.ndarray,write_voltage:float,tg:float,pulse_width:float,set_device:bool = True):
         
         self.write_voltage = write_voltage
         self.set_op_mode2(read=False,from_row=set_device)
         self.set_pulse_width(pulse_width)
+
+        # --------------------------------------------------配置写的点的数据, 因为行/列对应的bank是间隔1, 所以为了避免更多的切行列bank, 尽量使得一个bank的挨在一起
+        # crossbar为0时, if会自动转成False
+        row,col = crossbar.shape
+        points = []
+        for i_start in range(2):
+            for i in range(i_start,row,2):
+                col_index = [j for j in range(0,col,2) if crossbar[i,j]] + [j for j in range(1,col,2) if crossbar[i,j]]
+                points += [(i,j) for j in col_index]  
 
         # ----------------------------------------------ins_ram,din_ram的地址
         write_ins = PL_WRITE_ROW_PULSE if set_device else PL_WRITE_COL_PULSE
         ins_ram_start = 0
         din_ram_start = 0
 
-        res_row_bank,res_col_bank = self.send_point_din_ram2(crossbar = crossbar>0,din_ram_start = din_ram_start)
+        res_row_bank,res_col_bank,_ = self.send_point_din_ram2(points,din_ram_start = din_ram_start)
         # ----------------------------------------------准备指令序列
         ins_data = self.get_dac_ins2(v=write_voltage,tg=tg)                                             # 配置电压
 
@@ -1192,7 +1195,7 @@ class CHIP():
         print(f"需要写{point_nums}个点")
         for k in range(point_nums):
             # 是否需要清空原来的bank
-            if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last != res_col_bank[k][0]):
+            if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last[0] != res_col_bank[k][0]):
                 ins_data.append( CMD(PL_CIM_RESET) )
             elif row_bank_data_last[0] != res_row_bank[k][0]:
                 ins_data.append( CMD(PL_ROW_BANK,command_data=CmdData(row_bank_data_last[0]<<8|0)) )
