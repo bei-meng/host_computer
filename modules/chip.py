@@ -701,48 +701,58 @@ class CHIP():
 
         self.ps.send_packets(pkts)
 
-    def get_dac_ins2(self,v,tg=5):
+    def get_dac_ins2(self,v:float = None,tg:float = None):
         """
             Args:
                 read: True配置为读模式, False配置为写模式
                 row: True配置为从行读/写, False配置为从列读/写
 
             Functions:
-                同时会将所有的DAC通道电压设置为0
+                根据读写模式和器件要求配置对应的dac电压
         """
         cmd=[]
-        if self.op_mode == "read":
-            if self.deviceType==0:                      # ReRAM
-                for i in DAC_INFO.RERAM_TG:
-                    cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(tg))))
-                if self.from_row:                       # 从行读
-                    for i in DAC_INFO.RERAM_ROW_VA:
-                        cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
-                else:                                   # 从列读
-                    for i in DAC_INFO.RERAM_COL_VA:
-                        cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+        if v is not None:
+            if self.op_mode == "read":
+                if self.deviceType==0:                      # ReRAM
+                    if self.from_row:                       # 从行读
+                        for i in DAC_INFO.RERAM_ROW_VA:
+                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+                    else:                                   # 从列读
+                        for i in DAC_INFO.RERAM_COL_VA:
+                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+                elif self.deviceType==1:                    # ECRAM
+                        for i in DAC_INFO.ECRAM_ROW_VA:
+                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+                        for i in DAC_INFO.ECRAM_COL_VA:
+                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+            elif self.op_mode == "write":
+                if self.deviceType==0:                      # ReRAM
+                    if self.from_row:                       # 从行写
+                        for i in DAC_INFO.RERAM_ROW_VA:
+                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+                    else:                                   # 从列写
+                        for i in DAC_INFO.RERAM_COL_VA:
+                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
             elif self.deviceType==1:                    # ECRAM
-                    for i in DAC_INFO.ECRAM_ROW_VA:
-                        cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
-                    for i in DAC_INFO.ECRAM_COL_VA:
-                        cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
-        elif self.op_mode == "write":
-            if self.deviceType==0:                      # ReRAM
-                for i in DAC_INFO.RERAM_TG:
-                    cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(tg))))
-                if self.from_row:                       # 从行写
-                    for i in DAC_INFO.RERAM_ROW_VA:
-                        cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
-                else:                                   # 从列写
-                    for i in DAC_INFO.RERAM_COL_VA:
-                        cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+                    if self.from_row:                       # 从行写
+                        for i in DAC_INFO.ECRAM_ROW_VA:
+                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+                    else:                                   # 从列写
+                        for i in DAC_INFO.ECRAM_COL_VA:
+                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+        if tg is not None:
+            if self.op_mode == "read":
+                if self.deviceType==0:                      # ReRAM
+                    for i in DAC_INFO.RERAM_TG:
+                        cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(tg))))
+                elif self.deviceType==1:                    # ECRAM
+                    pass
+            elif self.op_mode == "write":
+                if self.deviceType==0:                      # ReRAM
+                    for i in DAC_INFO.RERAM_TG:
+                        cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(tg))))
             elif self.deviceType==1:                    # ECRAM
-                if self.from_row:                       # 从行写
-                    for i in DAC_INFO.ECRAM_ROW_VA:
-                        cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
-                else:                                   # 从列写
-                    for i in DAC_INFO.ECRAM_COL_VA:
-                        cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+                pass
         return cmd
     
     #------------------------------------------------------------------------------------------
@@ -1105,8 +1115,7 @@ class CHIP():
         points = []
         for i_start in range(2):
             for i in range(i_start,row,2):
-                col_index = [j for j in range(0,col,2) if crossbar[i,j]] + [j for j in range(1,col,2) if crossbar[i,j]]
-                points += [(i,j) for j in col_index]  
+                points += [(i,j) for j in range(0,col,2) if crossbar[i,j]] + [(i,j) for j in range(1,col,2) if crossbar[i,j]]
 
         # ----------------------------------------------ins_ram,din_ram,dout_ram的地址
         read_ins = PL_READ_ROW_PULSE if from_row else PL_READ_COL_PULSE
@@ -1166,7 +1175,7 @@ class CHIP():
             return self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
         
             
-    def write_point2(self,crossbar:np.ndarray,write_voltage:float,tg:float,pulse_width:float,set_device:bool = True):
+    def write_point2(self,crossbar:np.ndarray,write_voltage:float,tg:Union[float|np.ndarray],pulse_width:float,set_device:bool = True):
         
         self.write_voltage = write_voltage
         self.set_op_mode2(read=False,from_row=set_device)
@@ -1178,8 +1187,7 @@ class CHIP():
         points = []
         for i_start in range(2):
             for i in range(i_start,row,2):
-                col_index = [j for j in range(0,col,2) if crossbar[i,j]] + [j for j in range(1,col,2) if crossbar[i,j]]
-                points += [(i,j) for j in col_index]  
+                points += [(i,j) for j in range(0,col,2) if crossbar[i,j]] + [(i,j) for j in range(1,col,2) if crossbar[i,j]]
 
         # ----------------------------------------------ins_ram,din_ram的地址
         write_ins = PL_WRITE_ROW_PULSE if set_device else PL_WRITE_COL_PULSE
@@ -1188,9 +1196,11 @@ class CHIP():
 
         res_row_bank,res_col_bank,_ = self.send_point_din_ram2(points,din_ram_start = din_ram_start)
         # ----------------------------------------------准备指令序列
-        ins_data = self.get_dac_ins2(v=write_voltage,tg=tg)                                             # 配置电压
+        change_tg = type(tg)==np.ndarray
+        ins_data = self.get_dac_ins2(v=write_voltage,tg=None if change_tg else tg)                                             # 配置电压
 
         row_bank_data_last, col_bank_data_last = (0,0),(0,0)
+        v_last = 0
         point_nums = len(res_row_bank)
         print(f"需要写{point_nums}个点")
         for k in range(point_nums):
@@ -1208,7 +1218,13 @@ class CHIP():
                 ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(res_col_bank[k][0]<<8|res_col_bank[k][1])))
 
             row_bank_data_last,col_bank_data_last = res_row_bank[k],res_col_bank[k]
-
+            # 改变tg的电压
+            if change_tg:
+                tg_v = tg[points[k][0],points[k][1]]
+                if tg_v!=v_last:
+                    ins_data +=self.get_dac_ins2(tg=tg_v)
+                    v_last = tg_v
+            # 写指令
             ins_data.append(CMD(write_ins))
             
             if len(ins_data) >= self.ins_ram_threshold-5:
