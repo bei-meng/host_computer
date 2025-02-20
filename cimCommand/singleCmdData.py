@@ -41,7 +41,7 @@ class CmdData:
 
     def replace_bit(self, start:int, length:int, newdata:int):
         """
-            将数据中起始位置为start位, 长度为length的比特, 替换为newdata对应的数据
+            将数据中起始位置为start(从0开始)位, 长度为length的比特, 替换为newdata对应的数据
         """
         mask=0
         for i in range(length):

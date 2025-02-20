@@ -18,8 +18,6 @@ BYTE_ORDER   = "big"                        # 命令转换为字节后的字节�
 PULSE_CYC_LENGTH = 10*1e-9                  # 单位s
 
 
-
-
 class COMMAND_TYPE():
     """
         # 命令的类型是什么
@@ -125,9 +123,15 @@ class INS2_INFO():
     """
         新版本加速指令相关信息
     """
-    INS_RAM = 1024
-    DIN_RAM_LENGHT = 256
-    DOUT_RAM_LENGTH = 256
+    INS_RAM = 280                                                   # 指令RAM的长度
+    DIN_RAM_LENGTH = 256                                            # DIN RAM的长度
+    DOUT_RAM_LENGTH = 128                                           # DOUT RAM的长度
+    REG_NUM = 64                                                    # 寄存器的数量
+
+
+    INS_RAM_ADDR_LENGTH = 10                                        # 指令RAM的地址长度 2^10=1024
+    BGE_INS_ADDR_START_POS = 22                                     # bge中指令地址bit位置的起始位置
+
 
 
 COMMAND_ADDR = 0                            # 命令的地址
@@ -1087,3 +1091,170 @@ PL_CIM_RESET=dict(
     command_description = "latch复位"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_BGE:9
+PL_BGE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_bge",
+    command_data = CmdData(0),
+    command_description = "条件跳转, reg1>reg2, 就跳转到指定地址"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_ADDI:0x0A
+PL_ADDI=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_addi",
+    command_data = CmdData(0),
+    command_description = "reg1=reg0+imm"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_EXIT:0x0B
+PL_EXIT=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_exit",
+    command_data = CmdData(0),
+    command_description = "退出指令"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_LOAD_DIN_RAM:0x0C
+PL_LOAD_DIN_RAM=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_load_din_ram",
+    command_data = CmdData(0),
+    command_description = "加载din_ram中的数据到reg0"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_ADD:0x0D
+PL_ADD=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_add",
+    command_data = CmdData(0),
+    command_description = "reg2=reg0+reg1"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_SUB:0x0E
+PL_SUB=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_sub",
+    command_data = CmdData(0),
+    command_description = "reg2=reg1-reg0"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_XORI:0x0F
+PL_XORI=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_xori",
+    command_data = CmdData(0),
+    command_description = "reg1=reg0^imm"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_SLL:0x10
+PL_SLL=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_sll",
+    command_data = CmdData(0),
+    command_description = "reg2=reg1<<reg0"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_SRL:0x11
+PL_SRL=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_srl",
+    command_data = CmdData(0),
+    command_description = "reg2=reg1>>reg0"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_SET_ROW_BANK:0x12
+PL_SET_ROW_BANK=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_set_row_bank",
+    command_data = CmdData(0),
+    command_description = "设置reg1对应的行bank对应的数据为reg0里面的32bit的index数据"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_SET_COL_BANK:0x13
+PL_SET_COL_BANK=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_set_col_bank",
+    command_data = CmdData(0),
+    command_description = "设置reg1对应的列bank对应的数据为reg0里面的32bit的index数据"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_READ_ROW_PULSE_TIA:0x14
+PL_READ_ROW_PULSE_TIA=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_read_row_pulse_tia",
+    command_data = CmdData(0),
+    command_description = "产生row读pulse, 求平均, reg2是TIA的num(0,15),reg1是dout_ram的地址(每个单元16bit),reg0是哪一块dout_ram(0或者1)"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_READ_COL_PULSE_TIA:0x15
+PL_READ_COL_PULSE_TIA=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_read_col_pulse_tia",
+    command_data = CmdData(0),
+    command_description = "产生col读pulse, 求平均, reg2是TIA的num(0,15),reg1是dout_ram的地址(每个单元16bit),reg0是哪一块dout_ram(0或者1)"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_RETURN_OUT:0x16
+PL_RETURN_OUT=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_return_out",
+    command_data = CmdData(0),
+    command_description = "返回dout_ram的数据, reg2是数据长度, reg1是dout_ram的地址(每个单元16bit), reg0是哪一块dout_ram(0或者1)"
+)
