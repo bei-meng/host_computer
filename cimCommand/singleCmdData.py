@@ -5,7 +5,7 @@ class CmdData:
     data = 0
     # big
 
-    def __init__(self, data:int = 0)->None:
+    def __init__(self, data)->None:
         """
             初始化数据
         """

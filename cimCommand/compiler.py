@@ -28,9 +28,16 @@ class COMPILER:
             res += f"变量名: {k:<{30}}: 寄存器编号: {v}\n"
         
         res += "\n"
+        for k,v in self.labels.items():
+            res += f"标签: {k:<{30}}: 指令地址: {v}\n"
+
+        res += "\n"
+        # res += "start:\t0\n"
         num = 0
         for ins in self.ass_ins:
             if ins[0]:
+                if num!=0:
+                    res += "\n"
                 res += ins[1]+":" + "\t" + str(num)
             else:
                 res += str(num)
@@ -44,6 +51,33 @@ class COMPILER:
             res += "\n"
         return res
     
+    def get_assembler_ins(self):
+        res = ""
+        num = 0
+        for ins in self.ass_ins:
+            if ins[0]:
+                if num!=0:
+                    res += "\n"
+                res += ins[1]+":" + "\t"
+            else:
+                num += 1
+                res += "\t" + ins[1][3:] +"\t"
+                if len(ins)>2:
+                    for i in range(2,len(ins)):
+                        if i!=2: res += ", "
+                        # print(ins[1],ins)
+                        res += ins[i]
+            res += "\n"
+        return res
+    
+    def load_assembler_ins(self,filename:str):
+        # 打开文件并逐行读取
+        with open(filename, 'r', encoding='utf-8') as file:
+            for line in file:
+                # 删除注释,同时删除首尾空格和\t符号
+                line = line.split('#')[0].strip()
+                
+    
     def get_ins_data(self):
         """
             获取ins_data
@@ -51,7 +85,10 @@ class COMPILER:
         for ins_pos,label,start,length in self.need_replace_label:
             new_data = self.labels.get(label,None)
             if new_data is not None:
-                self.ins_data[ins_pos].command_data.replace_bit(start,length,new_data)
+                self.ins_data[ins_pos].command_data.data = self.ins_data[ins_pos].command_data.data|new_data<<start
+                # print(self.ins_data[ins_pos],start,length,new_data)
+                # self.ins_data[ins_pos].command_data.replace_bit(start,length,new_data)
+                # print(self.ins_data[ins_pos])
             else:
                 raise Exception(f"标签{label}未定义!")
         return self.ins_data
@@ -259,7 +296,7 @@ class COMPILER:
         self.ass_ins.append((0, ins.command_name, reg2, reg1, reg0))
         self.ins_pos += 1
 
-    def dout_return(self,reg2:str,reg1:str,reg0:str):
+    def return_dout(self,reg2:str,reg1:str,reg0:str):
         """
             Args:
                 reg2: 数据长度
@@ -269,14 +306,14 @@ class COMPILER:
         reg_2 = self.get_variable(reg2,init=False)
         reg_1 = self.get_variable(reg1,init=False)
         reg_0 = self.get_variable(reg0,init=False)
-        ins = CMD(PL_RETURN_OUT,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
+        ins = CMD(PL_RETURN_DOUT,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, reg2, reg1, reg0))
         self.ins_pos += 1
 
 
     def jump(self,label:str):
-        ins = CMD(PL_JUMP)
+        ins = CMD(PL_JUMP,command_data=CmdData(0))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, label))
         self.ins_pos += 1

@@ -1,14 +1,4 @@
 start:
-    li_din_ram 0x000, 0x1E                                  # 第一个行bank中起始读的行index
-    li_din_ram 0x001, 0x00                                  # 第二个行bank中起始读的行index
-    li_din_ram 0x002, 0x1F                                  # 第一个行bank中截止读的行index
-    li_din_ram 0x003, 0x01                                  # 第二个行bank中截止读的行index
-    # ---------------------------------
-    li_din_ram 0x004, 0x1E                                  # 第一个列bank中起始读的列index
-    li_din_ram 0x005, 0x00                                  # 第二个列bank中起始读的列index
-    li_din_ram 0x006, 0x1F                                  # 第一个列bank中截止读的列index
-    li_din_ram 0x007, 0x01                                  # 第二个列bank中截止读的列index
-    # ---------------------------------
     addi row_bank_start, zero, 3                            # 起始读的行bank号
     addi row_bank_end, zero, 4                              # 截止读的行bank号
     addi col_bank_start, zero, 3                            # 起始读的列bank号
@@ -32,7 +22,7 @@ start:
 
 loop1:
     load_din_ram row_index_count, row_index_start_addr      # 将当前行bank的起始row index加载进来
-97  load_din_ram row_end_index, row_index_end_addr          # 将当前行bank的截止row index加载进来
+    load_din_ram row_end_index, row_index_end_addr          # 将当前行bank的截止row index加载进来
     addi row_index_mask, zero, 0x00000001                   # 初始化行bank内行掩码地址为0x00000001（32行）
     sll row_index_mask, row_index_mask, row_index_count     # row_index_mask << row_index_count
 
@@ -52,37 +42,37 @@ loop3:
     addi col_index_mask, zero, 0x00000001                   # 初始化列bank内列掩码地址为0x00000001（32列）
     sll col_index_mask, col_index_mask, col_index_count     # col_index_mask << col_index_count
 
-// ----------------------------------------------------------------------------------------------------计算tia
+# ----------------------------------------------------------------------------------------------------计算tia
     bge col_bank_count, four, tia_big4                      # 如果col_bank_count >= 4，跳转到tia_big4
 tia_nobig4:
     add tmp_bank, col_bank_count, four                      # tmp_bank = col_bank_count + 4
-    j tia_end
+    jump tia_end
 tia_big4:
-    sub     tmp_bank, col_bank_count, four                      # tmp_bank = col_bank_count - 4
+    sub     tmp_bank, col_bank_count, four                  # tmp_bank = col_bank_count - 4
 tia_end:
-    sll     tmp_bank, tmp_bank, shift_one                       # tmp_bank = tmp_bank << 1
-// ----------------------------------------------------------------------------------------------------计算tia
+    sll     tmp_bank, tmp_bank, shift_one                   # tmp_bank = tmp_bank << 1
+# ----------------------------------------------------------------------------------------------------计算tia
 
 loop4:
     srl tmp_index, col_index_count, shift_four              # tmp_index = col_index_count >> 4
     add tia, tmp_bank, tmp_index                            # tia = tmp_bank + tmp_index
 
     set_col_bank col_bank_mask, col_index_mask              # 配置列bank
-    read tia,count,pq
-// ----------------------------------------------------------------------------------------------------控制返回的计数器
+    row_read tia,count,pq
+# ----------------------------------------------------------------------------------------------------控制返回的计数器
     addi    count, count, 1                                   # count = count + 1
     bge     count, count_max, return_res                       # 如果count >= 128，跳转到return_res
-    j   jump_return
+    jump   jump_return
 return_res:
     return_dout count,zero ,pq
     xori    pq, pq, 1                                         # pq = pq xor 1 
     addi    count, zero, 0                                    # count = 0
 jump_return:
-// ----------------------------------------------------------------------------------------------------控制返回的计数器
+# ----------------------------------------------------------------------------------------------------控制返回的计数器
     bge col_index_count, col_end_index, end4                # 如果col_index_count >= col_end_index，跳转到end4
     addi col_index_count, col_index_count, 1                # col_index_count = col_index_count + 1
     sll col_index_mask, col_index_mask, shift_one           # col_index_mask << 1
-    j loop4
+    jump loop4
 
 end4:
     set_col_bank col_bank_mask, zero
@@ -91,13 +81,13 @@ end4:
     sll col_bank_mask, col_bank_mask, shift_one             # col_bank_mask << 1
     addi col_index_start_addr, col_index_start_addr, 1      # 下一个列bank的起始读的列index的地址（加改）
     addi col_index_end_addr, col_index_end_addr, 1          # 下一个列bank的截止读的列index的地址（加改）
-    j loop3
+    jump loop3
 
 end3:
     bge row_index_count, row_end_index, end2                # 如果row_index_count >= row_end_index，跳转到end2
     addi row_index_count, row_index_count, 1                # row_index_count = row_index_count + 1
     sll row_index_mask, row_index_mask, shift_one           # row_index_mask << 1
-    j loop2
+    jump loop2
 
 end2:
     set_row_bank row_bank_mask, zero
@@ -106,8 +96,8 @@ end2:
     sll row_bank_mask, row_bank_mask, shift_one             # row_bank_mask << 1
     addi row_index_start_addr, row_index_start_addr, 1      # 下一个行bank的起始读的行index的地址（加改）
     addi row_index_end_addr, row_index_end_addr, 1          # 下一个行bank的截止读的行index的地址（加改）
-    j loop1
+    jump loop1
 
 end1:
     return_dout count,zero ,pq
-    EXIT              # 结束执行
+    exit              # 结束执行

@@ -130,7 +130,7 @@ class INS2_INFO():
 
 
     INS_RAM_ADDR_LENGTH = 10                                        # 指令RAM的地址长度 2^10=1024
-    BGE_INS_ADDR_START_POS = 22                                     # bge中指令地址bit位置的起始位置
+    BGE_INS_ADDR_START_POS = 14                                     # bge中指令地址bit位置的起始位置
 
 
 
@@ -1248,13 +1248,13 @@ PL_READ_COL_PULSE_TIA=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
-#-------------------------------------------------------------------PL_RETURN_OUT:0x16
-PL_RETURN_OUT=dict(
+#-------------------------------------------------------------------PL_RETURN_DOUT:0x16
+PL_RETURN_DOUT=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.PL,
     n_addr_bytes = N_ADDR_BYTES.ONE,
     n_data_bytes = N_DATA_BYTES.THREE,
-    command_name = "pl_return_out",
+    command_name = "pl_return_dout",
     command_data = CmdData(0),
     command_description = "返回dout_ram的数据, reg2是数据长度, reg1是dout_ram的地址(每个单元16bit), reg0是哪一块dout_ram(0或者1)"
 )
