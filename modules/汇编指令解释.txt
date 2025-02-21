@@ -1,6 +1,8 @@
 注释使用:#
 立即数只支持：16进制数格式0x10或者0X10, 10进制数格式10101,10进制数最高位不能为0
 
+consti a,10                              # 注册立即数变量a, 值为10,后面指令中的立即数可以使用
+
 addi a, b, 3                            # a = b + 3
 bge a, b, label                         # if a>=b 就跳转到对应标签指令处
 exit                                    # 结束指令
@@ -12,6 +14,6 @@ sll a,b,c                               # a = b << c
 srl a,b,c                               # a = b >> c
 set_row_bank a,b                        # a为row_bank_mask,b为row_index_mask
 set_col_bank a,b                        # a为col_bank_mask,b为col_index_mask
-read_row_pulse_tia a,b,c                # a为tia的编号,b为存储的dout_ram地址,c为哪一块dout_ram
-read_col_pulse_tia a,b,c                # a为tia的编号,b为存储的dout_ram地址,c为哪一块dout_ram
+read_row_pulse_tia a,b,c                # a为tia的掩码,b为存储的dout_ram地址,c为哪一块dout_ram
+read_col_pulse_tia a,b,c                # a为tia的掩码,b为存储的dout_ram地址,c为哪一块dout_ram
 return_dout a,b,c                       # a为要返回的数据长度,b为dout_ram读取的起始地址,c为哪一块dout_ram
