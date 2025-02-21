@@ -8,6 +8,7 @@ class COMPILER:
     ass_ins = None                                                  # 汇编指令(name,参数2, 参数1, 参数0)
     reg_flag = None                                                 # 寄存器使用标志, 使用为1,未使用为0
     need_replace_label = None                                       # 需要进行label提供的指令(ins_pos,label_name,start,length)
+    need_replace_const = None                                       # 需要替换的常量符号(ins_pos,label_name,start,length)
     labels = None                                                   # 标签
     variable = None                                                 # 变量对应的reg号
     const_variable = None                                                    # 常量,用于立即数
@@ -18,6 +19,7 @@ class COMPILER:
         self.ass_ins = []                                            # 汇编指令(name,参数2, 参数1, 参数0)
         self.reg_flag = [0]*INS2_INFO.REG_NUM                        # 寄存器使用标志, 使用为1,未使用为0
         self.need_replace_label = []                                 # 需要进行label提供的指令(ins_pos,label_name,start,length)
+        self.need_replace_const = []
         self.labels = {}                                             # 标签
         self.variable = {}                                           # 变量对应的reg号
         self.const_variable = {}
@@ -60,14 +62,18 @@ class COMPILER:
         return res
     
     def const_str_to_int(self,imm:Union[int|str]):
+        flag = False
         if type(imm)==str:
             imm_c = self.get_const_variable(imm)
-            imm_c = int(imm,0) if imm_c is None else imm_c
+            if imm_c is None:
+                imm_c = int(imm,0)
+            else:
+                flag = True
         elif type(imm)==int:
             imm_c = imm
         else:
             raise Exception(f"立即数{imm}类型错误!")
-        return imm_c
+        return imm_c,flag
     
     def get_assembler_ins(self):
         res = ""
@@ -119,25 +125,21 @@ class COMPILER:
         for ins_pos,label,start,length in self.need_replace_label:
             new_data = self.labels.get(label,None)
             if new_data is not None:
-                # self.ins_data[ins_pos].command_data.data = self.ins_data[ins_pos].command_data.data|new_data<<start
-                # print(self.ins_data[ins_pos],start,length,new_data)
                 self.ins_data[ins_pos].command_data.replace_bit(start,length,new_data)
-                # print(self.ins_data[ins_pos])
             else:
                 raise Exception(f"标签{label}未定义!")
+            
+        for ins_pos,label,start,length in self.need_replace_const:
+            new_data = self.get_const_variable(label,None)
+            if new_data is not None:
+                self.ins_data[ins_pos].command_data.replace_bit(start,length,new_data)
+            else:
+                raise Exception(f"常量{label}未定义!")
+            
         return self.ins_data
     
-    def consti(self,variable_name:str,value:int):
-        """
-            Args:
-                variable_name: 变量名
-                value: 变量值
-            新增非寄存器的变量, 用于编译转字节码
-        """
-        if type(value)==str:
-            value = int(value,0)
+    def add_const_variable(self,variable_name:str,value:int):
         self.const_variable[variable_name] = value
-        self.ass_ins.append((0, "pl_consti", variable_name, str(value)))
 
     def get_const_variable(self,variable_name:str):
         """
@@ -181,12 +183,25 @@ class COMPILER:
         else:
             raise Exception(f"变量{variable_name}未定义!")
     
+    def consti(self,variable_name:str,value:int):
+        """
+            Args:
+                variable_name: 变量名
+                value: 变量值
+            新增非寄存器的变量, 用于编译转字节码
+        """
+        if type(value)==str:
+            value = int(value,0)
+        self.const_variable[variable_name] = value
+        self.ass_ins.append((0, "pl_consti", variable_name, str(value)))
+
     def add_label(self,label_name:str):
         """
             添加一个label
         """
         self.labels[label_name] = self.ins_pos
         self.ass_ins.append((1, label_name))
+        
 
     def bge(self,reg1:str,reg0:str,label:str):
         """
@@ -206,13 +221,17 @@ class COMPILER:
         """
             reg1 = reg0 + imm
         """
-        imm_c = self.const_str_to_int(imm)
+        imm_c,flag = self.const_str_to_int(imm)
         reg_1 = self.get_reg_variable(reg1)
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_ADDI,command_data=CmdData(imm_c<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, reg1, reg0, str(imm)))
         self.ins_pos += 1
+
+        if flag:
+            self.add_const_variable(imm,imm_c)
+            self.need_replace_const.append((self.ins_pos-1, imm, 16, 8))
 
     def exit(self):
         """
@@ -262,13 +281,17 @@ class COMPILER:
         """
             reg1 = reg0 ^ imm
         """
-        imm_c = self.const_str_to_int(imm)
+        imm_c,flag = self.const_str_to_int(imm)
         reg_1 = self.get_reg_variable(reg1)
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_XORI,command_data=CmdData(imm_c<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, reg1, reg0, str(imm)))
         self.ins_pos += 1
+
+        if flag:
+            self.add_const_variable(imm,imm_c)
+            self.need_replace_const.append((self.ins_pos-1, imm, 16, 8))
 
     def sll(self,reg2:str,reg1:str,reg0:str):
         """
