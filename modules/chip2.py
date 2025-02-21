@@ -24,9 +24,9 @@ class CHIP():
     chip_tia_num = 16
     chip_latch_num = 256
 
-    din_ram_threshold = INS2_INFO.DIN_RAM_LENGTH#256
-    dout_ram_threshold = INS2_INFO.DOUT_RAM_LENGTH#256
-    ins_ram_threshold = INS2_INFO.INS_RAM#1024
+    din_ram_threshold = INS2_INFO.DIN_RAM_LENGTH
+    dout_ram_threshold = INS2_INFO.DOUT_RAM_LENGTH
+    ins_ram_threshold = INS2_INFO.INS_RAM
 
     ps = None
     adc = None
@@ -64,8 +64,6 @@ class CHIP():
         """
             chip的初始化操作
         """
-        # 配置器件的初始化
-        # self.set_device_cfg(deviceType=0,reg_clk_cyc=0xF,latch_clk_cyc=0xF)
         if self.init:
             pkts=Packet()
             pkts.append_cmdlist([
@@ -83,21 +81,6 @@ class CHIP():
                 self.adc.initOp()
             if self.dac is not None:
                 self.dac.initOp()
-
-    # def set_device_cfg(self,deviceType = None,latch_cyc = None, reg_clk_cyc= None, latch_clk_cyc = None,cim_rstn_cyc = None):
-    #     """
-    #         设置device的cfg
-    #     """
-    #     self.deviceType = self.deviceType if deviceType is None else deviceType
-    #     self.latch_cyc = self.latch_cyc if latch_cyc is None else latch_cyc
-    #     self.reg_clk_cyc = self.reg_clk_cyc if reg_clk_cyc is None else reg_clk_cyc
-    #     self.latch_clk_cyc = self.latch_clk_cyc if latch_clk_cyc is None else latch_clk_cyc
-    #     self.cim_rstn_cyc = self.cim_rstn_cyc if cim_rstn_cyc is None else cim_rstn_cyc
-
-    #     data = self.deviceType | self.latch_cyc<<1 | self. reg_clk_cyc<<3 | self.latch_clk_cyc<<7 | self.cim_rstn_cyc<<11
-    #     pkts=Packet()
-    #     pkts.append_cmdlist([CMD(DEVICE_CFG,command_data=CmdData(data)),],mode=1)
-    #     self.ps.send_packets(pkts)
 
     def set_device_cfg(self,deviceType = 0):
         """
@@ -1371,6 +1354,11 @@ class CHIP():
             return self.voltage_to_cond(voltage=res, read_voltage=read_voltage)
         elif out_type == 2:
             return self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
+        
 
+    #------------------------------------------------------------------------------------------
+    # ************************************ 汇编代码(读写) ************************************
+    #------------------------------------------------------------------------------------------
     def read_point3(self,row_index_start:int,row_index_end:int,col_index_start:int,col_index_end:int,
                     read_voltage:float,tg:float = 5,gain:int = 1,from_row:bool = True, out_type = 0):
+        

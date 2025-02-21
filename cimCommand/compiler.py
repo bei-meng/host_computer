@@ -27,6 +27,11 @@ class COMPILER:
 
     def __str__ (self):
         res = ""
+        for k,v in self.const_variable.items():
+            res += f"const: {k:<{30}}: 常量值: {v}\n"
+        
+        res += "\n"
+        
         for k,v in self.variable.items():
             res += f"变量名: {k:<{30}}: 寄存器编号: {v}\n"
         
@@ -83,12 +88,28 @@ class COMPILER:
             res += "\n"
         return res
     
-    def load_assembler_ins(self,filename:str):
-        # 打开文件并逐行读取
-        with open(filename, 'r', encoding='utf-8') as file:
+    def load_assembler_ins(self,filename:str,encoding:str = 'utf-8'):
+        """
+            从filename中加载汇编代码
+        """
+        with open(filename, 'r', encoding=encoding) as file:
             for line in file:
                 # 删除注释,同时删除首尾空格和\t符号
                 line = line.split('#')[0].strip()
+                
+                if line == '':
+                    continue
+                if line[-1] == ':':
+                    self.add_label(line[:-1])
+                else:
+                    pos = line.find(' ')
+                    if pos>0:
+                        cmd_name = line[:pos] or line
+                        cmd_data = line[pos:].replace(' ','').split(',')
+                    else:
+                        cmd_name = line
+                        cmd_data = []
+                    getattr(self, cmd_name)(*cmd_data)
                 
     
     def get_ins_data(self):
