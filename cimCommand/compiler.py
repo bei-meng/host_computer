@@ -320,7 +320,7 @@ class COMPILER:
         self.ass_ins.append((0, ins.command_name, reg1, reg0))
         self.ins_pos += 1
 
-    def row_read_pulse(self,reg2:str,reg1:str,reg0:str):
+    def read_row_pulse_tia(self,reg2:str,reg1:str,reg0:str):
         """
             Args:
                 reg2: tia[0,15]
@@ -335,7 +335,7 @@ class COMPILER:
         self.ass_ins.append((0, ins.command_name, reg2, reg1, reg0))
         self.ins_pos += 1
 
-    def col_read_pulse(self,reg2:str,reg1:str,reg0:str):
+    def read_row_pulse_tia(self,reg2:str,reg1:str,reg0:str):
         """
             Args:
                 reg2: tia[0,15]

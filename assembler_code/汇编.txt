@@ -7,16 +7,16 @@
     consti row_bank_din_ram_e_c, 2
 
     #---------------------------------------------------------------------------------------------------要读的行bank号存放的位置,以及右边界
-    consti col_bank_din_ram_s_c, 4
-    consti col_bank_din_ram_e_c, 6
+    consti col_bank_din_ram_s_c, 2
+    consti col_bank_din_ram_e_c, 4
 
     #---------------------------------------------------------------------------------------------------每个行bank的起始index号和结束index号存放的位置
-    consti row_index_din_ram_s_c, 8
-    consti row_index_din_ram_e_c, 10
+    consti row_index_din_ram_s_c, 4
+    consti row_index_din_ram_e_c, 6
 
     #---------------------------------------------------------------------------------------------------每个列bank的起始index号和结束index号存放的位置
-    consti col_index_din_ram_s_c, 12
-    consti col_index_din_ram_e_c, 14
+    consti col_index_din_ram_s_c, 8
+    consti col_index_din_ram_e_c, 12
 start:
     #---------------------------------------------------------------------------------------------------用于移位操作的寄存器数
     addi one, zero, 1                                                       # 寄存器里面存的1
@@ -100,7 +100,7 @@ loop4:
     add tia_num, tia_base, tia_offset                                       # tia_num = tia_base + tia_offset
     sll tia_mask,one,tia_num                                                # tia_mask = one << tia_num
 
-    row_read_pulse tia_mask,count,pq
+    read_row_pulse_tia tia_mask,count,pq
     #---------------------------------------------------------------------------------------------------控制返回的计数器, 计数已经操作了多少个点了
     addi    count, count, 1                                                 # count, count + 1
     bge     count, count_max, return_0                                      # 如果count >= count_max, 跳转到return_0
