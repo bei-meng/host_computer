@@ -239,13 +239,14 @@ class ADC():
     
     def get_out2(self,data_length:int,dout_ram_start:int) -> np.ndarray:
         """
-            从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的16路tia的值
             Args:
-                data_length: 要从dout_ram里面读多少条数据
+                data_length: 要从dout_ram里面读多少条数据(每条数据256bit)
                 dout_ram_start: dout_ram_start的起始地址
 
             Returns:
                 vres: data_length*16的一个np矩阵
+
+            从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的16路tia的值
         """
         # return np.array([[j  for j in range(16)] for i in range(data_length)])
         pkts=Packet()
@@ -273,4 +274,20 @@ class ADC():
 
             vres.append([self.hex_to_voltage(i) for i in tmp])
         return np.array(vres)
-        
+    
+    def get_out3(self,data_length:int)->np.ndarray:
+        """
+            Args:
+                data_length: 要从dout_ram里面读多少条数据(每条数据16bit)
+
+            Returns:
+                res: 逐点的一个电压值
+
+            从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的tia的值
+        """
+        # return np.array([i for i in range(data_length)])
+        message = self.ps.receive_packet(data_length*2)
+        # 每条数据2B,16位占4个16进制数
+        res = [message.hex()[i*4:(i+1)*4] for i in range(data_length)]
+        voltage = [self.hex_to_voltage(i) for i in res]
+        return np.array(voltage)

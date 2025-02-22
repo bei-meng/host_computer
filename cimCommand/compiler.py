@@ -13,6 +13,7 @@ class COMPILER:
     variable = None                                                 # 变量对应的reg号
     const_variable = None                                                    # 常量,用于立即数
     ins_pos = None                                                  # 最后一条指令的位置
+    offset = 0                                                      # 当前指令的偏移
 
     def __init__(self):
         self.ins_data = []                                           # 存放CMD
@@ -25,6 +26,7 @@ class COMPILER:
         self.const_variable = {}
         self.ins_pos = 0                                             # 最后一条指令的位置
         self.get_reg_variable("zero")                                # 寄存器默认初始化就为0,不要改0寄存器的值
+        self.offset = 0
 
 
     def __str__ (self):
@@ -45,11 +47,11 @@ class COMPILER:
         # res += "start:\t0\n"
         num = 0
         for ins in self.ass_ins:
-            if ins[0]:
+            if ins[0] == 1:
                 if num!=0:
                     res += "\n"
                 res += str(num)+ "\t" + ins[1]+":"
-            else:
+            elif ins[0]==0:
                 res += str(num)
                 num += 1
                 res += "\t\t" + ins[1][3:] +"\t"
@@ -58,24 +60,32 @@ class COMPILER:
                         if i!=2: res += ", "
                         # print(ins[1],ins)
                         res += ins[i]
+            elif ins[0]==2:
+                res += str(num)
+                res += "\t\t" + ins[1][3:] +"\t"
+                if len(ins)>2:
+                    for i in range(2,len(ins)):
+                        if i!=2: res += ", "
+                        # print(ins[1],ins)
+                        res += ins[i]
+
             res += "\n"
         return res
     
-    def const_str_to_int(self,imm:Union[int|str]):
-        flag = False
-        if type(imm)==str:
-            imm_c = self.get_const_variable(imm)
-            if imm_c is None:
-                imm_c = int(imm,0)
-            else:
-                flag = True
-        elif type(imm)==int:
-            imm_c = imm
-        else:
-            raise Exception(f"立即数{imm}类型错误!")
-        return imm_c,flag
+    def add_offset(self,offset:int):
+        """
+            修改汇编代码里面的label的偏移
+        """
+        need_offset = offset - self.offset
+        for label_name,ins_pos in self.labels.items():
+            self.labels[label_name] = ins_pos + need_offset
+        self.offset = offset
+
     
     def get_assembler_ins(self):
+        """
+            返回对应的汇编指令
+        """
         res = ""
         num = 0
         for ins in self.ass_ins:
@@ -93,6 +103,27 @@ class COMPILER:
                         res += ins[i]
             res += "\n"
         return res
+                
+    def get_ins_data(self)->list[CMD]:
+        """
+            获取ins_data
+            返回ins_data的副本
+        """
+        for ins_pos,label,start,length in self.need_replace_label:
+            new_data = self.labels.get(label,None)
+            if new_data is not None:
+                self.ins_data[ins_pos].command_data.replace_bit(start,length,new_data)
+            else:
+                raise Exception(f"标签{label}未定义!")
+            
+        for ins_pos,label,start,length in self.need_replace_const:
+            new_data = self.get_const_variable(label)
+            if new_data is not None:
+                self.ins_data[ins_pos].command_data.replace_bit(start,length,new_data)
+            else:
+                raise Exception(f"常量{label}未定义!")
+            
+        return self.ins_data.copy()
     
     def load_assembler_ins(self,filename:str,encoding:str = 'utf-8'):
         """
@@ -116,37 +147,36 @@ class COMPILER:
                         cmd_name = line
                         cmd_data = []
                     getattr(self, cmd_name)(*cmd_data)
-                
-    
-    def get_ins_data(self):
-        """
-            获取ins_data
-        """
-        for ins_pos,label,start,length in self.need_replace_label:
-            new_data = self.labels.get(label,None)
-            if new_data is not None:
-                self.ins_data[ins_pos].command_data.replace_bit(start,length,new_data)
-            else:
-                raise Exception(f"标签{label}未定义!")
-            
-        for ins_pos,label,start,length in self.need_replace_const:
-            new_data = self.get_const_variable(label,None)
-            if new_data is not None:
-                self.ins_data[ins_pos].command_data.replace_bit(start,length,new_data)
-            else:
-                raise Exception(f"常量{label}未定义!")
-            
-        return self.ins_data
-    
+
+    #------------------------------------------------------------------------------------------
+    # *********************************** 常量相关函数 ***********************************
+    #------------------------------------------------------------------------------------------
     def add_const_variable(self,variable_name:str,value:int):
         self.const_variable[variable_name] = value
 
-    def get_const_variable(self,variable_name:str):
+    def get_const_variable(self,variable_name:str)->Union[int|None]:
         """
             获取常量变量的值
         """
         return self.const_variable.get(variable_name,None)
     
+    def const_str_to_int(self,imm:Union[int|str]):
+        flag = False
+        if type(imm)==str:
+            imm_c = self.get_const_variable(imm)
+            if imm_c is None:
+                imm_c = int(imm,0)
+            else:
+                flag = True
+        elif type(imm)==int:
+            imm_c = imm
+        else:
+            raise Exception(f"立即数{imm}类型错误!")
+        return imm_c,flag
+    
+    #------------------------------------------------------------------------------------------
+    # *********************************** 变量相关函数 ***********************************
+    #------------------------------------------------------------------------------------------
     def get_reg_variable(self,variable_name,init=True):
         """
             Args:
@@ -183,6 +213,16 @@ class COMPILER:
         else:
             raise Exception(f"变量{variable_name}未定义!")
     
+    #------------------------------------------------------------------------------------------
+    # *********************************** 编译汇编文件的函数 ***********************************
+    #------------------------------------------------------------------------------------------
+    def add_label(self,label_name:str):
+        """
+            添加一个label
+        """
+        self.labels[label_name] = self.ins_pos
+        self.ass_ins.append((1, label_name))
+
     def consti(self,variable_name:str,value:int):
         """
             Args:
@@ -193,15 +233,7 @@ class COMPILER:
         if type(value)==str:
             value = int(value,0)
         self.const_variable[variable_name] = value
-        self.ass_ins.append((0, "pl_consti", variable_name, str(value)))
-
-    def add_label(self,label_name:str):
-        """
-            添加一个label
-        """
-        self.labels[label_name] = self.ins_pos
-        self.ass_ins.append((1, label_name))
-        
+        self.ass_ins.append((2, "pl_consti", variable_name, str(value)))
 
     def bge(self,reg1:str,reg0:str,label:str):
         """

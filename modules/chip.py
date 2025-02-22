@@ -1,4 +1,4 @@
-from cimCommand import CMD,CmdData,Packet
+from cimCommand import CMD,CmdData,Packet,COMPILER
 from cimCommand.singleCmdInfo import *
 from pc import PS
 from modules.adc import ADC
@@ -33,6 +33,8 @@ class CHIP():
     dac = None
     clk_manager = None
 
+    compilers = None
+
     init = True
 
     def __init__(self, ps:PS,init = True):
@@ -42,6 +44,24 @@ class CHIP():
         self.adc = ADC(ps,init)
         self.dac = DAC(ps,init)
         self.clk_manager = CLK_MANAGER(ps,init)
+
+        self.compilers = {}
+
+    def add_compiler(self,name:str,filename:str,encoding:str = 'utf-8'):
+        """
+            增加汇编代码
+        """
+        self.compilers[name] = COMPILER()
+        self.compilers[name].load_assembler_ins(filename,encoding)
+
+    def get_compiler(self,name:str)->COMPILER:
+        """
+            获取汇编代码
+        """
+        res = self.compilers.get(name,None)
+        if res is None:
+            raise Exception(f"汇编文件{name}没找到。")
+        return res
 
     def get_setting_info(self):
         """
@@ -175,10 +195,10 @@ class CHIP():
                 num: 行/列号, 从0开始
 
             Returns:
-                tuple: (bank, index) 其中 bank 和 index 坐标从0开始
+                tuple: (bank, index) 其中 bank[0:8] 和 index[0:31] 坐标从0开始
         """
         num += 1
-        assert num > 0 and num < 257,"numToBank_Index: num超过范围!"
+        assert num >=0 and num < 257,"numToBank_Index: num超过范围!"
         # 先判断奇数偶数
         if num&1:
             index_base,index_offset = 64,1
@@ -638,7 +658,7 @@ class CHIP():
                 self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(1))])
 
 
-    def execute_ins(self,ins_data:list,ins_ram_start:int):
+    def execute_ins(self,ins_data:list[CMD],ins_ram_start:int):
         """
             Args:
                 ins_data: 需要执行的指令的list
@@ -647,6 +667,8 @@ class CHIP():
                 自动检查指令长度,配置,然后执行
                 并会清空指令列表
         """
+        if ins_data[-1].command_name != "pl_exit":
+            ins_data.append(CMD(PL_EXIT))
         ins_num = len(ins_data)
         assert ins_num+ins_ram_start < self.ins_ram_threshold,f"execute_ins: ins_ram:{ins_num+ins_ram_start}超过界限。"
         ins_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(ins_num)))
@@ -654,7 +676,7 @@ class CHIP():
 
         pkts=Packet()
         pkts.append_single(ins_data,mode=4)
-        pkts.append_single([CMD(INS_NUM,command_data=CmdData(ins_num))],mode=1)
+        # pkts.append_single([CMD(INS_NUM,command_data=CmdData(ins_num))],mode=1)
         pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
         self.ps.send_packets(pkts)
         # packet添加指令时都会对指令进行浅拷贝
@@ -691,7 +713,7 @@ class CHIP():
         ins_data=[CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16)) for i in range(12)]
         self.execute_ins(ins_data=ins_data,ins_ram_start=0)
 
-    def get_dac_ins2(self,v:float = None,tg:float = None):
+    def get_dac_ins2(self,v:float = None,tg:float = None)->list[CMD]:
         """
             Args:
                 read: True配置为读模式, False配置为写模式
@@ -1372,5 +1394,121 @@ class CHIP():
         elif out_type == 2:
             return self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
 
-    def read_point3(self,row_index_start:int,row_index_end:int,col_index_start:int,col_index_end:int,
+    #------------------------------------------------------------------------------------------
+    # *************************************** 汇编执行 ***************************************
+    #------------------------------------------------------------------------------------------
+    def send_din_ram3(self,row_num_start:int,row_num_end:int,col_num_start:int,col_num_end:int,
+                      din_ram_start:int = 0,) -> tuple[dict,list[int],list[int]]:
+        """
+            Args:
+                row_num_start: 行号左边界
+                row_num_end: 行号右边界
+                col_num_start: 列号左边界
+                col_num_end: 列号右边界
+                din_ram_start: din_ram起始地址
+
+            Returns:
+                res: 汇编代码中需要预先获取的常量值
+                row_data: 按顺序遍历的行bank数据
+                col_data: 按顺序遍历的列bank数据
+        """
+        res = dict(
+            row_bank_din_ram_s_c = 0,                                                                   # 要读的行bank号存放的位置,以及右边界
+            row_bank_din_ram_e_c = 0,
+            col_bank_din_ram_s_c = 8,                                                                   # 要读的列bank号存放的位置,以及右边界
+            col_bank_din_ram_e_c = 8,
+            row_index_din_ram_s_c = 16,                                                                  # 每个行bank的起始index号和结束index号存放的位置
+            row_index_din_ram_e_c = 24,
+            col_index_din_ram_s_c = 32,                                                                  # 每个列bank的起始index号和结束index号存放的位置
+            col_index_din_ram_e_c = 40,
+        )
+
+        # --------------------------------------------------准备din_ram的数据
+        din_ram_data = [CMD(PL_DATA,command_data=CmdData(0)) for i in range(64)]                        # 要发送下去的数据, din_ram的开始存0,用于恢复
+
+        # --------------------------------------------------处理行bank
+        row_data = self.get_bank_index_tia(list(range(row_num_start,row_num_end+1)))
+        row_data = self.bank_split(row_data,all_data=True)
+        for i,v in enumerate(row_data):
+            # (pos, row_num/col_num, bank, index, tia_num)
+            din_ram_data[res["row_bank_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][2]))
+            din_ram_data[res["row_index_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][3]))
+            din_ram_data[res["row_index_din_ram_e_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][3]))
+        res["row_bank_din_ram_e_c"] = res["row_bank_din_ram_s_c"]+i
+
+        # --------------------------------------------------处理列bank
+        col_data = self.get_bank_index_tia(list(range(col_num_start,col_num_end+1)))
+        col_data = self.bank_split(col_data,all_data=True)
+        for i,v in enumerate(col_data):
+            # (pos, row_num/col_num, bank, index, tia_num)
+            din_ram_data[res["col_bank_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][2]))
+            din_ram_data[res["col_index_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][3]))
+            din_ram_data[res["col_index_din_ram_e_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][3]))
+        res["col_bank_din_ram_e_c"] = res["col_bank_din_ram_s_c"] +i
+
+        # --------------------------------------------------发送数据
+        self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
+        
+        row_data = [j[0] for i in row_data for j in i]
+        col_data = [j[0] for i in col_data for j in i]
+        return res,row_data,col_data
+    
+    def read_point3(self,row_num_start:int,row_num_end:int,col_num_start:int,col_num_end:int,
                     read_voltage:float,tg:float = 5,gain:int = 1,from_row:bool = True, out_type = 0):
+        """
+            Args:
+                row_num_start: 行号左边界
+                row_num_end: 行号右边界
+                col_num_start: 列号左边界
+                col_num_end: 列号右边界
+
+            Returns:
+                对应块大小的矩阵
+        """
+        assert row_num_start>=0 and row_num_start<256 and row_num_end>=0 and row_num_end<256, "超过界限"
+        assert col_num_start>=0 and col_num_start<256 and col_num_end>=0 and col_num_end<256, "超过界限"
+        self.read_voltage = read_voltage
+        self.set_tia_gain(gain)
+        self.set_op_mode2(read=True,from_row=from_row)
+        compiler = self.get_compiler("row_read_point3")
+
+        din_ram_start = 0
+        ins_ram_start = 0
+        count_max_c = 512
+        const_data,row_data,col_data = self.send_din_ram3(row_num_start,row_num_end,col_num_start,col_num_end,din_ram_start)
+
+        for k,v in const_data.items():
+            compiler.add_const_variable(k,v)
+
+        compiler.add_const_variable("count_max_c",count_max_c)
+        compiler.add_const_variable("pq_c",0)
+
+        ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)
+        compiler.add_offset(len(ins_data))
+        ins_data = ins_data + compiler.get_ins_data()
+
+        self.execute_ins(ins_data=ins_data,ins_ram_start = ins_ram_start)
+
+        # 等待读取数据
+        row_length = row_num_end-row_num_start+1
+        col_length = col_num_end-col_num_start+1
+        res = np.zeros((row_length,col_length))
+
+        point_num = row_length*col_length
+        num = 512
+        voltage = None
+        for row_pos in row_data:
+            for col_pos in col_data:
+                if num == count_max_c:
+                    voltage = self.adc.get_out3(min(point_num,count_max_c))
+                    num = 0
+                    point_num -= count_max_c
+                res[row_pos,col_pos] = voltage[num]
+                num += 1
+
+        if out_type == 0:
+            return res
+        elif out_type == 1:
+            return self.voltage_to_cond(voltage=res, read_voltage=read_voltage)
+        elif out_type == 2:
+            return self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
