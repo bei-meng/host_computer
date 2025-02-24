@@ -2,9 +2,16 @@
 # 立即数只支持：16进制数格式0x10或者0X10, 10进制数格式10101,10进制数最高位不能为0
 # 指令名称后面为i的表示对立即数或常量的操作
 
-consti imm,10                                   # 注册常量imm, 值为10,指令中的立即数可以使用
+consti imm,0x1                                  # 注册常量imm, 值为10,指令中的立即数可以使用
+consti imm0,0x3                                 # 注册常量imm0, 值为10,指令中的立即数可以使用
+consti imm1,0x7                                 # 注册常量imm1, 值为10,指令中的立即数可以使用
+
+addi reg0,zero,0x1
+addi reg1,zero,0x3
+addi reg2,zero,0x7
 
 
+label:
 addi reg1,reg0,imm                              # reg1 = reg0 + imm
 add reg2,reg1,reg0                              # reg2 = reg1 + reg0
 sub reg2,reg1,reg0                              # reg2 = reg1 - reg0

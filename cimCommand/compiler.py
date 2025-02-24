@@ -161,18 +161,18 @@ class COMPILER:
         return self.const_variable.get(variable_name,None)
     
     def const_str_to_int(self,imm:Union[int|str]):
-        flag = False
+        isConst = False
         if type(imm)==str:
             imm_c = self.get_const_variable(imm)
             if imm_c is None:
                 imm_c = int(imm,0)
             else:
-                flag = True
+                isConst = True
         elif type(imm)==int:
             imm_c = imm
         else:
             raise Exception(f"立即数{imm}类型错误!")
-        return imm_c,flag
+        return imm_c,isConst
     
     #------------------------------------------------------------------------------------------
     # *********************************** 变量相关函数 ***********************************
@@ -223,7 +223,7 @@ class COMPILER:
         self.labels[label_name] = self.ins_pos
         self.ass_ins.append((1, label_name))
 
-    def consti(self,variable_name:str,value:int):
+    def consti(self,variable_name:str,value:Union[int|str]):
         """
             Args:
                 variable_name: 变量名
@@ -232,28 +232,14 @@ class COMPILER:
         """
         if type(value)==str:
             value = int(value,0)
-        self.const_variable[variable_name] = value
+        self.add_const_variable(variable_name,value)
         self.ass_ins.append((2, "pl_consti", variable_name, str(value)))
-
-    def bge(self,reg1:str,reg0:str,label:str):
-        """
-            bge reg1, reg0, label
-            如果reg1 >= reg0, 跳转到label
-        """
-        reg_1 = self.get_reg_variable(reg1,init=False)
-        reg_0 = self.get_reg_variable(reg0,init=False)
-        ins = CMD(PL_BGE,command_data=CmdData(reg_1<<8|reg_0))
-        self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.command_name, reg1, reg0, label))
-        self.ins_pos += 1
-
-        self.need_replace_label.append((self.ins_pos-1, label, INS2_INFO.BGE_INS_ADDR_START_POS, INS2_INFO.INS_RAM_ADDR_LENGTH))
 
     def addi(self,reg1:str,reg0:str,imm:Union[int|str]):
         """
             reg1 = reg0 + imm
         """
-        imm_c,flag = self.const_str_to_int(imm)
+        imm_c,isConst = self.const_str_to_int(imm)
         reg_1 = self.get_reg_variable(reg1)
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_ADDI,command_data=CmdData(imm_c<<16|reg_1<<8|reg_0))
@@ -261,29 +247,8 @@ class COMPILER:
         self.ass_ins.append((0, ins.command_name, reg1, reg0, str(imm)))
         self.ins_pos += 1
 
-        if flag:
-            self.add_const_variable(imm,imm_c)
+        if isConst:
             self.need_replace_const.append((self.ins_pos-1, imm, 16, 8))
-
-    def exit(self):
-        """
-            exit
-        """
-        ins = CMD(PL_EXIT)
-        self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.command_name))
-        self.ins_pos += 1
-
-    def load_din_ram(self,reg1:str,reg0:str):
-        """
-            reg1 = din_ram[reg0]
-        """
-        reg_0 = self.get_reg_variable(reg0,init=False)
-        reg_1 = self.get_reg_variable(reg1)
-        ins = CMD(PL_LOAD_DIN_RAM,command_data=CmdData(reg_1<<8|reg_0))
-        self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.command_name, reg1, reg0))
-        self.ins_pos += 1
 
     def add(self,reg2:str,reg1:str,reg0:str):
         """
@@ -322,7 +287,6 @@ class COMPILER:
         self.ins_pos += 1
 
         if flag:
-            self.add_const_variable(imm,imm_c)
             self.need_replace_const.append((self.ins_pos-1, imm, 16, 8))
 
     def sll(self,reg2:str,reg1:str,reg0:str):
@@ -347,6 +311,51 @@ class COMPILER:
         ins = CMD(PL_SRL,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, reg2, reg1, reg0))
+        self.ins_pos += 1
+
+    def bge(self,reg1:str,reg0:str,label:str):
+        """
+            bge reg1, reg0, label
+            如果reg1 >= reg0, 跳转到label
+        """
+        reg_1 = self.get_reg_variable(reg1,init=False)
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_BGE,command_data=CmdData(reg_1<<8|reg_0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, reg1, reg0, label))
+        self.ins_pos += 1
+
+        self.need_replace_label.append((self.ins_pos-1, label, INS2_INFO.BGE_INS_ADDR_START_POS, INS2_INFO.INS_RAM_ADDR_LENGTH))
+
+    def jump(self,label:str):
+        """
+            pc跳转至label指令处
+        """
+        ins = CMD(PL_JUMP,command_data=CmdData(0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, label))
+        self.ins_pos += 1
+
+        self.need_replace_label.append((self.ins_pos-1, label, 0, INS2_INFO.INS_RAM_ADDR_LENGTH))
+
+    def exit(self):
+        """
+            exit
+        """
+        ins = CMD(PL_EXIT)
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name))
+        self.ins_pos += 1
+
+    def load_din_ram(self,reg1:str,reg0:str):
+        """
+            reg1 = din_ram[reg0]
+        """
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        reg_1 = self.get_reg_variable(reg1)
+        ins = CMD(PL_LOAD_DIN_RAM,command_data=CmdData(reg_1<<8|reg_0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, reg1, reg0))
         self.ins_pos += 1
 
     def set_row_bank(self,reg1:str,reg0:str):
@@ -375,7 +384,7 @@ class COMPILER:
         self.ass_ins.append((0, ins.command_name, reg1, reg0))
         self.ins_pos += 1
 
-    def read_row_pulse_tia(self,reg2:str,reg1:str,reg0:str):
+    def read_row_tia(self,reg2:str,reg1:str,reg0:str):
         """
             Args:
                 reg2: tia[0,15]
@@ -390,7 +399,7 @@ class COMPILER:
         self.ass_ins.append((0, ins.command_name, reg2, reg1, reg0))
         self.ins_pos += 1
 
-    def read_row_pulse_tia(self,reg2:str,reg1:str,reg0:str):
+    def read_col_tia(self,reg2:str,reg1:str,reg0:str):
         """
             Args:
                 reg2: tia[0,15]
@@ -420,11 +429,113 @@ class COMPILER:
         self.ass_ins.append((0, ins.command_name, reg2, reg1, reg0))
         self.ins_pos += 1
 
-
-    def jump(self,label:str):
-        ins = CMD(PL_JUMP,command_data=CmdData(0))
+    def set_daci(self,imm1:Union[int|str],imm0:Union[int|str]):
+        """
+            Args:
+                imm1: DAC的通道[0,11]
+                imm0: 16bit的电压码值
+        """
+        imm1_c,isConst1 = self.const_str_to_int(imm1)
+        imm0_c,isConst0 = self.const_str_to_int(imm0)
+        ins = CMD(PL_DAC_V,command_data=CmdData(imm1_c <<16 | imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.command_name, label))
+        self.ass_ins.append((0, ins.command_name, imm1, imm0))
         self.ins_pos += 1
 
-        self.need_replace_label.append((self.ins_pos-1, label, 0, INS2_INFO.INS_RAM_ADDR_LENGTH))
+        if isConst1:
+            self.need_replace_const.append((self.ins_pos-1, imm1, 16, 8))
+        if isConst0:
+            self.need_replace_const.append((self.ins_pos-1, imm0, 0, 8))
+
+    def set_row_banki(self,imm1:Union[int|str],imm0:Union[int|str]):
+        """
+            Args:
+                imm1: 为row_bank_mask(8bit)
+                imm0: 为din_ram的地址,din_ram[imm0]为row_index_mask
+        """
+        imm1_c,isConst1 = self.const_str_to_int(imm1)
+        imm0_c,isConst0 = self.const_str_to_int(imm0)
+        ins = CMD(PL_ROW_BANK,command_data=CmdData(imm1_c <<16 | imm0_c))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, imm1, imm0))
+        self.ins_pos += 1
+
+        if isConst1:
+            self.need_replace_const.append((self.ins_pos-1, imm1, 16, 8))
+        if isConst0:
+            self.need_replace_const.append((self.ins_pos-1, imm0, 0, 8))
+
+    def set_col_banki(self,imm1:Union[int|str],imm0:Union[int|str]):
+        """
+            Args:
+                imm1: 为col_bank_mask(8bit)
+                imm0: 为din_ram的地址,din_ram[imm0]为col_index_mask,din_ram每个数据单元大小32bit
+        """
+        imm1_c,isConst1 = self.const_str_to_int(imm1)
+        imm0_c,isConst0 = self.const_str_to_int(imm0)
+        ins = CMD(PL_COL_BANK,command_data=CmdData(imm1_c <<16 | imm0_c))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, imm1, imm0))
+        self.ins_pos += 1
+
+        if isConst1:
+            self.need_replace_const.append((self.ins_pos-1, imm1, 16, 8))
+        if isConst0:
+            self.need_replace_const.append((self.ins_pos-1, imm0, 0, 8))
+
+    def read_rowi(self,imm0:Union[int|str]):
+        """
+            Args:
+                imm0: 为dout_ram的地址,读出的结果存在dout_ram[imm0](每个数据单元大小256bit)
+            从行读
+        """
+        imm0_c,isConst0 = self.const_str_to_int(imm0)
+        ins = CMD(PL_READ_ROW_PULSE,command_data=CmdData(imm0_c))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, imm0))
+        self.ins_pos += 1
+
+        if isConst0:
+            self.need_replace_const.append((self.ins_pos-1, imm0, 0, 8))
+
+    def read_coli(self,imm0:Union[int|str]):
+        """
+            Args:
+                imm0: 为dout_ram的地址,读出的结果存在dout_ram[imm0](每个数据单元大小256bit)
+            从列读
+        """
+        imm0_c,isConst0 = self.const_str_to_int(imm0)
+        ins = CMD(PL_READ_COL_PULSE,command_data=CmdData(imm0_c))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, imm0))
+        self.ins_pos += 1
+
+        if isConst0:
+            self.need_replace_const.append((self.ins_pos-1, imm0, 0, 8))
+
+    def write_row(self):
+        """
+            从行写
+        """
+        ins = CMD(PL_WRITE_ROW_PULSE)
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name))
+        self.ins_pos += 1
+
+    def write_col(self):
+        """
+            从列写
+        """
+        ins = CMD(PL_WRITE_COL_PULSE)
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name))
+        self.ins_pos += 1
+
+    def cim_reset(self):
+        """
+            清零latch
+        """
+        ins = CMD(PL_CIM_RESET)
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name))
+        self.ins_pos += 1

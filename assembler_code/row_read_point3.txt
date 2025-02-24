@@ -100,7 +100,7 @@ loop4:
     add tia_num, tia_base, tia_offset                                       # tia_num = tia_base + tia_offset
     sll tia_mask,one,tia_num                                                # tia_mask = one << tia_num
 
-    read_row_pulse_tia tia_mask,count,pq
+    read_row_tia tia_mask,count,pq
     #---------------------------------------------------------------------------------------------------控制返回的计数器, 计数已经操作了多少个点了
     addi    count, count, 1                                                 # count, count + 1
     bge     count, count_max, return_0                                      # 如果count >= count_max, 跳转到return_0

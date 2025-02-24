@@ -1028,7 +1028,7 @@ PL_DAC_V=dict(
     n_data_bytes = N_DATA_BYTES.THREE,
     command_name = "pl_dac_v",
     command_data = CmdData(0),
-    command_description = "从din_ram读数据, 配置32bit列寄存器"
+    command_description = "配置DAC的电压"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
