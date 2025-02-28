@@ -33,6 +33,7 @@ class CLK_MANAGER():
     def __init__(self,ps:PS,init = True):
         self.ps = ps
         self.init = init
+        self.set_cyc()
 
     def set_pulse_cyc(self,pulsewidth:float):
         pulse_cyc=int(pulsewidth/PULSE_CYC_LENGTH)
@@ -44,3 +45,22 @@ class CLK_MANAGER():
 
         self.pulse_cyc = pulse_cyc
 
+    def set_cyc(self,delay1 = 10,delay2 = 100):        
+        pkts=Packet()
+        pkts.append_cmdlist([
+            CMD(OP_BANK_CFG_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            CMD(OP_CIM_DATA_CFG_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            CMD(REG_CLK_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            CMD(LATCH_CLK_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            CMD(OP_ADC_AVRG_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            CMD(OP_DAC_AVRG_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            CMD(OP_ROW_PULSE_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            CMD(OP_COL_PULSE_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            CMD(OP_CIM_RSTN_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+
+            CMD(CIM_RSTN_CYC,command_data=CmdData(delay2)),
+            CMD(LATCH_CLK_CYC,command_data=CmdData(delay2)),
+            CMD(REG_CLK_CYC,command_data=CmdData(delay2)),
+            CMD(LATCH_CYC,command_data=CmdData(delay2)),
+        ],mode=1)
+        self.ps.send_packets(pkts)

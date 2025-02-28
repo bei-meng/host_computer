@@ -21,6 +21,8 @@ set_row_bank reg1,reg0                          # 配置行bank,reg1 为row_bank
 set_col_bank reg1,reg0                          # 配置列bank,reg1 为col_bank_mask,reg0 为col_index_mask
 read_row_tia reg2,reg1,reg0                     # 从行读,reg2 为tia的掩码,reg1 为结果存储的dout_ram地址,reg0 为哪一块dout_ram(每个数据单元16bit)
 read_col_tia reg2,reg1,reg0                     # 从列读,reg2 为tia的掩码,reg1 为结果存储的dout_ram地址,reg0 为哪一块dout_ram(每个数据单元16bit)
+read_row_tia_reg reg1,reg0                      # 从行读,reg1 为tia的掩码,tia读出的结果存在reg0
+read_col_tia_reg reg1,reg0                      # 从列读,reg1 为tia的掩码,tia读出的结果存在reg0
 return_dout reg2,reg1,reg0                      # 数据返回上位机,reg2 为要返回的数据长度,reg1 为dout_ram读取的起始地址,reg0 为哪一块dout_ram(每个数据单元16bit)
 
 

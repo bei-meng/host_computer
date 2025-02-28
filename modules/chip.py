@@ -37,6 +37,8 @@ class CHIP():
 
     init = True
 
+    last_dac_v = []
+
     def __init__(self, ps:PS,init = True):
         self.ps = ps
         self.init = init
@@ -136,7 +138,7 @@ class CHIP():
         """
         self.clk_manager.set_pulse_cyc(pulsewidth)
 
-    def set_op_mode(self,read=True,from_row=True,clearv = True):
+    def set_op_mode(self,read=True,from_row=True):
         """
             Args:
                 read: True表示读模式, False表示写模式
@@ -147,8 +149,9 @@ class CHIP():
                 会记录读/写模式, 从行/列进行操作\n
                 会根据设置配置ROW_CTRL,COL_CTRL,ROW_COL_SW的选择
         """
-        if clearv:
+        if (read and self.op_mode != "read") or (not read and self.op_mode == "read"):
             self.clear_dac_v2()
+            self.last_dac_v = []
         self.op_mode = "read" if read else "write"
         self.from_row = from_row
         sign = 1 if from_row else 0
@@ -635,17 +638,18 @@ class CHIP():
     #------------------------------------------------------------------------------------------
     # *************************************** 其他操作 *****************************************
     #------------------------------------------------------------------------------------------
-    def set_op_mode2(self,read=True,from_row=True,clearv = True):
+    def set_op_mode2(self,read=True,from_row=True):
         """
             Args:
                 read: True配置为读模式, False配置为写模式
                 from_row: True配置为从行读/写, False配置为从列读/写
 
             Functions:
-                同时会将所有的DAC通道电压设置为0
+                如果模式和上次不一样,会将所有的DAC通道电压设置为0
         """
-        if clearv:
+        if (read and self.op_mode != "read") or (not read and self.op_mode == "read"):
             self.clear_dac_v2()
+            self.last_dac_v = []
         if read:
             self.op_mode = "read"
             self.from_row = from_row
@@ -723,48 +727,46 @@ class CHIP():
                 根据读写模式和器件要求配置对应的dac电压
         """
         cmd=[]
+        dac_v = []
+        v16,tg16 = self.dac.VToBytes(v),self.dac.VToBytes(tg)
         if v is not None:
             if self.op_mode == "read":
                 if self.deviceType==0:                      # ReRAM
                     if self.from_row:                       # 从行读
-                        for i in DAC_INFO.RERAM_ROW_VA:
-                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+                        for i in DAC_INFO.RERAM_ROW_VA: dac_v.append((i,v16))
                     else:                                   # 从列读
-                        for i in DAC_INFO.RERAM_COL_VA:
-                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+                        for i in DAC_INFO.RERAM_COL_VA: dac_v.append((i,v16))
                 elif self.deviceType==1:                    # ECRAM
-                        for i in DAC_INFO.ECRAM_ROW_VA:
-                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
-                        for i in DAC_INFO.ECRAM_COL_VA:
-                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+                        for i in DAC_INFO.ECRAM_ROW_VA: dac_v.append((i,v16))
+                        for i in DAC_INFO.ECRAM_COL_VA: dac_v.append((i,v16))
             elif self.op_mode == "write":
                 if self.deviceType==0:                      # ReRAM
                     if self.from_row:                       # 从行写
-                        for i in DAC_INFO.RERAM_ROW_VA:
-                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+                        for i in DAC_INFO.RERAM_ROW_VA: dac_v.append((i,v16))
                     else:                                   # 从列写
-                        for i in DAC_INFO.RERAM_COL_VA:
-                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+                        for i in DAC_INFO.RERAM_COL_VA: dac_v.append((i,v16))
             elif self.deviceType==1:                    # ECRAM
                     if self.from_row:                       # 从行写
-                        for i in DAC_INFO.ECRAM_ROW_VA:
-                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+                        for i in DAC_INFO.ECRAM_ROW_VA: dac_v.append((i,v16))
                     else:                                   # 从列写
-                        for i in DAC_INFO.ECRAM_COL_VA:
-                            cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(v))))
+                        for i in DAC_INFO.ECRAM_COL_VA: dac_v.append((i,v16))
         if tg is not None:
             if self.op_mode == "read":
                 if self.deviceType==0:                      # ReRAM
-                    for i in DAC_INFO.RERAM_TG:
-                        cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(tg))))
+                    for i in DAC_INFO.RERAM_TG: dac_v.append((i,tg16))
                 elif self.deviceType==1:                    # ECRAM
                     pass
             elif self.op_mode == "write":
                 if self.deviceType==0:                      # ReRAM
-                    for i in DAC_INFO.RERAM_TG:
-                        cmd.append(CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16 | self.dac.VToBytes(tg))))
+                    for i in DAC_INFO.RERAM_TG: dac_v.append((i,tg16))
             elif self.deviceType==1:                    # ECRAM
                 pass
+
+        for dac_data in dac_v:
+            if dac_data not in self.last_dac_v:
+                cmd.append(CMD(PL_DAC_V,command_data=CmdData((dac_data[0])<<16 | dac_data[1])))
+                
+        self.last_dac_v = dac_v
         return cmd
     
     #------------------------------------------------------------------------------------------
