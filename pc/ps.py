@@ -25,10 +25,13 @@ class PS():
             print(f"Connected to {self.host}:{self.port}\nlocal ip: {self.local_ip} local port: {self.local_port}")
             self.enable = True
 
-            self.socket.settimeout(10)
+            self.socket.settimeout(20)
         except Exception as e:
             print(f"Failed to connect: {e}")
             self.enable = False
+
+    def set_time_out(self,time_out):
+        self.socket.settimeout(time_out)
 
     def set_debug(self,debug):
         self.debug = debug
@@ -50,7 +53,7 @@ class PS():
                     if self.debug&2>0:
                         print(f"receive_packet收到消息用时: {elapsed_time:.6f} seconds")
                 except socket.timeout:
-                    print("receive_packet:接收超时!")
+                    print(f"receive_packet:接收超时!期望大小{bytes_num},实际大小{len(res)}")
                 except socket.error:
                     print(f"Failed to recv message")
             return res
