@@ -37,8 +37,6 @@ class CHIP():
 
     init = True
 
-    last_dac_v = []
-
     def __init__(self, ps:PS,init = True):
         self.ps = ps
         self.init = init
@@ -151,7 +149,6 @@ class CHIP():
         """
         if (read and self.op_mode != "read") or (not read and self.op_mode == "read"):
             self.clear_dac_v2()
-            self.last_dac_v = []
         self.op_mode = "read" if read else "write"
         self.from_row = from_row
         sign = 1 if from_row else 0
@@ -164,9 +161,9 @@ class CHIP():
         self.ps.send_packets(pkts)
         if self.deviceType == 1:
             if self.op_mode == "read":
-                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(0))])
+                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(0))],mode=1)
             else:
-                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(1))])
+                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(1))],mode=1)
 
     def send_cmd(self,cmd:list,mode:int):
         """
@@ -649,17 +646,16 @@ class CHIP():
         """
         if (read and self.op_mode != "read") or (not read and self.op_mode == "read"):
             self.clear_dac_v2()
-            self.last_dac_v = []
         if read:
             self.op_mode = "read"
             self.from_row = from_row
             if self.deviceType == 1:
-                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(0))])
+                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(0))],mode=1)
         else:
             self.op_mode = "write"
             self.from_row = from_row
             if self.deviceType == 1:
-                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(1))])
+                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(1))],mode=1)
 
 
     def execute_ins(self,ins_data:list[CMD],ins_ram_start:int):
@@ -728,8 +724,9 @@ class CHIP():
         """
         cmd=[]
         dac_v = []
-        v16,tg16 = self.dac.VToBytes(v),self.dac.VToBytes(tg)
+        
         if v is not None:
+            v16 = self.dac.VToBytes(v)
             if self.op_mode == "read":
                 if self.deviceType==0:                      # ReRAM
                     if self.from_row:                       # 从行读
@@ -751,6 +748,7 @@ class CHIP():
                     else:                                   # 从列写
                         for i in DAC_INFO.ECRAM_COL_VA: dac_v.append((i,v16))
         if tg is not None:
+            tg16 = self.dac.VToBytes(tg)
             if self.op_mode == "read":
                 if self.deviceType==0:                      # ReRAM
                     for i in DAC_INFO.RERAM_TG: dac_v.append((i,tg16))
@@ -763,10 +761,8 @@ class CHIP():
                 pass
 
         for dac_data in dac_v:
-            if dac_data not in self.last_dac_v:
-                cmd.append(CMD(PL_DAC_V,command_data=CmdData((dac_data[0])<<16 | dac_data[1])))
+            cmd.append(CMD(PL_DAC_V,command_data=CmdData((dac_data[0])<<16 | dac_data[1])))
                 
-        self.last_dac_v = dac_v
         return cmd
     
     #------------------------------------------------------------------------------------------
@@ -1157,7 +1153,7 @@ class CHIP():
             dout_ram_pos += 1
             
             # 检测是否超过阈值, 超过就先执行命令
-            if len(ins_data) >= self.ins_ram_threshold-5 or dout_ram_pos >= self.dout_ram_threshold:
+            if len(ins_data) >= self.ins_ram_threshold-7 or dout_ram_pos >= self.dout_ram_threshold:
                 self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
                 voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
                 for i in range(last_point_pos,k+1):
@@ -1230,7 +1226,7 @@ class CHIP():
             # 写指令
             ins_data.append(CMD(write_ins))
             
-            if len(ins_data) >= self.ins_ram_threshold-5:
+            if len(ins_data) >= self.ins_ram_threshold-7:
                 self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
 
         if len(ins_data)>0:
@@ -1261,9 +1257,9 @@ class CHIP():
         din_ram_bank_index_map = {}                                                                     # 用于节约din空间
 
         # --------------------------------------------------增加映射
-        def add_map(res_bank:list,index:int) -> None:                                                   # 增加bank和din_ram_data里面的index的映射
+        def add_map(res_bank:list,index:list) -> None:                                                  # 增加bank和din_ram_data里面的index的映射
             nonlocal din_ram_pos
-            bank32,index32 = self.get_bank_index32([index])
+            bank32,index32 = self.get_bank_index32(index)
             if din_ram_bank_index_map.get(index32,None) is None:
                 din_ram_bank_index_map[index32] = din_ram_pos                                           # 如果前面没有用过这个index, 记录下来
                 din_ram_data.append(CMD(PL_DATA,command_data=CmdData(index32)))
@@ -1271,24 +1267,24 @@ class CHIP():
             res_bank.append((bank32,din_ram_bank_index_map[index32]))
 
         for row_data in row_index:
+            row_bank_data = self.get_bank_index_tia(row_data)
+            row_bank = self.bank_split(row_bank_data,all_data=False)
             res_row_bank.append([])
-            for row in row_data:
-                add_map(res_row_bank[-1],row)
+            for rows in row_bank:
+                add_map(res_row_bank[-1],rows)
 
         for col_data in col_index:
+            col_bank_data = self.get_bank_index_tia(col_data)
+            col_bank = self.bank_split(col_bank_data,all_data=False)
             res_col_bank.append([])
-            for col in col_data:
-                add_map(res_col_bank[-1],col)
+            for cols in col_bank:
+                add_map(res_col_bank[-1],cols)
 
         if self.op_mode == "read":
             if self.from_row:
-                for col_data in col_index:
-                    for col in col_data:
-                        res_tia_map.append(self.adc.TIA_index_map(index = col,device = self.deviceType,col = True))
+                res_tia_map.extend(self.adc.TIA_index_map(index=col, device=self.deviceType, col=True) for col_data in col_index for col in col_data)
             else:
-                for row_data in row_index:
-                    for row in row_data:
-                        res_tia_map.append(self.adc.TIA_index_map(index = row,device = self.deviceType,col = False))
+                res_tia_map.extend(self.adc.TIA_index_map(index=row, device=self.deviceType, col=False) for row_data in row_index for row in row_data)
                 
         # --------------------------------------------------发送数据
         self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
@@ -1296,30 +1292,17 @@ class CHIP():
         return res_row_bank,res_col_bank,res_tia_map
 
     def get_compute_point(self,crossbar:np.ndarray,from_row:bool = True) -> tuple[list[list[int]],list[list[int]]]:
-        row,col = crossbar.shape
         row_index,col_index = [],[]
         if from_row:
-            for j in range(col):
-                flag = False
-                for i in range(row):
-                    if crossbar[i,j]:
-                        if flag == False:
-                            row_index.append([i])
-                            col_index.append([j])
-                            flag = True
-                        else:
-                            row_index[-1].append(i)
+            for j in range(crossbar.shape[1]):
+                rows = np.where(crossbar[:, j])[0]
+                row_index.append(rows.tolist())
+                col_index.append([j])
         else:
-            for i in range(row):
-                flag = False
-                for j in range(col):
-                    if crossbar[i,j]:
-                        if flag == False:
-                            row_index.append([i])
-                            col_index.append([j])
-                            flag = True
-                        else:
-                            col_index[-1].append(j)
+            for i in range(crossbar.shape[0]):
+                cols = np.where(crossbar[i, :])[0]
+                row_index.append([i])
+                col_index.append(cols.tolsit())
         return row_index,col_index
 
     def compute(self,crossbar:np.ndarray,read_voltage:float,tg:float = 5,gain:int = 1,from_row:bool = True, out_type = 0):
@@ -1333,7 +1316,6 @@ class CHIP():
         # --------------------------------------------------配置写的点的数据, 因为行/列对应的bank是间隔1, 所以为了避免更多的切行列bank, 尽量使得一个bank的挨在一起
         row,col = crossbar.shape
         row_index,col_index = self.get_compute_point(crossbar,from_row)
-
         # ----------------------------------------------ins_ram,din_ram,dout_ram的地址
         read_ins = PL_READ_ROW_PULSE if from_row else PL_READ_COL_PULSE
         ins_ram_start = 0
@@ -1347,7 +1329,7 @@ class CHIP():
         # ----------------------------------------------准备指令序列
         ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)                                              # 得到配置电压的指令序列
         
-        cal_nums = len(res_row_bank)
+        # row_bank_data_last, col_bank_data_last = (0,0),(0,0)
         print(f"需要计算{cal_nums}次")
         last_point_pos = 0
         for k in range(cal_nums):
@@ -1435,7 +1417,7 @@ class CHIP():
             # (pos, row_num/col_num, bank, index, tia_num)
             din_ram_data[res["row_bank_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][2]))
             din_ram_data[res["row_index_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][3]))
-            din_ram_data[res["row_index_din_ram_e_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][3]))
+            din_ram_data[res["row_index_din_ram_e_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[-1][3]))
         res["row_bank_din_ram_e_c"] = res["row_bank_din_ram_s_c"]+i
 
         # --------------------------------------------------处理列bank
@@ -1445,7 +1427,7 @@ class CHIP():
             # (pos, row_num/col_num, bank, index, tia_num)
             din_ram_data[res["col_bank_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][2]))
             din_ram_data[res["col_index_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][3]))
-            din_ram_data[res["col_index_din_ram_e_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][3]))
+            din_ram_data[res["col_index_din_ram_e_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[-1][3]))
         res["col_bank_din_ram_e_c"] = res["col_bank_din_ram_s_c"] +i
 
         # --------------------------------------------------发送数据

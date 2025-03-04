@@ -704,6 +704,30 @@ LATCH_CYC=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------INS_RUN_TIME_L32:43
+INS_RUN_TIME_L32=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "ins_run_time_l32",
+    command_data = CmdData(0),
+    command_description = "正脉冲, PCB上锁存器的latch cycle数"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------INS_RUN_TIME_H32:44
+INS_RUN_TIME_H32=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "ins_run_time_h32",
+    command_data = CmdData(0),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
 
 
 
