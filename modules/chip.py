@@ -1328,7 +1328,7 @@ class CHIP():
         res_tmp = []
         # ----------------------------------------------准备指令序列
         ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)                                              # 得到配置电压的指令序列
-        
+        cal_nums = len(res_tia_map)
         # row_bank_data_last, col_bank_data_last = (0,0),(0,0)
         print(f"需要计算{cal_nums}次")
         last_point_pos = 0
