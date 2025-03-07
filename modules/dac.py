@@ -122,6 +122,6 @@ class DAC():
         """
             将需求的DAC电压转成16bit, 对应的电压bit
         """
-        assert v <= self.referenceVoltage*self.gain,"VToBytes: 电压超过范围!"
+        assert v>=0 and v <= self.referenceVoltage*self.gain,"VToBytes: 电压超过范围!"
         res = v/self.referenceVoltage/self.gain*self.base
         return int(res)<<4

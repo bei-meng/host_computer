@@ -30,7 +30,6 @@ def plot_cond(data,vmin = 0,vmax = 1400,title = "",label = "us",path = None):
     """
     :param data为256*256的np矩阵
     """
-    # plt.figure(figsize=(6,6))
     cmap = plt.cm.viridis
     norm = Normalize(vmin=vmin, vmax=vmax)
     im = plt.imshow(data, cmap=cmap,norm=norm)
