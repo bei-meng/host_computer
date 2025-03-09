@@ -148,22 +148,25 @@ class CHIP():
                 会根据设置配置ROW_CTRL,COL_CTRL,ROW_COL_SW的选择
         """
         if (read and self.op_mode != "read") or (not read and self.op_mode == "read"):
-            self.clear_dac_v2()
+            self.clear_dac_v()
         self.op_mode = "read" if read else "write"
         self.from_row = from_row
         sign = 1 if from_row else 0
         pkts=Packet()
-        pkts.append_cmdlist([
-            CMD(ROW_CTRL,command_data=CmdData(sign)),                                                  # 1配置行到施加电压,
-            CMD(COL_CTRL,command_data=CmdData(int(not sign))),                                         # 0配置列到TIA,
-            CMD(ROW_COL_SW,command_data=CmdData(sign)),                                                # 1PCB上的TIA接在列,
-        ],mode=1)
-        self.ps.send_packets(pkts)
         if self.deviceType == 1:
-            if self.op_mode == "read":
-                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(0))],mode=1)
-            else:
-                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(1))],mode=1)
+            self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(self.op_mode == "read"))],mode=1)
+            pkts.append_cmdlist([
+                CMD(ROW_CTRL,command_data=CmdData(1)),                                                  # 1配置行到施加电压,
+                CMD(COL_CTRL,command_data=CmdData(int(not sign))),                                                  # 0配置列到TIA,
+                CMD(ROW_COL_SW,command_data=CmdData(sign)),                                             # 1PCB上的TIA接在列,
+            ],mode=1)
+        else:
+            pkts.append_cmdlist([
+                CMD(ROW_CTRL,command_data=CmdData(sign)),                                                  # 1配置行到施加电压,
+                CMD(COL_CTRL,command_data=CmdData(int(not sign))),                                         # 0配置列到TIA,
+                CMD(ROW_COL_SW,command_data=CmdData(sign)),                                                # 1PCB上的TIA接在列,
+            ],mode=1)
+        self.ps.send_packets(pkts)
 
     def send_cmd(self,cmd:list,mode:int):
         """
@@ -428,12 +431,12 @@ class CHIP():
         self.read_voltage = v
         if self.deviceType==0:
             if self.from_row:
-                self.dac.set_voltage(tg,dac_num=0,dac_channel=6)          # TG
+                self.dac.set_voltage(tg,dac_num=0,dac_channel=6)            # TG
                 self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
-                self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
+                # self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
             else:   
-                self.dac.set_voltage(tg,dac_num=0,dac_channel=6)          # TG
-                self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
+                self.dac.set_voltage(tg,dac_num=0,dac_channel=6)            # TG
+                # self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
                 self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
         elif self.deviceType==1:    
             # 新版1T1E需要ROW, COL的Va电压都加
@@ -459,23 +462,42 @@ class CHIP():
             if self.from_row:
                 self.dac.set_voltage(tg,dac_num=0,dac_channel=6)            # TG
                 self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
-                self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
+                # self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
             else:   
                 self.dac.set_voltage(tg,dac_num=0,dac_channel=6)            # TG
-                self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
+                # self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
                 self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
         elif self.deviceType==1:    
-            # 写不确定怎么弄
             if self.from_row:  
+                # self.dac.set_voltage(0,dac_num=0,dac_channel=0)             # ROW_Va电压
+                # self.dac.set_voltage(0,dac_num=0,dac_channel=1)             # ROW_Va电压
+                # self.dac.set_voltage(0,dac_num=0,dac_channel=2)             # ROW_Va电压
+                # self.dac.set_voltage(0,dac_num=0,dac_channel=3)             # ROW_Va电压
+
+                # self.dac.set_voltage(0,dac_num=0,dac_channel=4)             # COL_Va电压
+                # self.dac.set_voltage(0,dac_num=0,dac_channel=5)             # COL_Va电压
+                # self.dac.set_voltage(0,dac_num=0,dac_channel=6)             # COL_Va电压
+                # self.dac.set_voltage(0,dac_num=0,dac_channel=7)             # COL_Va电压
+
+                # self.dac.set_voltage(0,dac_num=1,dac_channel=0)             # ROW_Vc
+                # self.dac.set_voltage(0,dac_num=1,dac_channel=1)             # COL_Vc     
+                self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # GL
+                self.dac.set_voltage(v,dac_num=1,dac_channel=3)             # GR
+            else:
                 self.dac.set_voltage(v,dac_num=0,dac_channel=0)             # ROW_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=1)             # ROW_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=2)             # ROW_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=3)             # ROW_Va电压
-            else:
+
                 self.dac.set_voltage(v,dac_num=0,dac_channel=4)             # COL_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=5)             # COL_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=6)             # COL_Va电压
                 self.dac.set_voltage(v,dac_num=0,dac_channel=7)             # COL_Va电压
+
+                self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Vc
+                self.dac.set_voltage(v,dac_num=1,dac_channel=1)             # COL_Vc     
+                self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # GL
+                self.dac.set_voltage(v,dac_num=1,dac_channel=3)             # GR
 
     #------------------------------------------------------------------------------------------
     # ************************************** 读相关操作 ****************************************
@@ -620,6 +642,22 @@ class CHIP():
         self.set_latch([row_index],row=self.from_row,value=None)                            # 配置行
         self.set_latch([col_index],row=not self.from_row,value=None)                        # 配置列
         self.generate_write_pulse()                                                         # 产生写脉冲
+
+    def write_ecram_one(self,row,col,v,isSet=True):
+        self.set_op_mode(read=False,from_row=isSet)
+        self.set_dac_write_V(v)
+        self.set_cim_reset()
+        if isSet:
+            self.set_latch([row],row=True,value=None)
+            self.set_latch([col],row=False,value=None)
+        else:
+            bank,index = self.numToBank_Index(row)
+            self.set_bank([i for i in range(8)],row=True,value=0xFFFF_FFFF)
+            self.set_bank([bank],row=True,value=0xFFFF_FFFF^(1<<index))
+            self.set_latch([col],row=False,value=None)
+
+        self.generate_write_pulse()
+
 
     def close(self):
         """
