@@ -154,7 +154,7 @@ class CHIP():
         sign = 1 if from_row else 0
         pkts=Packet()
         if self.deviceType == 1:
-            self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(self.op_mode == "read"))],mode=1)
+            self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(self.op_mode != "read"))],mode=1)
             pkts.append_cmdlist([
                 CMD(ROW_CTRL,command_data=CmdData(1)),                                                  # 1配置行到施加电压,
                 CMD(COL_CTRL,command_data=CmdData(int(not sign))),                                                  # 0配置列到TIA,
