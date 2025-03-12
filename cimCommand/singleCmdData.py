@@ -9,7 +9,7 @@ class CmdData:
         """
             初始化数据
         """
-        self.data = data
+        self.data = int(data)
     
     def __str__ (self):
         """
@@ -22,7 +22,7 @@ class CmdData:
         """
             设置命令的数据
         """
-        self.data=data
+        self.data=int(data)
     
     def get_data(self):
         """

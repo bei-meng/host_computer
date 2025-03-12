@@ -418,7 +418,7 @@ ROW_CTRL=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "row_ctrl",
     command_data = CmdData(0),
-    command_description = ""
+    command_description = "1接电压,0接TIA"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -430,7 +430,7 @@ COL_CTRL=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "col_ctrl",
     command_data = CmdData(0),
-    command_description = ""
+    command_description = "1接电压,0接TIA"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -532,7 +532,7 @@ INS_NUM=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "ins_num",
     command_data = CmdData(0),
-    command_description = "指令数量: 1~1024, cfg_ins_run前配置"
+    command_description = "指令数量: 1~1024, cfg_ins_run前配置--已经废弃"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -544,7 +544,7 @@ SER_DATA=dict(
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "ser_data",
     command_data = CmdData(0),
-    command_description = "指令数量: 1~1024, cfg_ins_run前配置"
+    command_description = ""
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -1256,7 +1256,7 @@ PL_READ_ROW_PULSE_TIA=dict(
     n_data_bytes = N_DATA_BYTES.THREE,
     command_name = "pl_read_row_pulse_tia",
     command_data = CmdData(0),
-    command_description = "产生row读pulse, 求平均, reg2是TIA的num(0,15),reg1是dout_ram的地址(每个单元16bit),reg0是哪一块dout_ram(0或者1)"
+    command_description = "产生row读pulse, 求平均, reg2是TIA的掩码,reg1是dout_ram的地址(每个单元16bit),reg0是哪一块dout_ram(0或者1)"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -1268,7 +1268,7 @@ PL_READ_COL_PULSE_TIA=dict(
     n_data_bytes = N_DATA_BYTES.THREE,
     command_name = "pl_read_col_pulse_tia",
     command_data = CmdData(0),
-    command_description = "产生col读pulse, 求平均, reg2是TIA的num(0,15),reg1是dout_ram的地址(每个单元16bit),reg0是哪一块dout_ram(0或者1)"
+    command_description = "产生col读pulse, 求平均, reg2是TIA的掩码,reg1是dout_ram的地址(每个单元16bit),reg0是哪一块dout_ram(0或者1)"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -1282,3 +1282,64 @@ PL_RETURN_DOUT=dict(
     command_data = CmdData(0),
     command_description = "返回dout_ram的数据, reg2是数据长度, reg1是dout_ram的地址(每个单元16bit), reg0是哪一块dout_ram(0或者1)"
 )
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_READ_ROW_PULSE_REG:0x17
+PL_READ_ROW_PULSE_REG=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_read_row_pulse_reg",
+    command_data = CmdData(0),
+    command_description = "产生row读pulse, 求平均, reg1是TIA的掩码,reg0为读出来的值"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_READ_COL_PULSE_REG:0x18
+PL_READ_COL_PULSE_REG=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_read_col_pulse_reg",
+    command_data = CmdData(0),
+    command_description = "产生col读pulse, 求平均, reg1是TIA的掩码,reg0为读出来的值"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_ROW_CTRL:0x19
+PL_ROW_CTRL=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_row_ctrl",
+    command_data = CmdData(0),
+    command_description = "配置row_ctrl的值,1接电压,0接TIA"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_COL_CTRL:0x1A
+PL_COL_CTRL=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_col_ctrl",
+    command_data = CmdData(0),
+    command_description = "配置col_ctrl的值,1接电压,0接TIA"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_ROW_COL_SW:0x1B
+PL_ROW_COL_SW=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_row_col_sw",
+    command_data = CmdData(0),
+    command_description = "配置row_col_sw的值,pcb上row或col的TIA,0:row,1:col"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1

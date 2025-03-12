@@ -25,12 +25,15 @@ read_row_tia_reg reg1,reg0                      # 从行读,reg1 为tia的掩码
 read_col_tia_reg reg1,reg0                      # 从列读,reg1 为tia的掩码,tia读出的结果存在reg0
 return_dout reg2,reg1,reg0                      # 数据返回上位机,reg2 为要返回的数据长度,reg1 为dout_ram读取的起始地址,reg0 为哪一块dout_ram(每个数据单元16bit)
 
+row_ctrli imm0                                  # 设置row_ctrl为imm0
+col_ctrli imm0                                  # 设置col_ctrl为imm0
+row_col_swi imm0                                # 设置row_col_sw为imm0
 
 set_daci imm1,imm0                              # 设置dac的第imm1[0:11]个通道的电压码值(16bit)为imm0
 set_row_banki imm1,imm0                         # 从din_ram配置行bank,imm1为row_bank_mask(8bit),din_ram[imm0]里面是row_index_mask(32bit)
 set_col_banki imm1,imm0                         # 从din_ram配置列bank,imm1为col_bank_mask(8bit),din_ram[imm0]里面是col_index_mask(32bit)
 read_rowi imm                                   # 从行读16路TIA,结果存储在dout_ram[imm](每个数据单元256bit)
 read_coli imm                                   # 从列读16路TIA,结果存储在dout_ram[imm](每个数据单元256bit)
-write_row                                       # 从行写,产生row写pulse, 同时row ctrl置1
-write_col                                       # 从列写,产生col写pulse, 同时col ctrl置1
+write_row                                       # 从行写,产生row写pulse
+write_col                                       # 从列写,产生col写pulse
 cim_reset                                       # 清零latch

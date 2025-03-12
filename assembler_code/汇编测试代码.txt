@@ -2,6 +2,7 @@
 # 立即数只支持：16进制数格式0x10或者0X10, 10进制数格式10101,10进制数最高位不能为0
 # 指令名称后面为i的表示对立即数或常量的操作
 
+start:
 consti imm,0x1                                  # 注册常量imm, 值为10,指令中的立即数可以使用
 consti imm0,0x3                                 # 注册常量imm0, 值为10,指令中的立即数可以使用
 consti imm1,0x7                                 # 注册常量imm1, 值为10,指令中的立即数可以使用
@@ -20,6 +21,9 @@ sll reg2,reg1,reg0                              # reg2 = reg1 << reg0
 srl reg2,reg1,reg0                              # reg2 = reg1 >> reg0
 bge reg1,reg0,label                             # if reg1 >= reg0 就跳转到对应标签处
 
+addi reg0,zero,0x1
+addi reg1,zero,0x3
+addi reg2,zero,0x7
 
 jump label                                      # 跳转到对应标签处
 exit:
@@ -29,10 +33,18 @@ label:
 load_din_ram reg1,reg0                          # 从din_ram取数据, reg1 = din_ram[reg0]
 set_row_bank reg1,reg0                          # 配置行bank, reg1 为row_bank_mask, reg0 为row_index_mask
 set_col_bank reg1,reg0                          # 配置列bank, reg1 为col_bank_mask, reg0 为col_index_mask
+
 read_row_tia reg2,reg1,reg0                     # 从行读,reg2 为tia的掩码, reg1 为结果存储的dout_ram地址, reg0 为哪一块dout_ram(每个数据单元16bit)
 read_col_tia reg2,reg1,reg0                     # 从列读,reg2 为tia的掩码, reg1 为结果存储的dout_ram地址, reg0 为哪一块dout_ram(每个数据单元16bit)
+
+read_row_tia_reg reg1,reg0                      # 从行读,reg1 为tia的掩码,tia读出的结果存在reg0
+read_col_tia_reg reg1,reg0                      # 从列读,reg1 为tia的掩码,tia读出的结果存在reg0
+
 return_dout reg2,reg1,reg0                      # 数据返回上位机,reg2 为要返回的数据长度,reg1 为dout_ram读取的起始地址,reg0 为哪一块dout_ram(每个数据单元16bit)
 
+row_ctrli imm0                                  # 设置row_ctrl为imm0
+col_ctrli imm0                                  # 设置col_ctrl为imm0
+row_col_swi imm0                                # 设置row_col_sw为imm0
 
 #set_daci imm1,imm0                              # 设置dac的第imm1[0:11]个通道的电压码值(16bit)为imm0
 #set_row_banki imm1,imm0                         # 从din_ram配置行bank,imm1为row_bank_mask(8bit),din_ram[imm0]里面是row_index_mask(32bit)

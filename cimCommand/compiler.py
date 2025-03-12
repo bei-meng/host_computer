@@ -46,6 +46,7 @@ class COMPILER:
         res += "\n"
         # res += "start:\t0\n"
         num = 0
+        # ins[0]==1表示label, ins[0]==0表示指令, ins[0]==2表示常量
         for ins in self.ass_ins:
             if ins[0] == 1:
                 if num!=0:
@@ -88,12 +89,13 @@ class COMPILER:
         """
         res = ""
         num = 0
+        # ins[0]==1表示label, ins[0]==0表示指令, ins[0]==2表示常量
         for ins in self.ass_ins:
-            if ins[0]:
+            if ins[0] == 1:
                 if num!=0:
                     res += "\n"
                 res += ins[1]+":" + "\t"
-            else:
+            elif ins[0] == 0 or ins[0]==2:
                 num += 1
                 res += "\t" + ins[1][3:] +"\t"
                 if len(ins)>2:
@@ -101,6 +103,13 @@ class COMPILER:
                         if i!=2: res += ", "
                         # print(ins[1],ins)
                         res += ins[i]
+            # elif ins[0]==2:
+            #     res += "\t" + ins[1][3:] +"\t"
+            #     if len(ins)>2:
+            #         for i in range(2,len(ins)):
+            #             if i!=2: res += ", "
+            #             # print(ins[1],ins)
+            #             res += ins[i]
             res += "\n"
         return res
                 
@@ -387,7 +396,7 @@ class COMPILER:
     def read_row_tia(self,reg2:str,reg1:str,reg0:str):
         """
             Args:
-                reg2: tia[0,15]
+                reg2: tia的mask
                 reg1: dout_ram_addr
                 reg0: dout_ram块(0,1)
         """
@@ -402,9 +411,10 @@ class COMPILER:
     def read_col_tia(self,reg2:str,reg1:str,reg0:str):
         """
             Args:
-                reg2: tia[0,15]
+                reg2: tia的mask
                 reg1: dout_ram_addr
                 reg0: dout_ram块(0,1)
+            --废弃
         """
         reg_2 = self.get_reg_variable(reg2,init=False)
         reg_1 = self.get_reg_variable(reg1,init=False)
@@ -412,6 +422,33 @@ class COMPILER:
         ins = CMD(PL_READ_COL_PULSE_TIA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, reg2, reg1, reg0))
+        self.ins_pos += 1
+
+    def read_row_tia_reg(self,reg1:str,reg0:str):
+        """
+            Args:
+                reg1: tia的mask
+                reg0: 读出来的结果存在reg0
+        """
+        reg_1 = self.get_reg_variable(reg1,init=False)
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_READ_ROW_PULSE_REG,command_data=CmdData(reg_1<<8|reg_0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name,reg1, reg0))
+        self.ins_pos += 1
+
+    def read_col_tia_reg(self,reg1:str,reg0:str):
+        """
+            Args:
+                reg1: tia的mask
+                reg0: 读出来的结果存在reg0
+            -- 废弃
+        """
+        reg_1 = self.get_reg_variable(reg1,init=False)
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_READ_COL_PULSE_REG,command_data=CmdData(reg_1<<8|reg_0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name,reg1, reg0))
         self.ins_pos += 1
 
     def return_dout(self,reg2:str,reg1:str,reg0:str):
@@ -428,6 +465,48 @@ class COMPILER:
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, reg2, reg1, reg0))
         self.ins_pos += 1
+
+    def row_ctrli(self,imm0:Union[int|str]):
+        """
+            Args:
+                imm0: 0|1
+        """
+        imm0_c,isConst0 = self.const_str_to_int(imm0)
+        ins = CMD(PL_ROW_CTRL,command_data=CmdData(imm0_c))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, imm0))
+        self.ins_pos += 1
+
+        if isConst0:
+            self.need_replace_const.append((self.ins_pos-1, imm0, 0, 8))
+
+    def col_ctrli(self,imm0:Union[int|str]):
+        """
+            Args:
+                imm0: 0|1
+        """
+        imm0_c,isConst0 = self.const_str_to_int(imm0)
+        ins = CMD(PL_COL_CTRL,command_data=CmdData(imm0_c))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, imm0))
+        self.ins_pos += 1
+        
+        if isConst0:
+            self.need_replace_const.append((self.ins_pos-1, imm0, 0, 8))
+
+    def row_col_swi(self,imm0:Union[int|str]):
+        """
+            Args:
+                imm0: 0|1
+        """
+        imm0_c,isConst0 = self.const_str_to_int(imm0)
+        ins = CMD(PL_ROW_COL_SW,command_data=CmdData(imm0_c))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, imm0))
+        self.ins_pos += 1
+        
+        if isConst0:
+            self.need_replace_const.append((self.ins_pos-1, imm0, 0, 8))
 
     def set_daci(self,imm1:Union[int|str],imm0:Union[int|str]):
         """

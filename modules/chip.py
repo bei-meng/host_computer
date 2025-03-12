@@ -151,20 +151,19 @@ class CHIP():
             self.clear_dac_v()
         self.op_mode = "read" if read else "write"
         self.from_row = from_row
-        sign = 1 if from_row else 0
         pkts=Packet()
         if self.deviceType == 1:
             self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(self.op_mode != "read"))],mode=1)
             pkts.append_cmdlist([
                 CMD(ROW_CTRL,command_data=CmdData(1)),                                                  # 1配置行到施加电压,
-                CMD(COL_CTRL,command_data=CmdData(int(not sign))),                                                  # 0配置列到TIA,
-                CMD(ROW_COL_SW,command_data=CmdData(sign)),                                             # 1PCB上的TIA接在列,
+                CMD(COL_CTRL,command_data=CmdData(not from_row)),                                                  # 0配置列到TIA,
+                CMD(ROW_COL_SW,command_data=CmdData(from_row)),                                             # 1PCB上的TIA接在列,
             ],mode=1)
         else:
             pkts.append_cmdlist([
-                CMD(ROW_CTRL,command_data=CmdData(sign)),                                                  # 1配置行到施加电压,
-                CMD(COL_CTRL,command_data=CmdData(int(not sign))),                                         # 0配置列到TIA,
-                CMD(ROW_COL_SW,command_data=CmdData(sign)),                                                # 1PCB上的TIA接在列,
+                CMD(ROW_CTRL,command_data=CmdData(from_row)),                                                  # 1配置行到施加电压,
+                CMD(COL_CTRL,command_data=CmdData(not from_row)),                                         # 0配置列到TIA,
+                CMD(ROW_COL_SW,command_data=CmdData(from_row)),                                                # 1PCB上的TIA接在列,
             ],mode=1)
         self.ps.send_packets(pkts)
 
@@ -684,17 +683,19 @@ class CHIP():
         """
         if (read and self.op_mode != "read") or (not read and self.op_mode == "read"):
             self.clear_dac_v2()
-        if read:
-            self.op_mode = "read"
-            self.from_row = from_row
-            if self.deviceType == 1:
-                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(0))],mode=1)
+        self.from_row = from_row
+        self.op_mode = "read" if read else "write"
+        ins_data=[]
+        if self.deviceType == 1:
+            self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(self.op_mode != "read"))],mode=1)
+            ins_data.append(CMD(PL_ROW_CTRL,command_data=CmdData(1)))                                                  # 1配置行到施加电压,
+            ins_data.append(CMD(PL_COL_CTRL,command_data=CmdData(not from_row)))                                                  # 0配置列到TIA,
+            ins_data.append(CMD(PL_ROW_COL_SW,command_data=CmdData(from_row)))  
         else:
-            self.op_mode = "write"
-            self.from_row = from_row
-            if self.deviceType == 1:
-                self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(1))],mode=1)
-
+            ins_data.append(CMD(PL_ROW_CTRL,command_data=CmdData(from_row)))                                                  # 1配置行到施加电压,
+            ins_data.append(CMD(PL_COL_CTRL,command_data=CmdData(not from_row)))                                                  # 0配置列到TIA,
+            ins_data.append(CMD(PL_ROW_COL_SW,command_data=CmdData(from_row)))  
+        self.execute_ins(ins_data=ins_data,ins_ram_start=0)
 
     def execute_ins(self,ins_data:list[CMD],ins_ram_start:int):
         """
@@ -780,11 +781,17 @@ class CHIP():
                         for i in DAC_INFO.RERAM_ROW_VA: dac_v.append((i,v16))
                     else:                                   # 从列写
                         for i in DAC_INFO.RERAM_COL_VA: dac_v.append((i,v16))
-            elif self.deviceType==1:                    # ECRAM
+                elif self.deviceType==1:                    # ECRAM
                     if self.from_row:                       # 从行写
-                        for i in DAC_INFO.ECRAM_ROW_VA: dac_v.append((i,v16))
+                        for i in DAC_INFO.ECRAM_GL: dac_v.append((i,v16))
+                        for i in DAC_INFO.ECRAM_GR: dac_v.append((i,v16))
                     else:                                   # 从列写
+                        for i in DAC_INFO.ECRAM_ROW_VA: dac_v.append((i,v16))
                         for i in DAC_INFO.ECRAM_COL_VA: dac_v.append((i,v16))
+                        for i in DAC_INFO.ECRAM_ROW_VC: dac_v.append((i,v16))
+                        for i in DAC_INFO.ECRAM_COL_VC: dac_v.append((i,v16))
+                        for i in DAC_INFO.ECRAM_GL: dac_v.append((i,v16))
+                        for i in DAC_INFO.ECRAM_GR: dac_v.append((i,v16))
         if tg is not None:
             tg16 = self.dac.VToBytes(tg)
             if self.op_mode == "read":
@@ -795,8 +802,8 @@ class CHIP():
             elif self.op_mode == "write":
                 if self.deviceType==0:                      # ReRAM
                     for i in DAC_INFO.RERAM_TG: dac_v.append((i,tg16))
-            elif self.deviceType==1:                    # ECRAM
-                pass
+                elif self.deviceType==1:                    # ECRAM
+                    pass
 
         for dac_data in dac_v:
             cmd.append(CMD(PL_DAC_V,command_data=CmdData((dac_data[0])<<16 | dac_data[1])))
