@@ -1,7 +1,7 @@
 import threading
 import time
 import socket
-from cimCommand import CMD,CmdData,Packet
+from command import CMD,CmdData,Packet
 
 class PS():
     def __init__(self, host, port, delay=10*1e-3, debug = 0):
