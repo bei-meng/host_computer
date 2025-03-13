@@ -1,9 +1,14 @@
 from command import CMD,CmdData,Packet,COMPILER
 from command.singleCmdInfo import *
+
+
 from pc import PS
 from modules.adc import ADC
 from modules.dac import DAC
-from modules.clk_manager import CLK_MANAGER
+from modules.clkManager import CLK_MANAGER
+from compiler.chipSetting import CHIPSETTING
+
+
 import numpy as np
 import time
 import os
@@ -21,18 +26,11 @@ class CHIP():
     read_voltage = None             # 读写电压
     write_voltage = None            # 写电压
 
-    chip_bank_num = 8
-    chip_tia_num = 16
-    chip_latch_num = 256
-
-    din_ram_threshold = INS2_INFO.DIN_RAM_LENGTH#256
-    dout_ram_threshold = INS2_INFO.DOUT_RAM_LENGTH#256
-    ins_ram_threshold = INS2_INFO.INS_RAM#1024
-
-    ps = None
-    adc = None
-    dac = None
-    clk_manager = None
+    ps:PS = None
+    adc:ADC = None
+    dac:DAC = None
+    clk_manager:CLK_MANAGER = None
+    setting:CHIPSETTING = None
 
     compilers = None
 
@@ -45,6 +43,7 @@ class CHIP():
         self.adc = ADC(ps,init)
         self.dac = DAC(ps,init)
         self.clk_manager = CLK_MANAGER(ps,init)
+        self.setting = CHIPSETTING(self.deviceType)
 
         self.compilers = {}
 
@@ -89,7 +88,6 @@ class CHIP():
             chip的初始化操作
         """
         # 配置器件的初始化
-        # self.set_device_cfg(deviceType=0,reg_clk_cyc=0xF,latch_clk_cyc=0xF)
         if self.init:
             pkts=Packet()
             pkts.append_cmdlist([
@@ -108,21 +106,6 @@ class CHIP():
             if self.dac is not None:
                 self.dac.initOp()
 
-    # def set_device_cfg(self,deviceType = None,latch_cyc = None, reg_clk_cyc= None, latch_clk_cyc = None,cim_rstn_cyc = None):
-    #     """
-    #         设置device的cfg
-    #     """
-    #     self.deviceType = self.deviceType if deviceType is None else deviceType
-    #     self.latch_cyc = self.latch_cyc if latch_cyc is None else latch_cyc
-    #     self.reg_clk_cyc = self.reg_clk_cyc if reg_clk_cyc is None else reg_clk_cyc
-    #     self.latch_clk_cyc = self.latch_clk_cyc if latch_clk_cyc is None else latch_clk_cyc
-    #     self.cim_rstn_cyc = self.cim_rstn_cyc if cim_rstn_cyc is None else cim_rstn_cyc
-
-    #     data = self.deviceType | self.latch_cyc<<1 | self. reg_clk_cyc<<3 | self.latch_clk_cyc<<7 | self.cim_rstn_cyc<<11
-    #     pkts=Packet()
-    #     pkts.append_cmdlist([CMD(DEVICE_CFG,command_data=CmdData(data)),],mode=1)
-    #     self.ps.send_packets(pkts)
-
     def set_device_cfg(self,deviceType = 0):
         """
             设置device的cfg
@@ -131,6 +114,7 @@ class CHIP():
         pkts=Packet()
         pkts.append_cmdlist([CMD(DEVICE_CFG,command_data=CmdData(self.deviceType)),],mode=1)
         self.ps.send_packets(pkts)
+        self.setting.set_device(deviceType)
 
 
     def set_pulse_width(self,pulsewidth:float):
@@ -171,6 +155,14 @@ class CHIP():
             ],mode=1)
         self.ps.send_packets(pkts)
 
+    def set_cim_reset(self):
+        """
+            发送reset的指令
+        """
+        pkts=Packet()
+        pkts.append_cmdlist([CMD(CIM_RESET,command_data=CmdData(0)),CMD(CIM_RESET,command_data=CmdData(1)),],mode=1)
+        self.ps.send_packets(pkts)
+
     def send_cmd(self,cmd:list,mode:int):
         """
             Args:
@@ -184,158 +176,6 @@ class CHIP():
         pkts.append_single(cmd,mode=mode)
         self.ps.send_packets(pkts)
 
-    #------------------------------------------------------------------------------------------
-    # ************************************** 各种索引映射 **************************************
-    #------------------------------------------------------------------------------------------
-    def set_cim_reset(self):
-        """
-            发送reset的指令
-        """
-        pkts=Packet()
-        pkts.append_cmdlist([CMD(CIM_RESET,command_data=CmdData(0)),CMD(CIM_RESET,command_data=CmdData(1)),],mode=1)
-        self.ps.send_packets(pkts)
-
-    def numToBank_Index(self,num:int) -> tuple[int,int]:
-        """
-            Args:
-                num: 行/列号, 从0开始
-
-            Returns:
-                tuple: (bank, index) 其中 bank[0:8] 和 index[0:31] 坐标从0开始
-        """
-        num += 1
-        assert num >=0 and num < 257,"numToBank_Index: num超过范围!"
-        # 先判断奇数偶数
-        if num&1:
-            index_base,index_offset = 64,1
-            bank_base = 0
-        else:
-            index_base,index_offset = 64,2
-            bank_base = 4
-
-        bank_offset = int((num-index_offset)/index_base)
-        bank = bank_base + bank_offset
-        index = int((num - index_offset - bank_offset * index_base) / 2)
-
-        return bank, index
-
-    def bank_to_num(self,bank_data:list) -> list[int]:
-        """
-            Args:
-                bank_data: 包含需要映射的bank坐标的列表, 例: [0, 1]
-
-            Returns:
-                list: [ row_num/col_num ], 返回对应bank包含的所有的行/列号, 因为行/列号与bank的对应关系相同
-        """
-        bank_list = [[] for i in range(self.chip_bank_num)]
-        for i in range(self.chip_latch_num):
-            bank,_ = self.numToBank_Index(i)
-            bank_list[bank].append(i)
-        res = []
-        for i in bank_data:
-            res = res + bank_list[i]
-        return res
-    
-    def bank_split(self,data:list[tuple[int,int,int,int,int]],
-                   all_data:bool = False) -> Union[list[list[int]],list[list[tuple[int,int,int,int,int]]]]:
-        """
-            Args:
-                data: 数据为(pos, row_num/col_num, bank, index, tia_num)的列表
-                all_data: 是否返回完整格式的数据(pos, row_num/col_num, bank, index, tia_num)
-
-            Returns:
-                list0 [ list1 [int] ], 将数据切分到对应的bank中, list1表示在一个bank中的行/列号
-                每个list1都不为空
-        """
-        bank_data = [[] for _ in range(self.chip_bank_num)]
-        for j in data:
-            if all_data:
-                bank_data[j[2]].append(j)
-            else:
-                bank_data[j[2]].append(j[1])
-        return [i for i in bank_data if len(i)>0]
-    
-    def tia_to_num(self,tia_data:list,row=None):
-        """
-            Args:
-                tia_data: 包含需要映射的tia坐标的列表, 例: [0, 1]
-                row: 因为不同device的 行/列tia映射不一样
-
-            Returns:
-                list: [ row_num/col_num ], 返回对应tia包含的所有的行/列号, 因为行/列号与tia的对应关系不相同
-        """
-        tia_list = [[] for i in range(self.chip_tia_num)]
-        for i in range(self.chip_latch_num):
-            num = self.adc.TIA_index_map(i,device=self.deviceType,col= not row)
-            tia_list[num].append(i)
-        res = []
-        for i in tia_data:
-            res = res + tia_list[i]
-        return res
-    
-    def tia_split(self,data:tuple[int,int,int,int,int],check_tia = True) -> list[list[tuple[int,int,int,int,int]]]:
-        """
-            Args:
-                data: 数据为(pos, row_num/col_num, bank, index, tia_num)的列表
-                check_tia: 表示是否需要处理一路TIA只能映射一列的问题
-
-            Returns:
-                list0 [ list1 [tuple] ], 数据根据TIA数量, 切分到对应的处理批次中\n
-                每次读操作处理list1里面的数据,
-                每个list1都不为空
-        """
-        read_batch = []
-        if check_tia:
-            tia16 = [[] for _ in range(self.chip_tia_num)]
-            for i in data:
-                tia16[i[4]].append(i)
-            # ----------------------------------------------每路TIA选一路
-            flag = True
-            while flag:
-                flag = False
-                tmp = []
-                for i in tia16:
-                    if len(i)>0:
-                        tmp.append(i.pop())                 # 每路tia选一个值
-                        flag = True
-                if flag == True:
-                    read_batch.append(tmp)
-        else:
-            read_batch.append(data)
-
-        return read_batch
-    
-    def get_bank_index32(self,num:list) -> tuple[int,int]:
-        """
-            Args:
-                num: 行/列号的列表, 必须都在同一个bank里面!
-
-            Returns:
-                tuple[int,int]: 经过处理过的bank,index的值,可以直接作为指令数据下发
-        """
-        bank,index = 0,0
-        for i in num:
-            bank_tmp,index_tmp = self.numToBank_Index(i)
-            bank = bank | (1<<bank_tmp)
-            index = index | (1<<index_tmp)
-        return bank,index
-
-    def get_bank_index_tia(self,num:list) -> list[tuple[int,int,int,int,int]]:
-        """
-            Args:
-                num: 任意行/列号的列表
-
-            Returns:
-                list[tuple[int,int,int,int,int]]: 列表里面的每个数据都是对应行列号的映射结果
-                为元组(pos, row_num/col_num, bank, index, tia_num)的列表
-        """
-        res = []
-        for pos,v in enumerate(num):
-            bank,index = self.numToBank_Index(v)
-            tia = self.adc.TIA_index_map(v,device=self.deviceType,col=self.from_row)
-            res.append((pos,v,bank,index,tia))
-        return res
-
     def set_latch(self,num:list,row=True,value=None):
         """
             Args:
@@ -348,12 +188,12 @@ class CHIP():
                 如果value不为None,将会把这些行/列涉及的bank全配置成32bit的value值
         """
         row_col_sel = 1 if row else 0
-        data = self.get_bank_index_tia(num)
-        bank_data = self.bank_split(data)
+        data = self.setting.get_bank_index_tia(num,self.from_row)
+        bank_data = self.setting.bank_split(data)
 
         pkts=Packet()
         for i in bank_data:
-            bank,index = self.get_bank_index32(i)
+            bank,index = self.setting.get_bank_index32(i)
             index = value if value is not None else index
             pkts.append_cmdlist([
                 # 行reg配置
@@ -563,10 +403,10 @@ class CHIP():
         if not self.from_row:
             row_index, col_index = col_index, row_index
         # ----------------------------------------------行数据映射
-        row_data = self.get_bank_index_tia(row_index)
-        col_data = self.get_bank_index_tia(col_index)                                                 # 映射得到i,num,bank, index, tia
+        row_data = self.setting.get_bank_index_tia(row_index,self.from_row)
+        col_data = self.setting.get_bank_index_tia(col_index,self.from_row)                                                 # 映射得到i,num,bank, index, tia
         # ----------------------------------------------映射16路tia
-        col_batch = self.tia_split(col_data,check_tia = check_tia)
+        col_batch = self.setting.tia_split(col_data,check_tia = check_tia)
         # ----------------------------------------------循环去读
         res = []
         for i in col_batch:
@@ -578,7 +418,7 @@ class CHIP():
             self.generate_read_pulse() 
             # ------------------------------------------读出结果
             if not check_tia:
-                res.append(self.adc.get_out([i for i in range(self.chip_tia_num)]))
+                res.append(self.adc.get_out([i for i in range(self.setting.chip_tia_num)]))
             else:
                 res.append(self.adc.get_out([j[4] for j in i]))
         if not check_tia:
@@ -638,7 +478,7 @@ class CHIP():
             self.set_latch([row],row=True,value=None)
             self.set_latch([col],row=False,value=None)
         else:
-            bank,index = self.numToBank_Index(row)
+            bank,index = self.setting.numToBank_Index(row)
             self.set_bank([i for i in range(8)],row=True,value=0xFFFF_FFFF)
             self.set_bank([bank],row=True,value=0xFFFF_FFFF^(1<<index))
             self.set_latch([col],row=False,value=None)
@@ -697,7 +537,7 @@ class CHIP():
         if len(ins_data)==0 or ins_data[-1].command_name != "pl_exit":
             ins_data.append(CMD(PL_EXIT))
         ins_num = len(ins_data)
-        assert ins_num+ins_ram_start < self.ins_ram_threshold,f"execute_ins: ins_ram:{ins_num+ins_ram_start}超过界限。"
+        assert ins_num+ins_ram_start < self.setting.ins_ram_length,f"execute_ins: ins_ram:{ins_num+ins_ram_start}超过界限。"
         ins_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(ins_num)))
         ins_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(ins_ram_start)))
 
@@ -719,7 +559,7 @@ class CHIP():
                 并会清空数据列表
         """
         num = len(din_ram_data)
-        assert num+din_ram_start <= self.din_ram_threshold,f"send_din_ram2: din_ram:{num+din_ram_start}超过界限。"
+        assert num+din_ram_start <= self.setting.din_ram_length,f"send_din_ram2: din_ram:{num+din_ram_start}超过界限。"
         din_ram_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(num)))                
         din_ram_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(din_ram_start)))
 
@@ -822,7 +662,7 @@ class CHIP():
                 将对应的映射填入
             """
             nonlocal din_ram_pos
-            bank32,index32 = self.get_bank_index32(index)
+            bank32,index32 = self.setting.get_bank_index32(index)
             if din_ram_bank_index_map.get(index32,None) is None:
                 din_ram_bank_index_map[index32] = din_ram_pos                                             # 如果前面没有用过这个index, 记录下来
                 din_ram_data.append(CMD(PL_DATA,command_data=CmdData(index32)))
@@ -834,18 +674,18 @@ class CHIP():
         # --------------------------------------------------行数据映射--------------------------------------------------
         for row_index in row_index_list:
             row_tmp = []
-            row_data = self.get_bank_index_tia(row_index)
-            for i in self.bank_split(row_data,all_data=False):                                          # 切分到bank进行配置
+            row_data = self.setting.get_bank_index_tia(row_index,self.from_row)
+            for i in self.setting.bank_split(row_data,all_data=False):                                          # 切分到bank进行配置
                 add_map(row_tmp,i)
             res_row_bank.append(row_tmp)                                                                # 行有几个batch
 
         # --------------------------------------------------列数据映射--------------------------------------------------
-        col_data = self.get_bank_index_tia(col_index)                                                   # (pos, row_num/col_num, bank, index, tia_num)
+        col_data = self.setting.get_bank_index_tia(col_index,self.from_row)                                                   # (pos, row_num/col_num, bank, index, tia_num)
         if self.op_mode == "read":                                                                      # read模式按是否检查TIA来分batch
-            read_batch = self.tia_split(col_data,check_tia=check_tia)
+            read_batch = self.setting.tia_split(col_data,check_tia=check_tia)
             for batch in read_batch:                                                                    # 每个batch要读哪些点
                 col_tmp = []
-                for bank_data in self.bank_split(batch,all_data=False):                                 # 切分到bank进行配置
+                for bank_data in self.setting.bank_split(batch,all_data=False):                                 # 切分到bank进行配置
                     add_map(col_tmp,bank_data)
 
                 res_col_bank.append(col_tmp)                                                            # 这个batch要配置的bank
@@ -920,7 +760,7 @@ class CHIP():
                 record.append((col_batch,row_pos))                                                      # 记录是读列的几个batch, 是第几行, 读出的数据存在哪
                 dout_ram_pos = dout_ram_pos + 1
 
-        assert dout_ram_pos <= self.dout_ram_threshold,f"read2: dout_ram:{dout_ram_pos}超过界限。"
+        assert dout_ram_pos <= self.setting.dout_ram_length,f"read2: dout_ram:{dout_ram_pos}超过界限。"
         self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
 
         voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
@@ -957,16 +797,16 @@ class CHIP():
 
         resv = np.zeros((len(row_index),len(col_index)))
         if from_row:
-            row_data = self.get_bank_index_tia(num = row_index)
-            row_bank_data = self.bank_split(data = row_data,all_data = True)                # (pos, row_num/col_num, bank, index, tia_num)
+            row_data = self.setting.get_bank_index_tia(row_index,self.from_row)
+            row_bank_data = self.setting.bank_split(data = row_data,all_data = True)                # (pos, row_num/col_num, bank, index, tia_num)
             for bank_data in row_bank_data:                                                 # 因为下位机TCP容量限制, 从行读, 每次最多4行, 切分到同一个bank会减少切bank的次数
                 chunks = [bank_data[i:i+4] for i in range(0, len(bank_data), 4)]
                 for chunk in chunks:
                     vres0 = self.read2(row_index=[i[1] for i in chunk],col_index=col_index,read_voltage=read_voltage,tg=tg,check_tia=True,sum=False)
                     for k,v in enumerate(chunk): resv[v[0],:]=vres0[k,:]                    # 行索引
         else:
-            col_data = self.get_bank_index_tia(num = col_index)
-            col_bank_data = self.bank_split(data = col_data,all_data = True)                # (pos, row_num/col_num, bank, index, tia_num)
+            col_data = self.setting.get_bank_index_tia(col_index,self.from_row)
+            col_bank_data = self.setting.bank_split(data = col_data,all_data = True)                # (pos, row_num/col_num, bank, index, tia_num)
             for bank_data in col_bank_data:                                                 # 因为下位机TCP容量限制, 从列读, 每次最多4列, 切分到同一个bank会减少切bank的次数
                 chunks = [bank_data[i:i+4] for i in range(0, len(bank_data), 4)]        
                 for chunk in chunks:
@@ -1057,8 +897,8 @@ class CHIP():
         self.set_pulse_width(pulse_width)
         # 现在由于容量限制,每次最多写128个器件,切分到同一个bank会减少切bank的次数
         if len(row_index)<len(col_index):
-            col_data = self.get_bank_index_tia(num = col_index)
-            col_bank_data = self.bank_split(data = col_data,all_data = False)
+            col_data = self.setting.get_bank_index_tia(col_index,self.from_row)
+            col_bank_data = self.setting.bank_split(data = col_data,all_data = False)
             chunk0,chunk1 = [],[]
 
             for bank_data in col_bank_data:
@@ -1072,8 +912,8 @@ class CHIP():
                 if len(chunk1)>0:
                     self.write2(row_index=[i],col_index=chunk1,write_voltage=write_voltage,tg=tg)
         else:
-            row_data = self.get_bank_index_tia(num = row_index)
-            row_bank_data = self.bank_split(data = row_data,all_data = False)                # (pos, row_num/col_num, bank, index, tia_num)
+            row_data = self.setting.get_bank_index_tia(row_index,self.from_row)
+            row_bank_data = self.setting.bank_split(data = row_data,all_data = False)                # (pos, row_num/col_num, bank, index, tia_num)
             chunk0,chunk1 = [],[]
 
             for bank_data in row_bank_data:
@@ -1113,7 +953,7 @@ class CHIP():
         # --------------------------------------------------增加映射
         def add_map(res_bank:list,index:int) -> None:                                                   # 增加bank和din_ram_data里面的index的映射
             nonlocal din_ram_pos
-            bank32,index32 = self.get_bank_index32([index])
+            bank32,index32 = self.setting.get_bank_index32([index])
             if din_ram_bank_index_map.get(index32,None) is None:
                 din_ram_bank_index_map[index32] = din_ram_pos                                           # 如果前面没有用过这个index, 记录下来
                 din_ram_data.append(CMD(PL_DATA,command_data=CmdData(index32)))
@@ -1125,9 +965,9 @@ class CHIP():
             add_map(res_col_bank,col)
             if self.op_mode == "read":
                 if self.from_row:
-                    res_tia_map.append(self.adc.TIA_index_map(index = col,device = self.deviceType,col = True))
+                    res_tia_map.append(self.setting.TIA_index_map(index = col,device = self.deviceType,col = True))
                 else:
-                    res_tia_map.append(self.adc.TIA_index_map(index = row,device = self.deviceType,col = False))
+                    res_tia_map.append(self.setting.TIA_index_map(index = row,device = self.deviceType,col = False))
                 
         # --------------------------------------------------发送数据
         self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
@@ -1186,7 +1026,7 @@ class CHIP():
             dout_ram_pos += 1
             
             # 检测是否超过阈值, 超过就先执行命令
-            if len(ins_data) >= self.ins_ram_threshold-7 or dout_ram_pos >= self.dout_ram_threshold:
+            if len(ins_data) >= self.setting.ins_ram_length-7 or dout_ram_pos >= self.setting.dout_ram_length:
                 self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
                 voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
                 for i in range(last_point_pos,k+1):
@@ -1259,7 +1099,7 @@ class CHIP():
             # 写指令
             ins_data.append(CMD(write_ins))
             
-            if len(ins_data) >= self.ins_ram_threshold-7:
+            if len(ins_data) >= self.setting.ins_ram_length-7:
                 self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
 
         if len(ins_data)>0:
@@ -1292,7 +1132,7 @@ class CHIP():
         # --------------------------------------------------增加映射
         def add_map(res_bank:list,index:list) -> None:                                                  # 增加bank和din_ram_data里面的index的映射
             nonlocal din_ram_pos
-            bank32,index32 = self.get_bank_index32(index)
+            bank32,index32 = self.setting.get_bank_index32(index)
             if din_ram_bank_index_map.get(index32,None) is None:
                 din_ram_bank_index_map[index32] = din_ram_pos                                           # 如果前面没有用过这个index, 记录下来
                 din_ram_data.append(CMD(PL_DATA,command_data=CmdData(index32)))
@@ -1300,24 +1140,24 @@ class CHIP():
             res_bank.append((bank32,din_ram_bank_index_map[index32]))
 
         for row_data in row_index:
-            row_bank_data = self.get_bank_index_tia(row_data)
-            row_bank = self.bank_split(row_bank_data,all_data=False)
+            row_bank_data = self.setting.get_bank_index_tia(row_data,self.from_row)
+            row_bank = self.setting.bank_split(row_bank_data,all_data=False)
             res_row_bank.append([])
             for rows in row_bank:
                 add_map(res_row_bank[-1],rows)
 
         for col_data in col_index:
-            col_bank_data = self.get_bank_index_tia(col_data)
-            col_bank = self.bank_split(col_bank_data,all_data=False)
+            col_bank_data = self.setting.get_bank_index_tia(col_data,self.from_row)
+            col_bank = self.setting.bank_split(col_bank_data,all_data=False)
             res_col_bank.append([])
             for cols in col_bank:
                 add_map(res_col_bank[-1],cols)
 
         if self.op_mode == "read":
             if self.from_row:
-                res_tia_map.extend(self.adc.TIA_index_map(index=col, device=self.deviceType, col=True) for col_data in col_index for col in col_data)
+                res_tia_map.extend(self.setting.TIA_index_map(index=col, device=self.deviceType, col=True) for col_data in col_index for col in col_data)
             else:
-                res_tia_map.extend(self.adc.TIA_index_map(index=row, device=self.deviceType, col=False) for row_data in row_index for row in row_data)
+                res_tia_map.extend(self.setting.TIA_index_map(index=row, device=self.deviceType, col=False) for row_data in row_index for row in row_data)
                 
         # --------------------------------------------------发送数据
         self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
@@ -1379,7 +1219,7 @@ class CHIP():
 
             # 检测是否超过阈值, 超过就先执行命令
             # print("命令",len(ins_data)+len(tmp_ins_data))
-            if len(ins_data)+len(tmp_ins_data) >= self.ins_ram_threshold-5 or dout_ram_pos+1 >= self.dout_ram_threshold:
+            if len(ins_data)+len(tmp_ins_data) >= self.setting.ins_ram_length-5 or dout_ram_pos+1 >= self.setting.dout_ram_length:
                 self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
                 voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
                 for i in range(last_point_pos,k):
@@ -1444,8 +1284,8 @@ class CHIP():
         din_ram_data = [CMD(PL_DATA,command_data=CmdData(0)) for i in range(64)]                        # 要发送下去的数据, din_ram的开始存0,用于恢复
 
         # --------------------------------------------------处理行bank
-        row_data = self.get_bank_index_tia(list(range(row_num_start,row_num_end+1)))
-        row_data = self.bank_split(row_data,all_data=True)
+        row_data = self.setting.get_bank_index_tia(list(range(row_num_start,row_num_end+1)),self.from_row)
+        row_data = self.setting.bank_split(row_data,all_data=True)
         for i,v in enumerate(row_data):
             # (pos, row_num/col_num, bank, index, tia_num)
             din_ram_data[res["row_bank_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][2]))
@@ -1454,8 +1294,8 @@ class CHIP():
         res["row_bank_din_ram_e_c"] = res["row_bank_din_ram_s_c"]+i
 
         # --------------------------------------------------处理列bank
-        col_data = self.get_bank_index_tia(list(range(col_num_start,col_num_end+1)))
-        col_data = self.bank_split(col_data,all_data=True)
+        col_data = self.setting.get_bank_index_tia(list(range(col_num_start,col_num_end+1)),self.from_row)
+        col_data = self.setting.bank_split(col_data,all_data=True)
         for i,v in enumerate(col_data):
             # (pos, row_num/col_num, bank, index, tia_num)
             din_ram_data[res["col_bank_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][2]))

@@ -126,34 +126,6 @@ class ADC():
         self.ps.send_packets(pkts,delay=delay)
         self.gain=gain
 
-    def TIA_index_map(self,index,device=0,col=True):
-        """
-            注意: num从0索引开始
-            将对应的行或列索引映射为对应的TIA偏移
-        """
-        index += 1
-        assert index > 0 and index < 257,"numToBank_Index: num超过范围!"
-        if device==0 and col:
-            # 先判断奇数偶数
-            if index&1:
-                index_base,index_offset = 32,1
-                TIA_base = 8
-            else:
-                index_base,index_offset = 32,2
-                TIA_base = 0
-        else:
-            # 先判断奇数偶数
-            if index&1:
-                index_base,index_offset = 32,1
-                TIA_base = 0
-            else:
-                index_base,index_offset = 32,2
-                TIA_base = 8
-                
-        TIA_offset = int((index-index_offset)/index_base)
-
-        return TIA_base+TIA_offset
-
     def hex_to_voltage(self,message_hex,vref=1.25):
         """
             读取的16进制值换算成电压

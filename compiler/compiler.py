@@ -3,6 +3,8 @@ from command.singleCmdData import CmdData
 
 from command.singleCmdInfo import *
 from typing import List, Union
+from compiler.chipSetting import CHIPSETTING
+
 class COMPILER:
     ins_data = None                                                 # 存放CMD
     ass_ins = None                                                  # 汇编指令(name,参数2, 参数1, 参数0)
@@ -18,7 +20,7 @@ class COMPILER:
     def __init__(self):
         self.ins_data = []                                           # 存放CMD
         self.ass_ins = []                                            # 汇编指令(name,参数2, 参数1, 参数0)
-        self.reg_flag = [0]*INS2_INFO.REG_NUM                        # 寄存器使用标志, 使用为1,未使用为0
+        self.reg_flag = [0]*CHIPSETTING.REG_NUM                        # 寄存器使用标志, 使用为1,未使用为0
         self.need_replace_label = []                                 # 需要进行label提供的指令(ins_pos,label_name,start,length)
         self.need_replace_const = []
         self.labels = {}                                             # 标签
@@ -337,7 +339,7 @@ class COMPILER:
         self.ass_ins.append((0, ins.command_name, reg1, reg0, label))
         self.ins_pos += 1
 
-        self.need_replace_label.append((self.ins_pos-1, label, INS2_INFO.BGE_INS_ADDR_START_POS, INS2_INFO.INS_RAM_ADDR_LENGTH))
+        self.need_replace_label.append((self.ins_pos-1, label, CHIPSETTING.BGE_INS_ADDR_START_POS, CHIPSETTING.INS_RAM_ADDR_LENGTH))
 
     def jump(self,label:str):
         """
@@ -348,7 +350,7 @@ class COMPILER:
         self.ass_ins.append((0, ins.command_name, label))
         self.ins_pos += 1
 
-        self.need_replace_label.append((self.ins_pos-1, label, 0, INS2_INFO.INS_RAM_ADDR_LENGTH))
+        self.need_replace_label.append((self.ins_pos-1, label, 0, CHIPSETTING.INS_RAM_ADDR_LENGTH))
 
     def exit(self):
         """
