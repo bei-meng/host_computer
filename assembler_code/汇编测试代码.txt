@@ -2,33 +2,53 @@
 # 立即数只支持：16进制数格式0x10或者0X10, 10进制数格式10101,10进制数最高位不能为0
 # 指令名称后面为i的表示对立即数或常量的操作
 
-start:
+
 consti imm,0x1                                  # 注册常量imm, 值为10,指令中的立即数可以使用
 consti imm0,0x3                                 # 注册常量imm0, 值为10,指令中的立即数可以使用
 consti imm1,0x7                                 # 注册常量imm1, 值为10,指令中的立即数可以使用
+start:
 
 addi reg0,zero,0x1
+# reg0 = 1
 addi reg1,zero,0x3
+# reg1=3
 addi reg2,zero,0x7
-
-
+# reg2=7
 
 addi reg1,reg0,imm                              # reg1 = reg0 + imm
-add reg2,reg1,reg0                              # reg2 = reg1 + reg0
-sub reg2,reg1,reg0                              # reg2 = reg1 - reg0
-xori reg1,reg0,imm                              # reg1 = reg0 ^ imm
-sll reg2,reg1,reg0                              # reg2 = reg1 << reg0
-srl reg2,reg1,reg0                              # reg2 = reg1 >> reg0
-bge reg1,reg0,label                             # if reg1 >= reg0 就跳转到对应标签处
+# reg1 = 1+1 = 2
 
-addi reg0,zero,0x1
-addi reg1,zero,0x3
-addi reg2,zero,0x7
+add reg2,reg1,reg0                              # reg2 = reg1 + reg0
+# reg2 = 2+1 = 3
+
+sub reg2,reg1,reg0                              # reg2 = reg1 - reg0
+# reg2 = 2-1 = 1
+
+xori reg1,reg0,imm                              # reg1 = reg0 ^ imm
+# reg1 = 1^1 = 0
+
+sll reg2,reg2,reg0                              # reg2 = reg1 << reg0
+# reg2 = 1<<1 = 2
+
+srl reg2,reg2,reg0                              # reg2 = reg1 >> reg0
+# reg2 = 2>>1 = 1
+
+bge reg1,reg0,label                             # if reg1 >= reg0 就跳转到对应标签处
+# 0>=1,不跳转
+
+bge reg0,reg1,label                             # if reg1 >= reg0 就跳转到对应标签处
+# 1>=0,跳转
+
 
 jump label                                      # 跳转到对应标签处
 exit:
     exit                                        # 结束指令
 label:
+
+addi reg0,zero,0x1
+addi reg1,zero,0x3
+addi reg2,zero,0x7
+
 
 load_din_ram reg1,reg0                          # 从din_ram取数据, reg1 = din_ram[reg0]
 set_row_bank reg1,reg0                          # 配置行bank, reg1 为row_bank_mask, reg0 为row_index_mask
@@ -46,6 +66,9 @@ row_ctrli imm0                                  # 设置row_ctrl为imm0
 col_ctrli imm0                                  # 设置col_ctrl为imm0
 row_col_swi imm0                                # 设置row_col_sw为imm0
 
+
+jump exit                                       # 跳转到对应标签处
+
 #set_daci imm1,imm0                              # 设置dac的第imm1[0:11]个通道的电压码值(16bit)为imm0
 #set_row_banki imm1,imm0                         # 从din_ram配置行bank,imm1为row_bank_mask(8bit),din_ram[imm0]里面是row_index_mask(32bit)
 #set_col_banki imm1,imm0                         # 从din_ram配置列bank,imm1为col_bank_mask(8bit),din_ram[imm0]里面是col_index_mask(32bit)
@@ -55,4 +78,4 @@ row_col_swi imm0                                # 设置row_col_sw为imm0
 #write_col                                       # 从列写,产生col写pulse, 同时col ctrl置1
 #cim_reset                                       # 清零latch
 
-jump exit                                       # 跳转到对应标签处
+#jump exit                                       # 跳转到对应标签处

@@ -45,7 +45,7 @@ class CLK_MANAGER():
 
         self.pulse_cyc = pulse_cyc
 
-    def set_cyc(self,delay1 = 10,delay2 = 100):        
+    def set_cyc(self,delay1 = 20,delay2 = 100):        
         pkts=Packet()
         pkts.append_cmdlist([
             CMD(OP_BANK_CFG_DONE_DELAY_CYC,command_data=CmdData(delay1)),

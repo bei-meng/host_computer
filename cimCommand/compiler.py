@@ -174,7 +174,10 @@ class COMPILER:
         if type(imm)==str:
             imm_c = self.get_const_variable(imm)
             if imm_c is None:
-                imm_c = int(imm,0)
+                try:
+                    imm_c = int(imm,0)
+                except Exception as e:
+                    raise Exception(f"立即数{imm}未定义!")
             else:
                 isConst = True
         elif type(imm)==int:
@@ -472,7 +475,7 @@ class COMPILER:
                 imm0: 0|1
         """
         imm0_c,isConst0 = self.const_str_to_int(imm0)
-        ins = CMD(PL_ROW_CTRL,command_data=CmdData(imm0_c))
+        ins = CMD(PL_ROW_CTRL,command_data=CmdData(imm0_c<<16))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, imm0))
         self.ins_pos += 1
@@ -486,7 +489,7 @@ class COMPILER:
                 imm0: 0|1
         """
         imm0_c,isConst0 = self.const_str_to_int(imm0)
-        ins = CMD(PL_COL_CTRL,command_data=CmdData(imm0_c))
+        ins = CMD(PL_COL_CTRL,command_data=CmdData(imm0_c<<16))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, imm0))
         self.ins_pos += 1
@@ -500,7 +503,7 @@ class COMPILER:
                 imm0: 0|1
         """
         imm0_c,isConst0 = self.const_str_to_int(imm0)
-        ins = CMD(PL_ROW_COL_SW,command_data=CmdData(imm0_c))
+        ins = CMD(PL_ROW_COL_SW,command_data=CmdData(imm0_c<<16))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, imm0))
         self.ins_pos += 1

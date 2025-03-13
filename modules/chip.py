@@ -432,10 +432,8 @@ class CHIP():
             if self.from_row:
                 self.dac.set_voltage(tg,dac_num=0,dac_channel=6)            # TG
                 self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
-                # self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
             else:   
                 self.dac.set_voltage(tg,dac_num=0,dac_channel=6)            # TG
-                # self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
                 self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
         elif self.deviceType==1:    
             # 新版1T1E需要ROW, COL的Va电压都加
@@ -461,25 +459,11 @@ class CHIP():
             if self.from_row:
                 self.dac.set_voltage(tg,dac_num=0,dac_channel=6)            # TG
                 self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
-                # self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
             else:   
                 self.dac.set_voltage(tg,dac_num=0,dac_channel=6)            # TG
-                # self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
                 self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
         elif self.deviceType==1:    
-            if self.from_row:  
-                # self.dac.set_voltage(0,dac_num=0,dac_channel=0)             # ROW_Va电压
-                # self.dac.set_voltage(0,dac_num=0,dac_channel=1)             # ROW_Va电压
-                # self.dac.set_voltage(0,dac_num=0,dac_channel=2)             # ROW_Va电压
-                # self.dac.set_voltage(0,dac_num=0,dac_channel=3)             # ROW_Va电压
-
-                # self.dac.set_voltage(0,dac_num=0,dac_channel=4)             # COL_Va电压
-                # self.dac.set_voltage(0,dac_num=0,dac_channel=5)             # COL_Va电压
-                # self.dac.set_voltage(0,dac_num=0,dac_channel=6)             # COL_Va电压
-                # self.dac.set_voltage(0,dac_num=0,dac_channel=7)             # COL_Va电压
-
-                # self.dac.set_voltage(0,dac_num=1,dac_channel=0)             # ROW_Vc
-                # self.dac.set_voltage(0,dac_num=1,dac_channel=1)             # COL_Vc     
+            if self.from_row:     
                 self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # GL
                 self.dac.set_voltage(v,dac_num=1,dac_channel=3)             # GR
             else:
@@ -688,13 +672,13 @@ class CHIP():
         ins_data=[]
         if self.deviceType == 1:
             self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(self.op_mode != "read"))],mode=1)
-            ins_data.append(CMD(PL_ROW_CTRL,command_data=CmdData(1)))                                                  # 1配置行到施加电压,
-            ins_data.append(CMD(PL_COL_CTRL,command_data=CmdData(not from_row)))                                                  # 0配置列到TIA,
-            ins_data.append(CMD(PL_ROW_COL_SW,command_data=CmdData(from_row)))  
+            ins_data.append(CMD(PL_ROW_CTRL,command_data=CmdData(1<<16)))                                                  # 1配置行到施加电压,
+            ins_data.append(CMD(PL_COL_CTRL,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
+            ins_data.append(CMD(PL_ROW_COL_SW,command_data=CmdData(int(from_row)<<16)))  
         else:
-            ins_data.append(CMD(PL_ROW_CTRL,command_data=CmdData(from_row)))                                                  # 1配置行到施加电压,
-            ins_data.append(CMD(PL_COL_CTRL,command_data=CmdData(not from_row)))                                                  # 0配置列到TIA,
-            ins_data.append(CMD(PL_ROW_COL_SW,command_data=CmdData(from_row)))  
+            ins_data.append(CMD(PL_ROW_CTRL,command_data=CmdData(int(from_row)<<16)))                                                  # 1配置行到施加电压,
+            ins_data.append(CMD(PL_COL_CTRL,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
+            ins_data.append(CMD(PL_ROW_COL_SW,command_data=CmdData(int(from_row)<<16)))  
         self.execute_ins(ins_data=ins_data,ins_ram_start=0)
 
     def execute_ins(self,ins_data:list[CMD],ins_ram_start:int):
@@ -706,7 +690,7 @@ class CHIP():
                 自动检查指令长度,配置,然后执行
                 并会清空指令列表
         """
-        if ins_data[-1].command_name != "pl_exit":
+        if len(ins_data)==0 or ins_data[-1].command_name != "pl_exit":
             ins_data.append(CMD(PL_EXIT))
         ins_num = len(ins_data)
         assert ins_num+ins_ram_start < self.ins_ram_threshold,f"execute_ins: ins_ram:{ins_num+ins_ram_start}超过界限。"
