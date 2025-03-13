@@ -1,7 +1,7 @@
-from cimCommand.singleCmd import CMD
-from cimCommand.singleCmdData import CmdData
+from command.singleCmd import CMD
+from command.singleCmdData import CmdData
 
-from cimCommand.singleCmdInfo import *
+from command.singleCmdInfo import *
 from typing import List, Union
 class COMPILER:
     ins_data = None                                                 # 存放CMD

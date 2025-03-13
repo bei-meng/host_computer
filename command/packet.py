@@ -1,5 +1,5 @@
-from cimCommand.singleCmd import CMD
-from cimCommand.singleCmdInfo import (
+from command.singleCmd import CMD
+from command.singleCmdInfo import (
     BYTE_ORDER
 )
 class Packet:

@@ -1,11 +1,12 @@
-from cimCommand import CMD,CmdData,Packet,COMPILER
-from cimCommand.singleCmdInfo import *
+from command import CMD,CmdData,Packet,COMPILER
+from command.singleCmdInfo import *
 from pc import PS
 from modules.adc import ADC
 from modules.dac import DAC
 from modules.clk_manager import CLK_MANAGER
 import numpy as np
 import time
+import os
 
 from typing import List, Union
 
@@ -47,12 +48,15 @@ class CHIP():
 
         self.compilers = {}
 
-    def add_compiler(self,name:str,filename:str,encoding:str = 'utf-8'):
+    def add_compiler(self,directory:str,encoding:str = 'utf-8'):
         """
             增加汇编代码
         """
-        self.compilers[name] = COMPILER()
-        self.compilers[name].load_assembler_ins(filename,encoding)
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                if file.endswith('.txt'):
+                    self.compilers[file] = COMPILER()
+                    self.compilers[file].load_assembler_ins(os.path.join(root, file),encoding)
 
     def get_compiler(self,name:str)->COMPILER:
         """
@@ -681,7 +685,7 @@ class CHIP():
             ins_data.append(CMD(PL_ROW_COL_SW,command_data=CmdData(int(from_row)<<16)))  
         self.execute_ins(ins_data=ins_data,ins_ram_start=0)
 
-    def execute_ins(self,ins_data:list[CMD],ins_ram_start:int):
+    def execute_ins(self,ins_data:list[CMD],ins_ram_start:int,recv:bool = True):
         """
             Args:
                 ins_data: 需要执行的指令的list
@@ -701,7 +705,7 @@ class CHIP():
         pkts.append_single(ins_data,mode=4)
         # pkts.append_single([CMD(INS_NUM,command_data=CmdData(ins_num))],mode=1)
         pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
-        self.ps.send_packets(pkts)
+        self.ps.send_packets(pkts,recv)
         # packet添加指令时都会对指令进行浅拷贝
         ins_data.clear()
 
@@ -1483,11 +1487,11 @@ class CHIP():
         self.read_voltage = read_voltage
         self.set_tia_gain(gain)
         self.set_op_mode2(read=True,from_row=from_row)
-        compiler = self.get_compiler("row_read_point3")
+        compiler = self.get_compiler("row_read_point3.txt")
 
         din_ram_start = 0
         ins_ram_start = 0
-        count_max_c = 512
+        count_max_c = 2048
         const_data,row_data,col_data = self.send_din_ram3(row_num_start,row_num_end,col_num_start,col_num_end,din_ram_start)
 
         for k,v in const_data.items():
@@ -1500,7 +1504,7 @@ class CHIP():
         compiler.add_offset(len(ins_data))
         ins_data = ins_data + compiler.get_ins_data()
 
-        self.execute_ins(ins_data=ins_data,ins_ram_start = ins_ram_start)
+        self.execute_ins(ins_data=ins_data,ins_ram_start = ins_ram_start,recv=False)
 
         # 等待读取数据
         row_length = row_num_end-row_num_start+1
@@ -1508,7 +1512,7 @@ class CHIP():
         res = np.zeros((row_length,col_length))
 
         point_num = row_length*col_length
-        num = 512
+        num = 2048
         voltage = None
         for row_pos in row_data:
             for col_pos in col_data:
@@ -1518,6 +1522,8 @@ class CHIP():
                     point_num -= count_max_c
                 res[row_pos,col_pos] = voltage[num]
                 num += 1
+
+        self.ps.receive_packet(4)
 
         if out_type == 0:
             return res

@@ -12,7 +12,7 @@
     command_description: 对命令功能的描述
 """
 
-from cimCommand.singleCmdData import CmdData
+from command.singleCmdData import CmdData
 #-------------------------------------------------------------------备选参数
 BYTE_ORDER   = "big"                        # 命令转换为字节后的字节序, or "little"
 PULSE_CYC_LENGTH = 10*1e-9                  # 单位s

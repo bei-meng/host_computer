@@ -1,10 +1,10 @@
-from cimCommand.singleCmdInfo import (
+from command.singleCmdInfo import (
     COMMAND_TYPE,
     N_ADDR_BYTES,
     N_DATA_BYTES,
     BYTE_ORDER
 )
-from cimCommand.singleCmdData import CmdData
+from command.singleCmdData import CmdData
 class CMD:
     """
         command_addr: 命令的地址
