@@ -1,5 +1,5 @@
-from cimCommand import CMD,CmdData,Packet
-from cimCommand.singleCmdInfo import *
+from command import CMD,CmdData,Packet
+from command.singleCmdInfo import *
 from pc import PS
 import numpy as np
 
