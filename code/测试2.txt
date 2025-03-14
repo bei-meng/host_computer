@@ -1,0 +1,64 @@
+# 读[row_start_num,row_end_num][col_start_num,col_start_num]这块区域的值
+# 默认会定义一个寄存器变量zero,值为0
+    #---------------------------------------------------------------------------------------------------每个dout_ram能存的最大数据
+    consti count_max_c, 512
+    consti pq_c, 0
+
+    #---------------------------------------------------------------------------------------------------要读的行bank号在din_ram存放的位置,以及右边界
+    consti row_bank_din_ram_s_c, 0
+    consti row_bank_din_ram_e_c, 1
+
+    #---------------------------------------------------------------------------------------------------要读的行bank号在din_ram存放的位置,以及右边界
+    consti col_bank_din_ram_s_c, 8
+    consti col_bank_din_ram_e_c, 9
+
+    #---------------------------------------------------------------------------------------------------每个行bank的起始index号和结束index号在din_ram存放的位置
+    consti row_index_din_ram_s_c, 0x10
+    consti row_index_din_ram_e_c, 0x18
+
+    #---------------------------------------------------------------------------------------------------每个列bank的起始index号和结束index号在din_ram存放的位置
+    consti col_index_din_ram_s_c, 0x20
+    consti col_index_din_ram_e_c, 0x38
+start:
+    row_ctrli 1
+    col_ctrli 0
+    row_col_swi 1
+    #---------------------------------------------------------------------------------------------------用于移位操作的寄存器数
+    addi one, zero, 1                                                       # 寄存器里面存的1
+    addi four, zero, 4                                                      # 寄存器里面存的2
+
+    #---------------------------------------------------------------------------------------------------存储当前是使用的哪一块dout_ram
+    addi pq, zero,pq_c
+
+    #---------------------------------------------------------------------------------------------------得到row_bank_mask
+    addi row_bank_addr, zero, row_bank_din_ram_s_c                          # 初始化寄存器，存放din_ram中的第一个要读的行bank的bank号的addr
+    load_din_ram    row_bank_num,row_bank_addr                              # 加载bank号
+    sll     row_bank_mask, one, row_bank_num                                # row_bank_mask = one << row_bank_num
+
+    #---------------------------------------------------------------------------------------------------得到row_index_mask
+    addi row_index_start_addr, zero, row_index_din_ram_s_c                  # 初始化寄存器，存放din_ram中的第一个行bank起始读的行index的addr
+    load_din_ram    row_index_num, row_index_start_addr                     # 将当前行bank的起始index号加载进来
+    sll row_index_mask, one, row_index_num                                  # 初始化行index的掩码, row_index_mask = one << row_index_num
+
+    #---------------------------------------------------------------------------------------------------得到col_bank_mask
+    addi col_bank_addr, zero, col_bank_din_ram_s_c                          # 初始化寄存器，存放din_ram中的第一个要读的列bank的bank号的addr
+    load_din_ram    col_bank_num,col_bank_addr                              # 加载bank号
+    sll     col_bank_mask, one, col_bank_num                                # col_bank_mask = one << col_bank_num
+
+    #---------------------------------------------------------------------------------------------------得到col_index_mask
+    addi col_index_start_addr, zero, col_index_din_ram_s_c                  # 初始化寄存器，存放din_ram中的第一个列bank起始读的列index的addr
+    load_din_ram    col_index_num, col_index_start_addr                     # 将当前行bank的起始row index加载进来
+    sll col_index_mask, one, col_index_num                                  # col_index_mask = one << col_index_num
+    
+    #---------------------------------------------------------------------------------------------------配置行列bank
+    set_row_bank row_bank_mask, row_index_mask                              # 配置行bank
+    set_col_bank col_bank_mask, col_index_mask                              # 配置列bank
+
+    #---------------------------------------------------------------------------------------------------读
+    addi tia_mask,zero,10
+    sll tia_mask,one,tia_mask
+    read_row_tia tia_mask,zero,pq
+
+    return_dout one,zero ,pq
+
+    exit

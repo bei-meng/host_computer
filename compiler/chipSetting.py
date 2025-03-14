@@ -19,7 +19,7 @@ class CHIPSETTING:
     dout_ram_length = 128                                       # dout_ram可以存128个数据,本来是256,但是现在128以后的不知道为什么不能用
     dout_ram_size = 256                                         # 每个数据长256bit
 
-    ins_ram_length = 256                                        # ins_ram可以存1024个数据,但是由于下面TCP的限制导致每次只能发256条指令
+    ins_ram_length = 280                                        # ins_ram可以存1024个数据,但是由于下面TCP的限制导致每次只能发256条指令
     ins_ram_size = 32                                           # 每个数据长32bit
 
 

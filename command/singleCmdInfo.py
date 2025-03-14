@@ -17,6 +17,8 @@ from command.singleCmdData import CmdData
 BYTE_ORDER   = "big"                        # 命令转换为字节后的字节序, or "little"
 PULSE_CYC_LENGTH = 10*1e-9                  # 单位s
 
+DEBUGA_ADDR_TO_CMD = {}                     # debug模式指令地址到指令的映射
+PL_ADDR_TO_CMD = {}                         # PL指令地址到指令的映射
 
 class COMMAND_TYPE():
     """
@@ -1308,38 +1310,55 @@ PL_READ_COL_PULSE_REG=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
-#-------------------------------------------------------------------PL_ROW_CTRL:0x19
-PL_ROW_CTRL=dict(
+#-------------------------------------------------------------------PL_ROW_CTRLI:0x19
+PL_ROW_CTRLI=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.PL,
     n_addr_bytes = N_ADDR_BYTES.ONE,
     n_data_bytes = N_DATA_BYTES.THREE,
-    command_name = "pl_row_ctrl",
+    command_name = "pl_row_ctrli",
     command_data = CmdData(0),
     command_description = "配置row_ctrl的值,1接电压,0接TIA"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
-#-------------------------------------------------------------------PL_COL_CTRL:0x1A
-PL_COL_CTRL=dict(
+#-------------------------------------------------------------------PL_COL_CTRLI:0x1A
+PL_COL_CTRLI=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.PL,
     n_addr_bytes = N_ADDR_BYTES.ONE,
     n_data_bytes = N_DATA_BYTES.THREE,
-    command_name = "pl_col_ctrl",
+    command_name = "pl_col_ctrli",
     command_data = CmdData(0),
     command_description = "配置col_ctrl的值,1接电压,0接TIA"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
-#-------------------------------------------------------------------PL_ROW_COL_SW:0x1B
-PL_ROW_COL_SW=dict(
+#-------------------------------------------------------------------PL_ROW_COL_SWI:0x1B
+PL_ROW_COL_SWI=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.PL,
     n_addr_bytes = N_ADDR_BYTES.ONE,
     n_data_bytes = N_DATA_BYTES.THREE,
-    command_name = "pl_row_col_sw",
+    command_name = "pl_row_col_swi",
     command_data = CmdData(0),
     command_description = "配置row_col_sw的值,pcb上row或col的TIA,0:row,1:col"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+
+
+
+
+
+
+
+for cmd, obj in list(locals().items()):
+    if isinstance(obj, dict) and (obj.get("command_addr",None)!=None):
+        if "PL_" not in cmd:
+            DEBUGA_ADDR_TO_CMD[obj["command_addr"]]=obj
+        else:
+            PL_ADDR_TO_CMD[obj["command_addr"]]=obj
+
+

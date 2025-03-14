@@ -1,6 +1,6 @@
-from command import CMD,CmdData,Packet,COMPILER
+from command import CMD,CmdData,Packet
 from command.singleCmdInfo import *
-
+from compiler import COMPILER,SIMULATOR
 
 from pc import PS
 from modules.adc import ADC
@@ -516,13 +516,13 @@ class CHIP():
         ins_data=[]
         if self.deviceType == 1:
             self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(self.op_mode != "read"))],mode=1)
-            ins_data.append(CMD(PL_ROW_CTRL,command_data=CmdData(1<<16)))                                                  # 1配置行到施加电压,
-            ins_data.append(CMD(PL_COL_CTRL,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
-            ins_data.append(CMD(PL_ROW_COL_SW,command_data=CmdData(int(from_row)<<16)))  
+            ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(1<<16)))                                                  # 1配置行到施加电压,
+            ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
+            ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
         else:
-            ins_data.append(CMD(PL_ROW_CTRL,command_data=CmdData(int(from_row)<<16)))                                                  # 1配置行到施加电压,
-            ins_data.append(CMD(PL_COL_CTRL,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
-            ins_data.append(CMD(PL_ROW_COL_SW,command_data=CmdData(int(from_row)<<16)))  
+            ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(int(from_row)<<16)))                                                  # 1配置行到施加电压,
+            ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
+            ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
         self.execute_ins(ins_data=ins_data,ins_ram_start=0)
 
     def execute_ins(self,ins_data:list[CMD],ins_ram_start:int,recv:bool = True):
@@ -1281,7 +1281,7 @@ class CHIP():
         )
 
         # --------------------------------------------------准备din_ram的数据
-        din_ram_data = [CMD(PL_DATA,command_data=CmdData(0)) for i in range(64)]                        # 要发送下去的数据, din_ram的开始存0,用于恢复
+        din_ram_data = [CMD(PL_DATA,command_data=CmdData(0)) for i in range(48)]                        # 要发送下去的数据, din_ram的开始存0,用于恢复
 
         # --------------------------------------------------处理行bank
         row_data = self.setting.get_bank_index_tia(list(range(row_num_start,row_num_end+1)),self.from_row)

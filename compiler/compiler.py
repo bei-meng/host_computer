@@ -477,7 +477,7 @@ class COMPILER:
                 imm0: 0|1
         """
         imm0_c,isConst0 = self.const_str_to_int(imm0)
-        ins = CMD(PL_ROW_CTRL,command_data=CmdData(imm0_c<<16))
+        ins = CMD(PL_ROW_CTRLI,command_data=CmdData(imm0_c<<16))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, imm0))
         self.ins_pos += 1
@@ -491,7 +491,7 @@ class COMPILER:
                 imm0: 0|1
         """
         imm0_c,isConst0 = self.const_str_to_int(imm0)
-        ins = CMD(PL_COL_CTRL,command_data=CmdData(imm0_c<<16))
+        ins = CMD(PL_COL_CTRLI,command_data=CmdData(imm0_c<<16))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, imm0))
         self.ins_pos += 1
@@ -505,7 +505,7 @@ class COMPILER:
                 imm0: 0|1
         """
         imm0_c,isConst0 = self.const_str_to_int(imm0)
-        ins = CMD(PL_ROW_COL_SW,command_data=CmdData(imm0_c<<16))
+        ins = CMD(PL_ROW_COL_SWI,command_data=CmdData(imm0_c<<16))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, imm0))
         self.ins_pos += 1

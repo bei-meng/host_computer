@@ -17,6 +17,8 @@ class PS():
         self.enable = True
         self.debug = debug
 
+        self.historic_pkts = []
+
         try:
             s = self.socket
             s.bind((self.local_ip, 0))
@@ -62,6 +64,8 @@ class PS():
         """
             将packer里面的所有上位机指令按顺序有间隔的发送下去
         """
+        if self.debug >0:
+            self.historic_pkts.append(pkts)
         if self.enable or self.debug>0:
             with self.lock:
                 try:
