@@ -40,11 +40,11 @@ class CHIP():
         self.ps = ps
         self.init = init
         self.initOp()
-        self.adc = ADC(ps,init)
-        self.dac = DAC(ps,init)
-        self.clk_manager = CLK_MANAGER(ps,init)
         self.setting = CHIPSETTING(self.deviceType)
-
+        self.adc = ADC(ps,self.setting,init)
+        self.dac = DAC(ps,self.setting,init)
+        self.clk_manager = CLK_MANAGER(ps,init)
+        
         self.compilers = {}
 
     def add_compiler(self,directory:str,encoding:str = 'utf-8'):
@@ -525,7 +525,7 @@ class CHIP():
             ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
         self.execute_ins(ins_data=ins_data,ins_ram_start=0)
 
-    def execute_ins(self,ins_data:list[CMD],ins_ram_start:int,recv:bool = True):
+    def execute_ins(self,ins_data:list[CMD],ins_ram_start:int,message_check:str="cc550000"):
         """
             Args:
                 ins_data: 需要执行的指令的list
@@ -543,9 +543,11 @@ class CHIP():
 
         pkts=Packet()
         pkts.append_single(ins_data,mode=4)
+        self.ps.send_packets(pkts)
         # pkts.append_single([CMD(INS_NUM,command_data=CmdData(ins_num))],mode=1)
+        pkts=Packet()
         pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
-        self.ps.send_packets(pkts,recv)
+        self.ps.send_packets(pkts,message_check=message_check)
         # packet添加指令时都会对指令进行浅拷贝
         ins_data.clear()
 

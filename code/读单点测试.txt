@@ -55,10 +55,9 @@ start:
     set_col_bank col_bank_mask, col_index_mask                              # 配置列bank
 
     #---------------------------------------------------------------------------------------------------读
-    addi tia_mask,zero,10
+    addi tia_mask,zero,11
     sll tia_mask,one,tia_mask
     read_row_tia tia_mask,zero,pq
 
     return_dout one,zero ,pq
-
     exit

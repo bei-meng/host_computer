@@ -1,4 +1,5 @@
 from command import CMD,CmdData,Packet
+from compiler.chipSetting import CHIPSETTING
 from command.singleCmdInfo import *
 from pc import PS
 
@@ -18,8 +19,9 @@ class DAC():
 
     init = True
 
-    def __init__(self,ps:PS,init = True):
+    def __init__(self,ps:PS,setting:CHIPSETTING,init = True):
         self.ps = ps
+        self.setting = setting
         self.init = init
         # DAC的初始化操作
         self.initOp()

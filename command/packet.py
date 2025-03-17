@@ -80,3 +80,12 @@ class Packet:
                     cmdbytes = k.get_command()
                     res += f"\t指令: {str(k.command_name):<{max_cmd_name_len}}\t字节码: " + " ".join(f'{byte:02x}' for byte in cmdbytes) + "\n"
         return res
+    
+    def all_bytes(self):
+        """
+            返回每条完整指令的字节码
+        """
+        res = []
+        for cmd in self.get_bytes_list():
+            res.append("".join(f'{byte:02x}' for byte in cmd))
+        return res

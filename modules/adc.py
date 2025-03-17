@@ -1,5 +1,6 @@
 from command import CMD,CmdData,Packet
 from command.singleCmdInfo import *
+from compiler.chipSetting import CHIPSETTING
 from pc import PS
 import numpy as np
 
@@ -21,10 +22,12 @@ class ADC():
     row_col_sw = 0 
 
     ps = None
+    setting = None
     init = True
 
-    def __init__(self,ps:PS,init = True):
+    def __init__(self,ps:PS,setting:CHIPSETTING,init = True):
         self.ps = ps
+        self.setting = setting
         self.init = init
         # DAC的初始化操作
         self.initOp()
@@ -113,7 +116,7 @@ class ADC():
         self.ps.send_packets(pkts)
 
 
-    def set_gain(self,gain,delay=None):
+    def set_gain(self,gain):
         """
             设置ADC的增益?
         """
@@ -123,7 +126,7 @@ class ADC():
         ],mode=1)
 
         # 发送指令
-        self.ps.send_packets(pkts,delay=delay)
+        self.ps.send_packets(pkts)
         self.gain=gain
 
     def hex_to_voltage(self,message_hex,vref=1.25):
@@ -201,7 +204,7 @@ class ADC():
             pkts.append_cmdlist([adc_out],mode=2)
 
             # 发送指令
-            self.ps.send_packets(pkts,recv=False)
+            self.ps.send_packets(pkts,message_check=None)
             # 接收信息
             # 高16bit: 0, 低16bit: 寄存器的16bit值
             message = self.ps.receive_packet(bytes_num=4)
@@ -226,27 +229,19 @@ class ADC():
             CMD(PL_RAM_ADDR,command_data=CmdData(dout_ram_start)),
             CMD(PL_DATA_LENGTH,command_data=CmdData(data_length))
         ],mode=6)
-        self.ps.send_packets(pkts,recv=False)
+        self.ps.send_packets(pkts,message_check=None)
         
         tia16_length = 64
         tia_num = 16
         tia_length = 4
         # 接收信息, num条dout_ram值, 每条dout_ram长为256/8=32B
-        message = self.ps.receive_packet(data_length*32)
+        message = self.ps.receive_packet(data_length*32).hex()
         # 切分数据为16路TIA, 转成16进制后, 每条dout_ram长32*2个16进制宽度(4bit)
-        message = [message.hex()[i*tia16_length:(i+1)*tia16_length] for i in range(data_length)]
+        message_tia = [message[i*tia16_length:(i+1)*tia16_length] for i in range(data_length)]
+        vres = [[self.hex_to_voltage(tia16[i*tia_length:(i+1)*tia_length]) for i in range(tia_num)] for tia16 in message_tia]
 
-        vres = []
-        for tia16 in message:
-            tmp = []
-            for i in range(0,tia_num,2):
-                # tia顺序为: 1, 0, 3, 2, 5, 4... 需要转换为0,1,2,3,4,5...
-                tmp.append(tia16[(i+1)*tia_length:(i+2)*tia_length])
-                tmp.append(tia16[i*tia_length:(i+1)*tia_length])
-
-            vres.append([self.hex_to_voltage(i) for i in tmp])
         return np.array(vres)
-    
+ 
     def get_out3(self,data_length:int)->np.ndarray:
         """
             Args:
@@ -258,8 +253,8 @@ class ADC():
             从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的tia的值
         """
         # return np.array([i for i in range(data_length)])
-        message = self.ps.receive_packet(data_length*2)
+        message = self.ps.receive_packet(np.ceil(data_length*16/256)).hex()
         # 每条数据2B,16位占4个16进制数
-        res = [message.hex()[i*4:(i+1)*4] for i in range(data_length)]
+        res = [message[i*4:(i+1)*4] for i in range(data_length)]
         voltage = [self.hex_to_voltage(i) for i in res]
         return np.array(voltage)

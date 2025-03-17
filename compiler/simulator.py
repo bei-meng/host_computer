@@ -58,8 +58,9 @@ class SIMULATOR:
         self.pc = self.pc-num
 
     def execut_one(self,cmdType="PL"):
-        if self.pc>self.ins_num:
+        if self.pc>=self.ins_num:
             print("指令已全部执行。")
+            self.pc = 0
             return
         cmd_bytes = self.ins_ram[self.pc]
         cmd_addr = (cmd_bytes>>24)&0xFF
@@ -103,22 +104,16 @@ class SIMULATOR:
 
     def print_reg(self):
         print("reg信息:")
-        # 按列输出
-        for i in range(8):  # 8行
-            for j in range(4):  # 每行4列
+        for i in range(8):
+            for j in range(4):
                 index = i * 4 + j
                 print(f"reg:{index:<{4}}值:{hex(self.reg[index]):<{12}}", end="")  # 左对齐
-            print()  # 换行
-        # for i,v in enumerate(self.reg):
-        #     print(f"寄存器编号:{i}\t\t值:{hex(v)}")
+            print()
 
     def print_din_ram(self):
         print("din_ram信息:")
-        # 按列输出
-        for i in range(int(self.din_num/4)):  # 8行
-            for j in range(4):  # 每行4列
+        for i in range(int(self.din_num/4)):
+            for j in range(4):
                 index = i * 4 + j
                 print(f"din:{index:<{4}}值:{hex(self.din_ram[index]):<{12}}", end="")  # 左对齐
-            print()  # 换行
-        # for i,v in enumerate(self.reg):
-        #     print(f"寄存器编号:{i}\t\t值:{hex(v)}")
+            print()
