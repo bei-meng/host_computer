@@ -36,6 +36,8 @@ class CHIP():
 
     init = True
 
+    read_parallel2_data = None
+
     def __init__(self, ps:PS,init = True):
         self.ps = ps
         self.init = init
@@ -1028,7 +1030,7 @@ class CHIP():
     
     def read_parallel2(self,crossbar:np.ndarray,read_voltage:float,tg:float = 5,
                        gain:int = 1,from_row:bool = True, out_type = 0,
-                       tia_map:Union[list[list[int]|None]]=None,check_tia:bool=True):
+                       tia_map:Union[list[list[int]|None]]=None,use_last_data:bool=False):
         """
             读器件, row_index为行索引, col_index为列索引
         """
@@ -1036,21 +1038,24 @@ class CHIP():
         self.set_tia_gain(gain)
         self.set_op_mode2(read=True,from_row=from_row)
 
-        # --------------------------------------------------配置写的点的数据, 因为行/列对应的bank是间隔1, 所以为了避免更多的切行列bank, 尽量使得一个bank的挨在一起
-        row,col = crossbar.shape
-        row_index,col_index = self.get_crossbar_data(crossbar,sum_row=not from_row)
         # ----------------------------------------------ins_ram,din_ram,dout_ram的地址
         read_ins = PL_READ_ROW_PULSE if from_row else PL_READ_COL_PULSE
         ins_ram_start = 0
         din_ram_start = 0
         dout_ram_start = 0
         dout_ram_pos = dout_ram_start
-        res_row_bank,res_col_bank,res_tia_map = self.send_parallel_read_din_ram2(row_index,col_index,tia_map,check_tia,din_ram_start)
+        # --------------------------------------------------配置写的点的数据, 因为行/列对应的bank是间隔1, 所以为了避免更多的切行列bank, 尽量使得一个bank的挨在一起
+        row,col = crossbar.shape
+        if use_last_data:
+            res_row_bank,res_col_bank,res_tia_map = self.read_parallel2_data
+        else:
+            row_index,col_index = self.get_crossbar_data(crossbar,sum_row=not from_row)
+            res_row_bank,res_col_bank,res_tia_map = self.send_parallel_read_din_ram2(row_index,col_index,tia_map,True,din_ram_start)
+            self.read_parallel2_data = (res_row_bank,res_col_bank,res_tia_map)
 
         res = np.zeros((row,col))
         ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)                                              # 得到配置电压的指令序列
-        read_nums = len(res_tia_map)
-        # print(f"需要读{read_nums}次")
+        read_nums = 0
         read_batch_start,read_batch_end = 0,0
 
         row_banks_last,col_banks_last = [],[]
@@ -1078,7 +1083,8 @@ class CHIP():
             row_banks_last,col_banks_last = row_banks,col_banks
             row_bank_num_last,col_bank_num_last = row_bank_num_new,col_bank_num_new
             
-            if len(ins_data)+len(add_ins_data) > self.setting.ins_ram_length or dout_ram_pos+1 >= self.setting.dout_ram_length:
+            if len(ins_data)+len(add_ins_data)+1 >= self.setting.ins_ram_length or dout_ram_pos+1 >= self.setting.dout_ram_length:
+                read_nums+=1
                 self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
                 voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
                 for i in range(read_batch_start,read_batch_end):
@@ -1095,18 +1101,189 @@ class CHIP():
             read_batch_end +=1
 
         if len(ins_data)>0:
+            read_nums+=1
             self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
             voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
             for i in range(read_batch_start,read_batch_end):
                 for row,col,tia in res_tia_map[i]:
                     res[row,col]=voltage[i-read_batch_start,tia]
 
+        print(f"共发送指令{read_nums}次")
         if out_type == 0:
             return res
         elif out_type == 1:
             return self.voltage_to_cond(voltage=res, read_voltage=read_voltage)
         elif out_type == 2:
             return self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
+
+    def send_parallel_chunk_read_din_ram2(self,row_index:list[list[int]],col_index:list[list[int]],
+                            tia_map:Union[list[list[int]|None]]=None,
+                            din_ram_start:int = 0) -> tuple[list[list],list[list],list]:
+        """
+            Args:
+                row_index: 需要配置的行的数据
+                col_index: 需要配置的列的数据
+                din_ram_start: 下发数据的din_ram的起始地址,默认为0
+
+            Returns:
+                res_row_bank: 一个个点需要配置的行bank和din_ram_data里面的index的映射\n
+                res_col_bank: 一个个点需要配置的列bank和din_ram_data里面的index的映射\n
+                res_tia_map: 每个点的TIA映射(写模式返回为空)
+            
+            只允许读函数中使用
+        """
+        assert self.op_mode == "read","只允许读函数中使用。"
+        # --------------------------------------------------准备din_ram的数据
+        din_ram_pos = din_ram_start+1                                                                   # 因为32bit的0在din_ram_data里面, 所以需要+1
+        din_ram_data = [CMD(PL_DATA,command_data=CmdData(0))]                                           # 要发送下去的数据, din_ram的开始存0,用于恢复
+        res_row_bank = []                                                                               # 等会配行bank指令执行需要的数据
+        res_col_bank = []                                                                               # 等会配列bank指令执行需要的数据
+        res_tia_map  = []                                                                               # 每个点对应的TIA映射,需要提前选好从行列读
+        din_ram_bank_index_map = {}                                                                     # 用于节约din空间
+
+        # --------------------------------------------------增加映射
+        def add_map(res_bank:list,index:list) -> None:                                                  # 增加bank和din_ram_data里面的index的映射
+            nonlocal din_ram_pos
+            bank32,index32 = self.setting.get_bank_index32(index)
+            if din_ram_bank_index_map.get(index32,None) is None:
+                din_ram_bank_index_map[index32] = din_ram_pos                                           # 如果前面没有用过这个index, 记录下来
+                din_ram_data.append(CMD(PL_DATA,command_data=CmdData(index32)))
+                din_ram_pos = din_ram_pos+1
+            res_bank.append((bank32,din_ram_bank_index_map[index32]))
+
+        if self.from_row:
+            col_bank_data = self.setting.get_bank_index_tia(col_index[0],self.from_row)
+            col_read_batch = self.setting.tia_split(col_bank_data,tia_map=tia_map,check_tia=True)
+
+            row_bank_data = [self.setting.bank_split(self.setting.get_bank_index_tia(i,self.from_row),all_data=False) for i in row_index]
+            for col_batch in col_read_batch:
+                # 每个列batch遍历多行
+                cols_bank = self.setting.bank_split(col_batch,all_data=False)
+                for row_num,rows_bank in enumerate(row_bank_data):
+                    res_row_bank.append([])
+                    res_col_bank.append([])
+                    for rows in rows_bank:
+                        add_map(res_row_bank[-1],rows)
+                    for cols in cols_bank:
+                        add_map(res_col_bank[-1],cols)
+                    res_tia_map.append([(row_index[row_num][0],j[1],j[4]) for j in col_batch])
+        else:
+            row_bank_data = self.setting.get_bank_index_tia(row_index[0],self.from_row)
+            row_read_batch = self.setting.tia_split(row_bank_data,tia_map=tia_map,check_tia=True)
+
+            col_bank_data = [self.setting.bank_split(self.setting.get_bank_index_tia(i,self.from_row),all_data=False) for i in col_index]
+            for row_batch in row_read_batch:
+                # 每个行latch遍历多列
+                rows_bank = self.setting.bank_split(row_batch,all_data=False)
+                for col_num,cols_bank in enumerate(col_bank_data):
+                    res_row_bank.append([])
+                    res_col_bank.append([])
+                    for rows in rows_bank:
+                        add_map(res_row_bank[-1],rows)
+                    for cols in cols_bank:
+                        add_map(res_col_bank[-1],cols)
+                    res_tia_map.append([(j[1],col_index[col_num][0],j[4]) for j in row_batch])
+
+        # --------------------------------------------------发送数据
+        self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
+        
+        return res_row_bank,res_col_bank,res_tia_map
+    
+    def read_chunk_parallel2(self,row_num_start:int,row_num_end:int,col_num_start:int,col_num_end:int,
+                       read_voltage:float,tg:float = 5,
+                       gain:int = 1,from_row:bool = True, out_type = 0,
+                       compute:bool = False,
+                       tia_map:Union[list[list[int]|None]]=None,use_last_data:bool=False):
+        """
+            左闭右闭区间[row_num_start,row_num_end]
+        """
+        self.read_voltage = read_voltage
+        self.set_tia_gain(gain)
+        self.set_op_mode2(read=True,from_row=from_row)
+
+        # ----------------------------------------------ins_ram,din_ram,dout_ram的地址
+        read_ins = PL_READ_ROW_PULSE if from_row else PL_READ_COL_PULSE
+        ins_ram_start = 0
+        din_ram_start = 0
+        dout_ram_start = 0
+        dout_ram_pos = dout_ram_start
+        # --------------------------------------------------配置写的点的数据, 因为行/列对应的bank是间隔1, 所以为了避免更多的切行列bank, 尽量使得一个bank的挨在一起
+        row,col = row_num_end-row_num_start+1,col_num_end-col_num_start+1
+        if use_last_data:
+            res_row_bank,res_col_bank,res_tia_map = self.read_parallel2_data
+        else:
+            if from_row:
+                row_index = list(range(row_num_start,row_num_end+1)) if compute else[[i] for i in range(row_num_start,row_num_end+1,2)]+[[i] for i in range(row_num_start+1,row_num_end+1,2)]
+                col_index = [[i for i in range(col_num_start,col_num_end+1,2)]+[i for i in range(col_num_start+1,col_num_end+1,2)]]
+            else:
+                row_index = [[i for i in range(row_num_start,row_num_end+1,2)]+[i for i in range(row_num_start+1,row_num_end+1,2)]]
+                col_index = list(range(col_num_start,col_num_end+1))if compute else [[i] for i in range(col_num_start,col_num_end+1,2)]+[[i] for i in range(col_num_start+1,col_num_end+1,2)]
+            res_row_bank,res_col_bank,res_tia_map = self.send_parallel_chunk_read_din_ram2(row_index,col_index,tia_map,din_ram_start)
+            self.read_parallel2_data = (res_row_bank,res_col_bank,res_tia_map)
+
+        res = np.zeros((row,col))
+        ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)                                              # 得到配置电压的指令序列
+        read_nums = 0
+        read_batch_start,read_batch_end = 0,0
+
+        row_banks_last,col_banks_last = [],[]
+        row_bank_num_last,col_bank_num_last = [],[]
+        for row_banks,col_banks in zip(res_row_bank,res_col_bank):
+            add_ins_data = []
+            row_bank_num_new,col_bank_num_new = [row_bank[0] for row_bank in row_banks],[col_bank[0] for col_bank in col_banks]
+            if row_bank_num_new==row_bank_num_last and col_bank_num_new==col_bank_num_last:
+                if row_banks_last!=row_banks:
+                    for row_bank in row_banks:
+                        add_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(row_bank[0]<<8|row_bank[1])))  # 配置行bank
+
+                if col_banks_last!=col_banks:
+                    for col_bank in col_banks:
+                        add_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(col_bank[0]<<8|col_bank[1])))  # 配置列bank
+            else:
+                add_ins_data.append( CMD(PL_CIM_RESET))
+                for row_bank in row_banks:
+                    add_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(row_bank[0]<<8|row_bank[1])))  # 配置行bank
+                for col_bank in col_banks:
+                    add_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(col_bank[0]<<8|col_bank[1])))  # 配置列bank
+
+            add_ins_data.append(CMD(read_ins,command_data=CmdData(dout_ram_pos)))
+
+            row_banks_last,col_banks_last = row_banks,col_banks
+            row_bank_num_last,col_bank_num_last = row_bank_num_new,col_bank_num_new
+            
+            if len(ins_data)+len(add_ins_data)+1 >= self.setting.ins_ram_length or dout_ram_pos+1 >= self.setting.dout_ram_length:
+                read_nums+=1
+                self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
+                voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
+                for i in range(read_batch_start,read_batch_end):
+                    for row,col,tia in res_tia_map[i]:
+                        res[row-row_num_start,col-col_num_start]=voltage[i-read_batch_start,tia]
+                
+                read_batch_start = read_batch_end
+
+                dout_ram_pos = dout_ram_start
+                add_ins_data[-1]=CMD(read_ins,command_data=CmdData(dout_ram_pos))
+
+            ins_data += add_ins_data
+            dout_ram_pos += 1
+            read_batch_end +=1
+
+        if len(ins_data)>0:
+            read_nums+=1
+            self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
+            voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
+            for i in range(read_batch_start,read_batch_end):
+                for row,col,tia in res_tia_map[i]:
+                    res[row-row_num_start,col-col_num_start]=voltage[i-read_batch_start,tia]
+
+        print(f"共发送指令{read_nums}次")
+        if out_type == 0:
+            return res
+        elif out_type == 1:
+            return self.voltage_to_cond(voltage=res, read_voltage=read_voltage)
+        elif out_type == 2:
+            return self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
+        
     #------------------------------------------------------------------------------------------
     # ******************************** 点读写相关操作(非并行) **********************************
     #------------------------------------------------------------------------------------------    

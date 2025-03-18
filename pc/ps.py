@@ -43,7 +43,7 @@ class PS():
         try:
             start_time = time.perf_counter()
             while len(res)< bytes_num:
-                packet = self.socket.recv(min(bytes_num-len(res),1024))
+                packet = self.socket.recv(bytes_num)
                 res = res + packet
             if self.debug&2>0:
                 end_time = time.perf_counter()

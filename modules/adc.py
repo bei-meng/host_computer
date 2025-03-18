@@ -212,7 +212,7 @@ class ADC():
             voltage.append(self.hex_to_voltage(voltage_hex))
         return np.array(voltage)
     
-    def get_out2(self,data_length:int,dout_ram_start:int) -> np.ndarray:
+    def get_out2_split(self,data_length:int,dout_ram_start:int) -> np.ndarray:
         """
             Args:
                 data_length: 要从dout_ram里面读多少条数据(每条数据256bit)
@@ -224,18 +224,61 @@ class ADC():
             从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的16路tia的值
         """
         # return np.array([[j  for j in range(16)] for i in range(data_length)])
+        message = b''
+        # 这里超过1440TCP包限制后就非常慢，几乎慢100倍
+        tmp_length = data_length
+        while tmp_length>0:
+            dout_size = int(self.setting.dout_ram_size/8)
+            recv_size = min(int(1440/dout_size),tmp_length)
+            tmp_length -= recv_size
+            pkts=Packet()
+            pkts.append_single([
+                CMD(PL_RAM_ADDR,command_data=CmdData(dout_ram_start)),
+                CMD(PL_DATA_LENGTH,command_data=CmdData(recv_size))
+            ],mode=6)
+            dout_ram_start +=recv_size
+            # 接收信息, num条dout_ram值, 每条dout_ram长为256/8=32B
+            self.ps.send_packets(pkts,message_check=None)
+            message += self.ps.receive_packet(recv_size*dout_size)
+        
+        
+        tia16_length = 64
+        tia_num = 16
+        tia_length = 4
+        
+        message=message.hex()
+        # 切分数据为16路TIA, 转成16进制后, 每条dout_ram长32*2个16进制宽度(4bit)
+        message_tia = [message[i*tia16_length:(i+1)*tia16_length] for i in range(data_length)]
+        vres = [[self.hex_to_voltage(tia16[i*tia_length:(i+1)*tia_length]) for i in range(tia_num)] for tia16 in message_tia]
+
+        return np.array(vres)
+    
+    def get_out2(self,data_length:int,dout_ram_start:int) -> np.ndarray:
+        """
+            Args:
+                data_length: 要从dout_ram里面读多少条数据(每条数据256bit)
+                dout_ram_start: dout_ram_start的起始地址
+
+            Returns:
+                vres: data_length*16的一个np矩阵
+
+            从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的16路tia的值
+        """
+        if dout_ram_start+96>=self.setting.dout_ram_length:
+            return self.get_out2_split(data_length,dout_ram_start)
         pkts=Packet()
         pkts.append_single([
             CMD(PL_RAM_ADDR,command_data=CmdData(dout_ram_start)),
-            CMD(PL_DATA_LENGTH,command_data=CmdData(data_length))
+            CMD(PL_DATA_LENGTH,command_data=CmdData(max(96,data_length)))
         ],mode=6)
         self.ps.send_packets(pkts,message_check=None)
         
         tia16_length = 64
         tia_num = 16
         tia_length = 4
+
         # 接收信息, num条dout_ram值, 每条dout_ram长为256/8=32B
-        message = self.ps.receive_packet(data_length*32).hex()
+        message = self.ps.receive_packet(max(96,data_length)*32).hex()
         # 切分数据为16路TIA, 转成16进制后, 每条dout_ram长32*2个16进制宽度(4bit)
         message_tia = [message[i*tia16_length:(i+1)*tia16_length] for i in range(data_length)]
         vres = [[self.hex_to_voltage(tia16[i*tia_length:(i+1)*tia_length]) for i in range(tia_num)] for tia16 in message_tia]
