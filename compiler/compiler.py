@@ -230,6 +230,9 @@ class COMPILER:
     #------------------------------------------------------------------------------------------
     # *********************************** 编译汇编文件的函数 ***********************************
     #------------------------------------------------------------------------------------------
+    def free_reg(self,variable_name):
+        self.del_reg_variable(variable_name=variable_name)
+
     def add_label(self,label_name:str):
         """
             添加一个label
@@ -510,6 +513,22 @@ class COMPILER:
         self.ass_ins.append((0, ins.command_name, imm0))
         self.ins_pos += 1
         
+        if isConst0:
+            self.need_replace_const.append((self.ins_pos-1, imm0, 0, 8))
+
+    def set_dac(self,imm0:Union[int|str],reg0:Union[int|str]):
+        """
+            Args:
+                imm1: DAC的通道[0,11]
+                imm0: 16bit的电压码值
+        """
+        imm0_c,isConst0 = self.const_str_to_int(imm0)
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_DAC_V,command_data=CmdData(reg_0 <<16 | imm0_c))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, reg0, imm0))
+        self.ins_pos += 1
+
         if isConst0:
             self.need_replace_const.append((self.ins_pos-1, imm0, 0, 8))
 

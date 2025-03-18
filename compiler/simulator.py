@@ -17,6 +17,10 @@ class SIMULATOR:
             Functions:
                 初始化相关ram空间和reg空间
         """
+        self.reset()
+
+    
+    def reset(self):
         self.din_ram = [0]*CHIPSETTING.din_ram_length
         self.dout_ram = [0]*CHIPSETTING.dout_ram_length
         self.ins_ram = [0]*CHIPSETTING.ins_ram_length
@@ -26,9 +30,6 @@ class SIMULATOR:
         self.ins_num = 0
         self.din_num = 0
         self.dout_num = 0
-
-    def reset_pc(self):
-        self.pc = 0
 
     def load_bit_cmd(self,cmd:bytes):
         """

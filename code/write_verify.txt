@@ -22,7 +22,6 @@
     consti V_set,3
     consti V_reset,2
 
-
     #----------------------------------------------------------定义din_ram[0:7]存放范围边界
     #---------------------------------------------------------------------------------------------------要读的行bank号在din_ram存放的位置,以及右边界
     consti row_bank_din_ram_s_c, 0
@@ -56,6 +55,8 @@ start:
     addi x,zero,256
     sll x,x,eight
     add TG_offset,x,eight
+    free_reg eight
+    free_reg x
     #---------------------------------------------------------------------------------------
 
 
@@ -74,6 +75,7 @@ loop1:
     #row_bank_addr 为计数器,会++, 直到结束边界
     load_din_ram    row_bank_num,row_bank_addr                              # 加载bank号
     sll     row_bank_mask, one, row_bank_num                                # row_bank_mask = one << row_bank_num
+    free_reg row_bank_num
 
     #---------------------------------------------------------------------------------------------------初始化index号遍历的起始和结束边界
     # row_index_start_addr 和 row_index_end_addr 会++, row_index_num 为起始边界, row_end_index 为结束边界
@@ -115,6 +117,7 @@ tia_nobig4:
 
 tia_big4:
     sub     tia_base, col_bank_num, four                                    # tia_base = col_bank_count - 4
+    free_reg col_bank_num
 
 tia_end:
     sll     tia_base, tia_base, one                                         # tia_base = tia_base * 2
@@ -130,14 +133,16 @@ loop4:
     srl tia_offset, col_index_num, four                                     # tmp_index = col_index_num / 16
     add tia_num, tia_base, tia_offset                                       # tia_num = tia_base + tia_offset
     sll tia_mask,one,tia_num                                                # tia_mask = one << tia_num
-
+    free_reg tia_num
 
 
     addi count_target,count,8               #从din_ram[8]开始存储每个点的target值
     load_din_ram target,count_target        #从din_ram[count_target]中取对应点的target值
+    free_reg count_target
 
     add count_TG,count,TG_offset        #从din_ram[8+256*256]开始存储每个点原有的写电压
     load_din_ram V_write,count_TG           #从din_ram[count_TG]取对应点的写电压
+    free_reg count_TG
  
     addi    count, count, 1                 #验证的点数+1
     addi    count_verify,zero,0             #初始化验证次数

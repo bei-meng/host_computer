@@ -122,7 +122,7 @@ class CHIPSETTING:
             res = res + tia_list[i]
         return res
     
-    def tia_split(self,data:list[tuple[int,int,int,int,int]],tia_map:Union[list[list[int]|None]]=None,
+    def tia_split(self,data:list[tuple[int,int,int,int,int]],tia_map:Union[list[int]|None]=None,
                   check_tia = True) -> list[list[tuple[int,int,int,int,int]]]:
         """
             Args:
@@ -143,7 +143,6 @@ class CHIPSETTING:
             maxNum = 0
             for sublist in tia16:
                 maxNum = max(maxNum,len(sublist))
-
             # ----------------------------------------------每路TIA选一路
             while maxNum:
                 read_batch.append([sublist.pop() for sublist in tia16 if sublist])
