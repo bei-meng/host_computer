@@ -1,4 +1,5 @@
 from typing import List, Union
+import numpy as np
 class CHIPSETTING:
     # 芯片配置
     deviceType = 0                                              # 0为ReRAM,1为ECRAM
@@ -22,17 +23,31 @@ class CHIPSETTING:
     ins_ram_length = 280                                        # ins_ram可以存1024个数据,但是由于下面TCP的限制导致每次只能发256条指令
     ins_ram_size = 32                                           # 每个数据长32bit
 
+    # 空间换时间
+    num_to_bank_index = None
+    num_to_tia_row = None
+    num_to_tia_col = None
+    num_to_bank_index_tia_row = None
 
     def __init__(self,deviceType:int):
-        self.deviceType = deviceType
+        self.set_device(deviceType)
 
     #------------------------------------------------------------------------------------------
     # ************************************** 各种索引映射 **************************************
     #------------------------------------------------------------------------------------------
     def set_device(self,deviceType:int):
         self.deviceType = deviceType
+        # 空间换时间
+        self.num_to_bank_index = [self._numToBank_Index(i) for i in range(self.chip_latch_num)]
+        self.num_to_tia_row = [self._TIA_index_map(i,col=False) for i in range(self.chip_latch_num)]
+        self.num_to_tia_col = [self._TIA_index_map(i,col=True) for i in range(self.chip_latch_num)]
+        self.num_to_bank_index_tia_row = [(bank,index,tia) for (bank,index),tia in zip(self.num_to_bank_index,self.num_to_tia_row)]
+        self.num_to_bank_index_tia_col = [(bank,index,tia) for (bank,index),tia in zip(self.num_to_bank_index,self.num_to_tia_col)]
+
+    def numToBank_Index(self,num):
+        return self.num_to_bank_index[num]
         
-    def numToBank_Index(self,num:int) -> tuple[int,int]:
+    def _numToBank_Index(self,num:int) -> tuple[int,int]:
         """
             Args:
                 num: 行/列号, 从0开始
@@ -86,11 +101,8 @@ class CHIPSETTING:
         """
         bank_data = [[] for _ in range(self.chip_bank_num)]
         for j in data:
-            if all_data:
-                bank_data[j[2]].append(j)
-            else:
-                bank_data[j[2]].append(j[1])
-        return [i for i in bank_data if len(i)>0]
+            bank_data[j[2]].append(j if all_data else j[1])
+        return [bank for bank in bank_data if bank]
     
     def tia_to_num(self,tia_data:list,row=None):
         """
@@ -103,14 +115,15 @@ class CHIPSETTING:
         """
         tia_list = [[] for i in range(self.chip_tia_num)]
         for i in range(self.chip_latch_num):
-            num = self.TIA_index_map(i,device=self.deviceType,col= not row)
+            num = self.TIA_index_map(i,col= not row)
             tia_list[num].append(i)
         res = []
         for i in tia_data:
             res = res + tia_list[i]
         return res
     
-    def tia_split(self,data:tuple[int,int,int,int,int],check_tia = True) -> list[list[tuple[int,int,int,int,int]]]:
+    def tia_split(self,data:list[tuple[int,int,int,int,int]],tia_map:Union[list[list[int]|None]]=None,
+                  check_tia = True) -> list[list[tuple[int,int,int,int,int]]]:
         """
             Args:
                 data: 数据为(pos, row_num/col_num, bank, index, tia_num)的列表
@@ -125,18 +138,17 @@ class CHIPSETTING:
         if check_tia:
             tia16 = [[] for _ in range(self.chip_tia_num)]
             for i in data:
-                tia16[i[4]].append(i)
+                tia16[tia_map[i[4]] if tia_map else i[4]].append(i)
+            tia16 = [sublist for sublist in tia16 if sublist]
+            maxNum = 0
+            for sublist in tia16:
+                maxNum = max(maxNum,len(sublist))
+
             # ----------------------------------------------每路TIA选一路
-            flag = True
-            while flag:
-                flag = False
-                tmp = []
-                for i in tia16:
-                    if len(i)>0:
-                        tmp.append(i.pop())                 # 每路tia选一个值
-                        flag = True
-                if flag == True:
-                    read_batch.append(tmp)
+            while maxNum:
+                read_batch.append([sublist.pop() for sublist in tia16 if sublist])
+                maxNum -=1
+                # tia16 = [sublist for sublist in tia16 if sublist]
         else:
             read_batch.append(data)
 
@@ -158,6 +170,12 @@ class CHIPSETTING:
         return bank,index
 
     def get_bank_index_tia(self,num:list,col:bool) -> list[tuple[int,int,int,int,int]]:
+        if col:
+            return [(i,v)+self.num_to_bank_index_tia_col[v] for i,v in enumerate(num)]
+        else:
+            return [(i,v)+self.num_to_bank_index_tia_row[v] for i,v in enumerate(num)]
+    
+    def _get_bank_index_tia(self,num:list,col:bool) -> list[tuple[int,int,int,int,int]]:
         """
             Args:
                 num: 任意行/列号的列表
@@ -170,21 +188,23 @@ class CHIPSETTING:
         res = []
         for pos,v in enumerate(num):
             bank,index = self.numToBank_Index(v)
-            tia = self.TIA_index_map(v,device=self.deviceType,col=col)
+            tia = self.TIA_index_map(v,col=col)
             res.append((pos,v,bank,index,tia))
         return res
     
+    def TIA_index_map(self,num,col=True):
+        return self.num_to_tia_col[num] if col else self.num_to_tia_row[num]
 
-    def TIA_index_map(self,index,device=0,col=True):
+    def _TIA_index_map(self,num,col=True):
         """
             注意: num从0索引开始
             将对应的行或列索引映射为对应的TIA偏移
         """
-        index += 1
-        assert index > 0 and index < 257,"numToBank_Index: num超过范围!"
-        if device==0 and col:
+        num += 1
+        assert num > 0 and num < 257,"numToBank_Index: num超过范围!"
+        if self.deviceType==0 and col:
             # 先判断奇数偶数
-            if index&1:
+            if num&1:
                 index_base,index_offset = 32,1
                 TIA_base = 8
             else:
@@ -192,13 +212,13 @@ class CHIPSETTING:
                 TIA_base = 0
         else:
             # 先判断奇数偶数
-            if index&1:
+            if num&1:
                 index_base,index_offset = 32,1
                 TIA_base = 0
             else:
                 index_base,index_offset = 32,2
                 TIA_base = 8
                 
-        TIA_offset = int((index-index_offset)/index_base)
+        TIA_offset = int((num-index_offset)/index_base)
 
         return TIA_base+TIA_offset
