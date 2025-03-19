@@ -1627,8 +1627,9 @@ class CHIP():
         din_ram_data = [CMD(PL_DATA,command_data=CmdData(0)) for i in range(48)]                        # 要发送下去的数据, din_ram的开始存0,用于恢复
 
         # --------------------------------------------------处理行bank
-        row_data = self.setting.get_bank_index_tia(list(range(row_num_start,row_num_end+1)),self.from_row)
+        row_data = self.setting.get_bank_index_tia(list(range(row_num_start,row_num_end)),self.from_row)
         row_data = self.setting.bank_split(row_data,all_data=True)
+        i=0
         for i,v in enumerate(row_data):
             # (pos, row_num/col_num, bank, index, tia_num)
             din_ram_data[res["row_bank_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][2]))
@@ -1637,8 +1638,9 @@ class CHIP():
         res["row_bank_din_ram_e_c"] = res["row_bank_din_ram_s_c"]+i
 
         # --------------------------------------------------处理列bank
-        col_data = self.setting.get_bank_index_tia(list(range(col_num_start,col_num_end+1)),self.from_row)
+        col_data = self.setting.get_bank_index_tia(list(range(col_num_start,col_num_end)),self.from_row)
         col_data = self.setting.bank_split(col_data,all_data=True)
+        i=0
         for i,v in enumerate(col_data):
             # (pos, row_num/col_num, bank, index, tia_num)
             din_ram_data[res["col_bank_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][2]))
@@ -1664,17 +1666,22 @@ class CHIP():
 
             Returns:
                 对应块大小的矩阵
+            
+                左闭右开
         """
-        assert row_num_start>=0 and row_num_start<256 and row_num_end>=0 and row_num_end<256, "超过界限"
-        assert col_num_start>=0 and col_num_start<256 and col_num_end>=0 and col_num_end<256, "超过界限"
+        assert row_num_start>=0 and row_num_start<256 and row_num_end>=0 and row_num_end<=256, "超过界限"
+        assert col_num_start>=0 and col_num_start<256 and col_num_end>=0 and col_num_end<=256, "超过界限"
+        if row_num_start>=row_num_end or col_num_start>=row_num_end:
+            print("0个点需要读。")
+            return []
         self.read_voltage = read_voltage
         self.set_tia_gain(gain)
         self.set_op_mode2(read=True,from_row=from_row)
-        compiler = self.get_compiler("row_read_point3.txt")
+        compiler = self.get_compiler("read_point3.txt")
 
         din_ram_start = 0
         ins_ram_start = 0
-        count_max_c = 2048
+        count_max_c = self.setting.dout_ram_length
         const_data,row_data,col_data = self.send_din_ram3(row_num_start,row_num_end,col_num_start,col_num_end,din_ram_start)
 
         for k,v in const_data.items():
@@ -1687,26 +1694,32 @@ class CHIP():
         compiler.add_offset(len(ins_data))
         ins_data = ins_data + compiler.get_ins_data()
 
-        self.execute_ins(ins_data=ins_data,ins_ram_start = ins_ram_start,recv=False)
+        self.execute_ins(ins_data=ins_data,ins_ram_start = ins_ram_start,message_check=None)
 
         # 等待读取数据
-        row_length = row_num_end-row_num_start+1
-        col_length = col_num_end-col_num_start+1
+        row_length = row_num_end-row_num_start
+        col_length = col_num_end-col_num_start
         res = np.zeros((row_length,col_length))
 
         point_num = row_length*col_length
-        num = 2048
+        num_max = count_max_c*16
+        num = num_max
+        
         voltage = None
+        flag=False
         for row_pos in row_data:
             for col_pos in col_data:
-                if num == count_max_c:
-                    voltage = self.adc.get_out3(min(point_num,count_max_c))
+                if num == num_max:
+                    voltage,flag = self.adc.get_out3(min(point_num,num_max))
                     num = 0
-                    point_num -= count_max_c
+                    point_num -= num_max
+                
                 res[row_pos,col_pos] = voltage[num]
                 num += 1
 
-        self.ps.receive_packet(4)
+        # self.ps.receive_packet(4,)
+        if not flag:
+            self.ps.receive_packet_check(4,"cc550000")
 
         if out_type == 0:
             return res

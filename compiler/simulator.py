@@ -68,6 +68,8 @@ class SIMULATOR:
         reg2 = (cmd_bytes>>16)&0xFF
         reg1 = (cmd_bytes>>8)&0xFF
         reg0 = cmd_bytes&0xFF
+        ins_addr_bge = (cmd_bytes>>20)&0x3F
+        ins_addr_jump = cmd_bytes&0x3F
         if cmdType=="PL":
             record = -1
             cmd = PL_ADDR_TO_CMD[cmd_addr] 
@@ -93,6 +95,12 @@ class SIMULATOR:
             elif cmd == PL_SRL:
                 self.reg[reg2] = self.reg[reg1]>>self.reg[reg0]
                 record = reg2
+            elif cmd == PL_BGE:
+                reg1 = (cmd_bytes>>8)&0xF
+                if self.reg[reg1]>=self.reg[reg0]:
+                    self.pc = ins_addr_bge-1
+            elif cmd == PL_JUMP:
+                self.pc = ins_addr_jump-1
             else:
                 pass
             if record>0:

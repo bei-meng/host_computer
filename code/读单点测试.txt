@@ -1,7 +1,7 @@
 # 读[row_start_num,row_end_num][col_start_num,col_start_num]这块区域的值
 # 默认会定义一个寄存器变量zero,值为0
     #---------------------------------------------------------------------------------------------------每个dout_ram能存的最大数据
-    consti count_max_c, 512
+    consti count_max_c, 128
     consti pq_c, 0
 
     #---------------------------------------------------------------------------------------------------要读的行bank号在din_ram存放的位置,以及右边界
@@ -54,10 +54,29 @@ start:
     set_row_bank row_bank_mask, row_index_mask                              # 配置行bank
     set_col_bank col_bank_mask, col_index_mask                              # 配置列bank
 
-    #---------------------------------------------------------------------------------------------------读
-    addi tia_mask,zero,11
-    sll tia_mask,one,tia_mask
+    #---------------------------------------------------------------------------------------------------从行读
+    bge col_bank_num, four, tia_big4                                        # 如果col_bank_num >= 4，跳转到tia_big4
+
+tia_nobig4:
+    add tia_base, col_bank_num, four                                        # tia_base = col_bank_count + 4
+    jump tia_end
+
+tia_big4:
+    sub     tia_base, col_bank_num, four                                    # tia_base = col_bank_count - 4
+
+tia_end:
+    sll     tia_base, tia_base, one                                         # tia_base = tia_base * 2
+
+    srl tia_offset, col_index_num, four                                     # tmp_index = col_index_num / 16
+    add tia_num, tia_base, tia_offset                                       # tia_num = tia_base + tia_offset
+    sll tia_mask,one,tia_num                                                # tia_mask = one << tia_num
+
     read_row_tia tia_mask,zero,pq
 
-    return_dout one,zero ,pq
+    addi count,zero,16
+    sll return_len,count,four                                               # return_len=count*16
+    addi return_len,return_len,255                                          # return_len=return_len+255
+    addi tmp,zero,8
+    srl return_len,return_len,tmp                                                      # return_len=return_len/256
+    return_dout return_len,zero ,pq
     exit

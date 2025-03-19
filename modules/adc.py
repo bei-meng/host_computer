@@ -56,6 +56,8 @@ class ADC():
             self.ps.send_packets(pkts)
             self.channel_num = 4
 
+            self.set_gap(adc_cs_gap=100,adc_first_gap=20,adc_last_gap=10)
+
     def set_row_col_sw(self,row_col_sw = 0):
         """
             pcb上row或col的TIA, 0:row,1:col
@@ -180,6 +182,19 @@ class ADC():
         elif self.gain == 3:
             return (read_voltage*1*self.small_resistance)/(voltage+1e-20)*1e-3
         
+    def return_dout(self,data_length:int,dout_ram_start:int)->str:
+        """
+            返回dout_ram里面的值
+        """
+        pkts=Packet()
+        pkts.append_single([
+            CMD(PL_RAM_ADDR,command_data=CmdData(dout_ram_start)),
+            CMD(PL_DATA_LENGTH,command_data=CmdData(data_length))
+        ],mode=6)
+        self.ps.send_packets(pkts,message_check=None)
+        message = self.ps.receive_packet(data_length*32).hex()
+        return message
+
     def get_out(self,num:list,delay=None):
         """
             从adc_num的adc的adc_channel读数据
@@ -296,8 +311,13 @@ class ADC():
             从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的tia的值
         """
         # return np.array([i for i in range(data_length)])
-        message = self.ps.receive_packet(np.ceil(data_length*16/256)).hex()
+        flag =False
+        message = self.ps.receive_packet(int((data_length*16+255)/256)*32).hex()
+        if message[0:8]=="cc550000":
+            message = message[8:]+self.ps.receive_packet(4).hex()
+            flag = True
+    
         # 每条数据2B,16位占4个16进制数
         res = [message[i*4:(i+1)*4] for i in range(data_length)]
         voltage = [self.hex_to_voltage(i) for i in res]
-        return np.array(voltage)
+        return np.array(voltage),flag

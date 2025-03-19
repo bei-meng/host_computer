@@ -140,6 +140,7 @@ class COMPILER:
         """
             从filename中加载汇编代码
         """
+        print("正在编译文件: ",filename)
         with open(filename, 'r', encoding=encoding) as file:
             for line in file:
                 # 删除注释,同时删除首尾空格和\t符号
@@ -186,6 +187,9 @@ class COMPILER:
             imm_c = imm
         else:
             raise Exception(f"立即数{imm}类型错误!")
+        
+        if imm_c>256:
+            raise Exception(f"立即数{imm_c}超过256限制!")
         return imm_c,isConst
     
     #------------------------------------------------------------------------------------------
@@ -249,6 +253,8 @@ class COMPILER:
         """
         if type(value)==str:
             value = int(value,0)
+        if value>256:
+            raise Exception(f"立即数{value}超过256限制!")
         self.add_const_variable(variable_name,value)
         self.ass_ins.append((2, "pl_consti", variable_name, str(value)))
 

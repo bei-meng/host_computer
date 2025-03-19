@@ -64,3 +64,20 @@ class CLK_MANAGER():
             CMD(LATCH_CYC,command_data=CmdData(delay2)),
         ],mode=1)
         self.ps.send_packets(pkts)
+    
+    def get_program_run_time(self):
+        """
+            得到下面程序的运行时间
+        """
+        pkts=Packet()
+        pkts.append_cmdlist([
+            CMD(INS_RUN_TIME_L32),
+            CMD(INS_RUN_TIME_H32)
+        ],mode=2)
+        self.ps.send_packets(pkts,message_check=None)
+
+        message = self.ps.receive_packet(8).hex()
+        res = ""
+        for i in range(8):
+            res = message[i*2:i*2+2]+res
+        return int(res, 16)*1e-8
