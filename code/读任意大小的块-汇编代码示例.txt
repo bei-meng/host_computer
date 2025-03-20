@@ -6,20 +6,22 @@
 
     #---------------------------------------------------------------------------------------------------要读的行bank号在din_ram存放的位置,以及右边界
     consti row_bank_din_ram_s_c, 0
-    consti row_bank_din_ram_e_c, 1
+    consti row_bank_din_ram_e_c, 0
 
     #---------------------------------------------------------------------------------------------------要读的行bank号在din_ram存放的位置,以及右边界
-    consti col_bank_din_ram_s_c, 2
-    consti col_bank_din_ram_e_c, 3
+    consti col_bank_din_ram_s_c, 8
+    consti col_bank_din_ram_e_c, 8
 
     #---------------------------------------------------------------------------------------------------每个行bank的起始index号和结束index号在din_ram存放的位置
-    consti row_index_din_ram_s_c, 4
-    consti row_index_din_ram_e_c, 6
+    consti row_index_din_ram_s_c, 16
+    consti row_index_din_ram_e_c, 24
 
     #---------------------------------------------------------------------------------------------------每个列bank的起始index号和结束index号在din_ram存放的位置
-    consti col_index_din_ram_s_c, 8
-    consti col_index_din_ram_e_c, 12
+    consti col_index_din_ram_s_c, 32
+    consti col_index_din_ram_e_c, 40
 start:
+    # 一定要记得reset！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+    cim_reset
     #---------------------------------------------------------------------------------------------------用于移位操作的寄存器数
     addi one, zero, 1                                                       # 寄存器里面存的1
     addi four, zero, 4                                                      # 寄存器里面存的2
@@ -163,4 +165,7 @@ return_1:
     srl return_len,return_len,tmp                                                      # return_len=return_len/256
     return_dout return_len,zero ,pq
 exit:
+    addi pq,zero,0
+    read_row_tia tia_mask,count,pq
+    return_dout zero,zero ,pq
     exit              # 结束执行

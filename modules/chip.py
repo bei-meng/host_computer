@@ -964,7 +964,7 @@ class CHIP():
         return row_index,col_index
     
     def send_parallel_read_din_ram2(self,row_index:list[list[int]],col_index:list[list[int]],
-                            tia_map:Union[list[list[int]|None]]=None,
+                            tia_split:Union[list[list[int]|None]]=None,
                             check_tia:bool=True,
                             din_ram_start:int = 0) -> tuple[list[list],list[list],list]:
         """
@@ -1002,9 +1002,9 @@ class CHIP():
 
         for i in range(len(row_index)):
             row_bank_data = self.setting.get_bank_index_tia(row_index[i],self.from_row)
-            row_read_batch = self.setting.tia_split(row_bank_data,tia_map=tia_map,check_tia=not self.from_row and check_tia)
+            row_read_batch = self.setting.tia_split(row_bank_data,tia_split=tia_split,check_tia=not self.from_row and check_tia)
             col_bank_data = self.setting.get_bank_index_tia(col_index[i],self.from_row)
-            col_read_batch = self.setting.tia_split(col_bank_data,tia_map=tia_map,check_tia=self.from_row and check_tia)
+            col_read_batch = self.setting.tia_split(col_bank_data,tia_split=tia_split,check_tia=self.from_row and check_tia)
             
             row_read_batch = row_read_batch*len(col_read_batch)
             col_read_batch = col_read_batch*len(row_read_batch)
@@ -1030,7 +1030,7 @@ class CHIP():
     
     def read_parallel2(self,crossbar:np.ndarray,read_voltage:float,tg:float = 5,
                        gain:int = 1,from_row:bool = True, out_type = 0,
-                       tia_map:Union[list[list[int]|None]]=None,use_last_data:bool=False):
+                       tia_split:Union[list[list[int]|None]]=None,use_last_data:bool=False):
         """
             读器件, row_index为行索引, col_index为列索引
         """
@@ -1050,7 +1050,7 @@ class CHIP():
             res_row_bank,res_col_bank,res_tia_map = self.read_parallel2_data
         else:
             row_index,col_index = self.get_crossbar_data(crossbar,sum_row=not from_row)
-            res_row_bank,res_col_bank,res_tia_map = self.send_parallel_read_din_ram2(row_index,col_index,tia_map,True,din_ram_start)
+            res_row_bank,res_col_bank,res_tia_map = self.send_parallel_read_din_ram2(row_index,col_index,tia_split,True,din_ram_start)
             self.read_parallel2_data = (res_row_bank,res_col_bank,res_tia_map)
 
         res = np.zeros((row,col))
@@ -1108,7 +1108,7 @@ class CHIP():
                 for row,col,tia in res_tia_map[i]:
                     res[row,col]=voltage[i-read_batch_start,tia]
 
-        print(f"共发送指令{read_nums}次")
+        #print(f"共发送指令{read_nums}次")
         if out_type == 0:
             return res
         elif out_type == 1:
@@ -1117,7 +1117,7 @@ class CHIP():
             return self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
 
     def send_parallel_chunk_read_din_ram2(self,row_index:list[list[int]],col_index:list[list[int]],
-                            tia_map:Union[list[list[int]|None]]=None,
+                            tia_split:Union[list[list[int]|None]]=None,
                             din_ram_start:int = 0) -> tuple[list[list],list[list],list]:
         """
             Args:
@@ -1153,7 +1153,7 @@ class CHIP():
 
         if self.from_row:
             col_bank_data = self.setting.get_bank_index_tia(col_index[0],self.from_row)
-            col_read_batch = self.setting.tia_split(col_bank_data,tia_map=tia_map,check_tia=True)
+            col_read_batch = self.setting.tia_split(col_bank_data,tia_split=tia_split,check_tia=True)
 
             row_bank_data = [self.setting.bank_split(self.setting.get_bank_index_tia(i,self.from_row),all_data=False) for i in row_index]
             for col_batch in col_read_batch:
@@ -1169,7 +1169,7 @@ class CHIP():
                     res_tia_map.append([(row_index[row_num][0],j[1],j[4]) for j in col_batch])
         else:
             row_bank_data = self.setting.get_bank_index_tia(row_index[0],self.from_row)
-            row_read_batch = self.setting.tia_split(row_bank_data,tia_map=tia_map,check_tia=True)
+            row_read_batch = self.setting.tia_split(row_bank_data,tia_split=tia_split,check_tia=True)
 
             col_bank_data = [self.setting.bank_split(self.setting.get_bank_index_tia(i,self.from_row),all_data=False) for i in col_index]
             for row_batch in row_read_batch:
@@ -1193,7 +1193,7 @@ class CHIP():
                        read_voltage:float,tg:float = 5,
                        gain:int = 1,from_row:bool = True, out_type = 0,
                        compute:bool = False,
-                       tia_map:Union[list[list[int]|None]]=None,use_last_data:bool=False):
+                       tia_split:Union[list[list[int]|None]]=None,use_last_data:bool=False):
         """
             左闭右闭区间[row_num_start,row_num_end]
         """
@@ -1218,7 +1218,7 @@ class CHIP():
             else:
                 row_index = [[i for i in range(row_num_start,row_num_end+1,2)]+[i for i in range(row_num_start+1,row_num_end+1,2)]]
                 col_index = list(range(col_num_start,col_num_end+1))if compute else [[i] for i in range(col_num_start,col_num_end+1,2)]+[[i] for i in range(col_num_start+1,col_num_end+1,2)]
-            res_row_bank,res_col_bank,res_tia_map = self.send_parallel_chunk_read_din_ram2(row_index,col_index,tia_map,din_ram_start)
+            res_row_bank,res_col_bank,res_tia_map = self.send_parallel_chunk_read_din_ram2(row_index,col_index,tia_split,din_ram_start)
             self.read_parallel2_data = (res_row_bank,res_col_bank,res_tia_map)
 
         res = np.zeros((row,col))
@@ -1276,7 +1276,7 @@ class CHIP():
                 for row,col,tia in res_tia_map[i]:
                     res[row-row_num_start,col-col_num_start]=voltage[i-read_batch_start,tia]
 
-        print(f"共发送指令{read_nums}次")
+        #(f"共发送指令{read_nums}次")
         if out_type == 0:
             return res
         elif out_type == 1:
@@ -1361,7 +1361,7 @@ class CHIP():
         
         row_bank_data_last, col_bank_data_last = (0,0),(0,0)
         point_nums = len(res_row_bank)
-        print(f"需要读{point_nums}个点")
+        #print(f"需要读{point_nums}个点")
         last_point_pos = 0
         for k in range(point_nums):
             # 是否需要清空原来的bank
@@ -1431,7 +1431,7 @@ class CHIP():
         row_bank_data_last, col_bank_data_last = (0,0),(0,0)
         v_last = 0
         point_nums = len(res_row_bank)
-        print(f"需要写{point_nums}个点")
+        #print(f"需要写{point_nums}个点")
         for k in range(point_nums):
             # 是否需要清空原来的bank
             if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last[0] != res_col_bank[k][0]):
@@ -1546,7 +1546,7 @@ class CHIP():
         ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)                                              # 得到配置电压的指令序列
         cal_nums = len(res_tia_map)
         # row_bank_data_last, col_bank_data_last = (0,0),(0,0)
-        print(f"需要计算{cal_nums}次")
+        #print(f"需要计算{cal_nums}次")
         last_point_pos = 0
         for k in range(cal_nums):
             tmp_ins_data = []
@@ -1672,7 +1672,7 @@ class CHIP():
         assert row_num_start>=0 and row_num_start<256 and row_num_end>=0 and row_num_end<=256, "超过界限"
         assert col_num_start>=0 and col_num_start<256 and col_num_end>=0 and col_num_end<=256, "超过界限"
         if row_num_start>=row_num_end or col_num_start>=row_num_end:
-            print("0个点需要读。")
+            # print("0个点需要读。")
             return []
         self.read_voltage = read_voltage
         self.set_tia_gain(gain)
@@ -1688,7 +1688,7 @@ class CHIP():
             compiler.add_const_variable(k,v)
 
         compiler.add_const_variable("count_max_c",count_max_c)
-        compiler.add_const_variable("pq_c",0)
+        compiler.add_const_variable("pq_c",1)
 
         ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)
         compiler.add_offset(len(ins_data))

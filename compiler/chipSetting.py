@@ -122,7 +122,7 @@ class CHIPSETTING:
             res = res + tia_list[i]
         return res
     
-    def tia_split(self,data:list[tuple[int,int,int,int,int]],tia_map:Union[list[int]|None]=None,
+    def tia_split(self,data:list[tuple[int,int,int,int,int]],tia_split:Union[list[int]|None]=None,
                   check_tia = True) -> list[list[tuple[int,int,int,int,int]]]:
         """
             Args:
@@ -138,7 +138,7 @@ class CHIPSETTING:
         if check_tia:
             tia16 = [[] for _ in range(self.chip_tia_num)]
             for i in data:
-                tia16[tia_map[i[4]] if tia_map else i[4]].append(i)
+                tia16[tia_split[i[4]] if tia_split else i[4]].append(i)
             tia16 = [sublist for sublist in tia16 if sublist]
             maxNum = 0
             for sublist in tia16:

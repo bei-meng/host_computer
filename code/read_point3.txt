@@ -20,6 +20,8 @@
     consti col_index_din_ram_s_c, 32
     consti col_index_din_ram_e_c, 40
 start:
+    # 一定要记得reset！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+    cim_reset
     #---------------------------------------------------------------------------------------------------用于移位操作的寄存器数
     addi one, zero, 1                                                       # 寄存器里面存的1
     addi four, zero, 4                                                      # 寄存器里面存的2
@@ -163,4 +165,7 @@ return_1:
     srl return_len,return_len,tmp                                                      # return_len=return_len/256
     return_dout return_len,zero ,pq
 exit:
+    addi pq,zero,0
+    read_row_tia tia_mask,count,pq
+    return_dout zero,zero ,pq
     exit              # 结束执行

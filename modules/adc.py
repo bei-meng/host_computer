@@ -56,7 +56,7 @@ class ADC():
             self.ps.send_packets(pkts)
             self.channel_num = 4
 
-            self.set_gap(adc_cs_gap=100,adc_first_gap=20,adc_last_gap=10)
+            self.set_gap(adc_cs_gap=100,adc_first_gap=10,adc_last_gap=10)
 
     def set_row_col_sw(self,row_col_sw = 0):
         """
