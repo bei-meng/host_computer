@@ -51,7 +51,7 @@ class PS():
                 print(f"收到信息: {len(res)}","".join(f'{byte:02x}' for byte in res))
                 print(f"receive_packet收到消息用时: {elapsed_time:.6f} seconds")
         except socket.timeout:
-            print(f"接收超时! 期望大小{bytes_num},实际大小{len(res)}")
+            print(f"接收超时! 期望大小{bytes_num},实际大小{len(res)},结果{res}")
         except socket.error:
             print(f"Failed to recv message")
         return res

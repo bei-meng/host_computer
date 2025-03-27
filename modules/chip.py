@@ -1195,7 +1195,7 @@ class CHIP():
                        compute:bool = False,
                        tia_split:Union[list[list[int]|None]]=None,use_last_data:bool=False):
         """
-            左闭右闭区间[row_num_start,row_num_end]
+            左闭右开区间[row_num_start,row_num_end)
         """
         self.read_voltage = read_voltage
         self.set_tia_gain(gain)
@@ -1208,16 +1208,16 @@ class CHIP():
         dout_ram_start = 0
         dout_ram_pos = dout_ram_start
         # --------------------------------------------------配置写的点的数据, 因为行/列对应的bank是间隔1, 所以为了避免更多的切行列bank, 尽量使得一个bank的挨在一起
-        row,col = row_num_end-row_num_start+1,col_num_end-col_num_start+1
+        row,col = row_num_end-row_num_start,col_num_end-col_num_start
         if use_last_data:
             res_row_bank,res_col_bank,res_tia_map = self.read_parallel2_data
         else:
             if from_row:
-                row_index = list(range(row_num_start,row_num_end+1)) if compute else[[i] for i in range(row_num_start,row_num_end+1,2)]+[[i] for i in range(row_num_start+1,row_num_end+1,2)]
-                col_index = [[i for i in range(col_num_start,col_num_end+1,2)]+[i for i in range(col_num_start+1,col_num_end+1,2)]]
+                row_index = list(range(row_num_start,row_num_end)) if compute else[[i] for i in range(row_num_start,row_num_end,2)]+[[i] for i in range(row_num_start+1,row_num_end,2)]
+                col_index = [[i for i in range(col_num_start,col_num_end,2)]+[i for i in range(col_num_start+1,col_num_end,2)]]
             else:
-                row_index = [[i for i in range(row_num_start,row_num_end+1,2)]+[i for i in range(row_num_start+1,row_num_end+1,2)]]
-                col_index = list(range(col_num_start,col_num_end+1))if compute else [[i] for i in range(col_num_start,col_num_end+1,2)]+[[i] for i in range(col_num_start+1,col_num_end+1,2)]
+                row_index = [[i for i in range(row_num_start,row_num_end,2)]+[i for i in range(row_num_start+1,row_num_end,2)]]
+                col_index = list(range(col_num_start,col_num_end))if compute else [[i] for i in range(col_num_start,col_num_end,2)]+[[i] for i in range(col_num_start+1,col_num_end,2)]
             res_row_bank,res_col_bank,res_tia_map = self.send_parallel_chunk_read_din_ram2(row_index,col_index,tia_split,din_ram_start)
             self.read_parallel2_data = (res_row_bank,res_col_bank,res_tia_map)
 
