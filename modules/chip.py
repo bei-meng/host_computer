@@ -20,6 +20,7 @@ class CHIP():
         对chip进行的操作
     """
     deviceType = 0                  # 器件类型0: RERAM,1: ECRAM
+    chip_sel = 0                    # 选择18个阵列中的一个
 
     op_mode = None                  # 当前所处模式
     from_row = True                 # 从行/列读写
@@ -1727,3 +1728,28 @@ class CHIP():
             return self.voltage_to_cond(voltage=res, read_voltage=read_voltage)
         elif out_type == 2:
             return self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
+
+    def set_chip_sel(self,chip_sel = 1):
+        """
+            选择18个阵列中的一个，chip_sel的范围是1-18
+        """
+        assert 1 <= chip_sel <= 18, "芯片编号范围是1-18"
+
+        # if (self.chip_sel) {
+        #     print("芯片编号从 {}")
+        # }
+        self.chip_sel = chip_sel
+
+        # 将chip_sel映射到gpio信号
+        map_chipsel_gpio = [0, 2, 8, 10, 32, 34, 40, 42, 128, 130, 136, 138, 160, 162, 168, 170, 512, 514, 520]
+        gpio = map_chipsel_gpio[chip_sel]
+
+        # 检查gpio的内容
+        getbits = lambda x, y: (x >> y) & 1
+        print(f"gpio的9/7/5/3/1位: {getbits(gpio, 9)} {getbits(gpio, 7)} {getbits(gpio, 5)} {getbits(gpio, 3)} {getbits(gpio, 1)}")
+        print(f"gpio: {bin(gpio & 0x3FF)}")
+
+
+        pkts=Packet()
+        pkts.append_cmdlist([CMD(EXT_GPIO,command_data=CmdData(gpio)),],mode=1)
+        self.ps.send_packets(pkts)

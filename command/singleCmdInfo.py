@@ -730,9 +730,60 @@ INS_RUN_TIME_H32=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
+RETURN_LENGTH=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "return_length",
+    command_data = CmdData(0),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
+RETURN_ADDR=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "return_addr",
+    command_data = CmdData(0),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
+RETURN_RAM_NUM=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "return_ram_num",
+    command_data = CmdData(0),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
+RETURN_FLG=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "return_flg",
+    command_data = CmdData(0),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+EXT_GPIO=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "ext_gpio",
+    command_data = CmdData(0),
+    command_description = ""
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
 
 
