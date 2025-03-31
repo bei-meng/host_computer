@@ -1749,7 +1749,6 @@ class CHIP():
         print(f"gpio的9/7/5/3/1位: {getbits(gpio, 9)} {getbits(gpio, 7)} {getbits(gpio, 5)} {getbits(gpio, 3)} {getbits(gpio, 1)}")
         print(f"gpio: {bin(gpio & 0x3FF)}")
 
-
         pkts=Packet()
         pkts.append_cmdlist([CMD(EXT_GPIO,command_data=CmdData(gpio)),],mode=1)
         self.ps.send_packets(pkts)
