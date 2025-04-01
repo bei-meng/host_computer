@@ -1,197 +1,130 @@
 输出相关调试信息:
-const: count_max_c                   : 常量值: 32
-const: pq_c                          : 常量值: 0
 const: row_bank_din_ram_s_c          : 常量值: 0
-const: row_bank_din_ram_e_c          : 常量值: 1
-const: col_bank_din_ram_s_c          : 常量值: 2
-const: col_bank_din_ram_e_c          : 常量值: 3
-const: row_index_din_ram_s_c         : 常量值: 4
-const: row_index_din_ram_e_c         : 常量值: 6
-const: col_index_din_ram_s_c         : 常量值: 8
-const: col_index_din_ram_e_c         : 常量值: 12
+const: row_bank_din_ram_e_c          : 常量值: 0
+const: col_bank_din_ram_s_c          : 常量值: 8
+const: col_bank_din_ram_e_c          : 常量值: 8
+const: row_index_din_ram_s_c         : 常量值: 16
+const: row_index_din_ram_e_c         : 常量值: 24
+const: col_index_din_ram_s_c         : 常量值: 32
+const: col_index_din_ram_e_c         : 常量值: 40
 
 变量名: zero                          : 寄存器编号: 0
 变量名: one                           : 寄存器编号: 1
 变量名: four                          : 寄存器编号: 2
-变量名: count                         : 寄存器编号: 3
-变量名: count_max                     : 寄存器编号: 4
-变量名: pq                            : 寄存器编号: 5
-变量名: row_bank_addr                 : 寄存器编号: 6
-变量名: row_bank_end_addr             : 寄存器编号: 7
-变量名: row_index_start_addr          : 寄存器编号: 8
-变量名: row_index_end_addr            : 寄存器编号: 9
-变量名: row_bank_num                  : 寄存器编号: 10
-变量名: row_bank_mask                 : 寄存器编号: 11
-变量名: row_index_num                 : 寄存器编号: 12
-变量名: row_end_index                 : 寄存器编号: 13
-变量名: row_index_mask                : 寄存器编号: 14
-变量名: col_bank_addr                 : 寄存器编号: 15
-变量名: col_bank_end_addr             : 寄存器编号: 16
-变量名: col_index_start_addr          : 寄存器编号: 17
-变量名: col_index_end_addr            : 寄存器编号: 18
-变量名: col_bank_num                  : 寄存器编号: 19
-变量名: col_bank_mask                 : 寄存器编号: 20
-变量名: col_index_num                 : 寄存器编号: 21
-变量名: col_end_index                 : 寄存器编号: 22
-变量名: tia_base                      : 寄存器编号: 23
-变量名: col_index_mask                : 寄存器编号: 24
-变量名: tia_offset                    : 寄存器编号: 25
-变量名: tia_num                       : 寄存器编号: 26
-变量名: tia_mask                      : 寄存器编号: 27
-变量名: return_len                    : 寄存器编号: 28
-变量名: tmp                           : 寄存器编号: 29
+变量名: row_bank_addr                 : 寄存器编号: 3
+变量名: row_bank_end_addr             : 寄存器编号: 4
+变量名: row_index_start_addr          : 寄存器编号: 5
+变量名: row_index_end_addr            : 寄存器编号: 6
+变量名: row_bank_num                  : 寄存器编号: 7
+变量名: row_bank_mask                 : 寄存器编号: 8
+变量名: row_index_num                 : 寄存器编号: 9
+变量名: row_end_index                 : 寄存器编号: 10
+变量名: row_index_mask                : 寄存器编号: 11
+变量名: col_bank_addr                 : 寄存器编号: 12
+变量名: col_bank_end_addr             : 寄存器编号: 13
+变量名: col_index_start_addr          : 寄存器编号: 14
+变量名: col_index_end_addr            : 寄存器编号: 15
+变量名: col_bank_num                  : 寄存器编号: 16
+变量名: col_bank_mask                 : 寄存器编号: 17
+变量名: col_index_num                 : 寄存器编号: 18
+变量名: col_end_index                 : 寄存器编号: 19
+变量名: col_index_mask                : 寄存器编号: 20
 
 标签: start                         : 指令地址: 0
-标签: loop1                         : 指令地址: 10
-标签: loop2                         : 指令地址: 14
-标签: loop3                         : 指令地址: 20
-标签: tia_nobig4                    : 指令地址: 25
-标签: tia_big4                      : 指令地址: 27
-标签: tia_end                       : 指令地址: 28
-标签: loop4                         : 指令地址: 29
-标签: return_0                      : 指令地址: 38
-标签: jump_return                   : 指令地址: 45
-标签: end4                          : 指令地址: 48
-标签: end3                          : 指令地址: 54
-标签: end2                          : 指令地址: 57
-标签: end1                          : 指令地址: 63
-标签: return_1                      : 指令地址: 65
-标签: exit                          : 指令地址: 70
+标签: loop1                         : 指令地址: 7
+标签: loop2                         : 指令地址: 11
+标签: loop3                         : 指令地址: 17
+标签: loop4                         : 指令地址: 21
+标签: end4                          : 指令地址: 27
+标签: end3                          : 指令地址: 33
+标签: end2                          : 指令地址: 36
+标签: end1                          : 指令地址: 42
 
-0		consti	count_max_c, 32
-0		consti	pq_c, 0
 0		consti	row_bank_din_ram_s_c, 0
-0		consti	row_bank_din_ram_e_c, 1
-0		consti	col_bank_din_ram_s_c, 2
-0		consti	col_bank_din_ram_e_c, 3
-0		consti	row_index_din_ram_s_c, 4
-0		consti	row_index_din_ram_e_c, 6
-0		consti	col_index_din_ram_s_c, 8
-0		consti	col_index_din_ram_e_c, 12
+0		consti	row_bank_din_ram_e_c, 0
+0		consti	col_bank_din_ram_s_c, 8
+0		consti	col_bank_din_ram_e_c, 8
+0		consti	row_index_din_ram_s_c, 16
+0		consti	row_index_din_ram_e_c, 24
+0		consti	col_index_din_ram_s_c, 32
+0		consti	col_index_din_ram_e_c, 40
 0	start:
-0		addi	one, zero, 1
-1		addi	four, zero, 4
-2		addi	count, zero, 0
-3		addi	count_max, zero, count_max_c
-4		sll	count_max, count_max, four
-5		addi	pq, zero, pq_c
-6		addi	row_bank_addr, zero, row_bank_din_ram_s_c
-7		addi	row_bank_end_addr, zero, row_bank_din_ram_e_c
-8		addi	row_index_start_addr, zero, row_index_din_ram_s_c
-9		addi	row_index_end_addr, zero, row_index_din_ram_e_c
+0		cim_rstn	
+1		addi	one, zero, 1
+2		addi	four, zero, 4
+3		addi	row_bank_addr, zero, row_bank_din_ram_s_c
+4		addi	row_bank_end_addr, zero, row_bank_din_ram_e_c
+5		addi	row_index_start_addr, zero, row_index_din_ram_s_c
+6		addi	row_index_end_addr, zero, row_index_din_ram_e_c
 
-10	loop1:
-10		load_din_ram	row_bank_num, row_bank_addr
-11		sll	row_bank_mask, one, row_bank_num
-12		load_din_ram	row_index_num, row_index_start_addr
-13		load_din_ram	row_end_index, row_index_end_addr
+7	loop1:
+7		load_din_ram	row_bank_num, row_bank_addr
+8		sll	row_bank_mask, one, row_bank_num
+9		load_din_ram	row_index_num, row_index_start_addr
+10		load_din_ram	row_end_index, row_index_end_addr
 
-14	loop2:
-14		sll	row_index_mask, one, row_index_num
-15		set_row_bank	row_bank_mask, row_index_mask
-16		addi	col_bank_addr, zero, col_bank_din_ram_s_c
-17		addi	col_bank_end_addr, zero, col_bank_din_ram_e_c
-18		addi	col_index_start_addr, zero, col_index_din_ram_s_c
-19		addi	col_index_end_addr, zero, col_index_din_ram_e_c
+11	loop2:
+11		sll	row_index_mask, one, row_index_num
+12		set_row_bank	row_bank_mask, row_index_mask
+13		addi	col_bank_addr, zero, col_bank_din_ram_s_c
+14		addi	col_bank_end_addr, zero, col_bank_din_ram_e_c
+15		addi	col_index_start_addr, zero, col_index_din_ram_s_c
+16		addi	col_index_end_addr, zero, col_index_din_ram_e_c
 
-20	loop3:
-20		load_din_ram	col_bank_num, col_bank_addr
-21		sll	col_bank_mask, one, col_bank_num
-22		load_din_ram	col_index_num, col_index_start_addr
-23		load_din_ram	col_end_index, col_index_end_addr
-24		bge	col_bank_num, four, tia_big4
+17	loop3:
+17		load_din_ram	col_bank_num, col_bank_addr
+18		sll	col_bank_mask, one, col_bank_num
+19		load_din_ram	col_index_num, col_index_start_addr
+20		load_din_ram	col_end_index, col_index_end_addr
 
-25	tia_nobig4:
-25		add	tia_base, col_bank_num, four
-26		jump	tia_end
+21	loop4:
+21		sll	col_index_mask, one, col_index_num
+22		set_col_bank	col_bank_mask, col_index_mask
+23		write_row_pulse	
+24		bge	col_index_num, col_end_index, end4
+25		addi	col_index_num, col_index_num, 1
+26		jump	loop4
 
-27	tia_big4:
-27		sub	tia_base, col_bank_num, four
+27	end4:
+27		set_col_bank	col_bank_mask, zero
+28		bge	col_bank_addr, col_bank_end_addr, end3
+29		addi	col_bank_addr, col_bank_addr, 1
+30		addi	col_index_start_addr, col_index_start_addr, 1
+31		addi	col_index_end_addr, col_index_end_addr, 1
+32		jump	loop3
 
-28	tia_end:
-28		sll	tia_base, tia_base, one
+33	end3:
+33		bge	row_index_num, row_end_index, end2
+34		addi	row_index_num, row_index_num, 1
+35		jump	loop2
 
-29	loop4:
-29		sll	col_index_mask, one, col_index_num
-30		set_col_bank	col_bank_mask, col_index_mask
-31		srl	tia_offset, col_index_num, four
-32		add	tia_num, tia_base, tia_offset
-33		sll	tia_mask, one, tia_num
-34		read_row_pulse_tia	tia_mask, count, pq
-35		addi	count, count, 1
-36		bge	count, count_max, return_0
-37		jump	jump_return
+36	end2:
+36		set_row_bank	row_bank_mask, zero
+37		bge	row_bank_addr, row_bank_end_addr, end1
+38		addi	row_bank_addr, row_bank_addr, 1
+39		addi	row_index_start_addr, row_index_start_addr, 1
+40		addi	row_index_end_addr, row_index_end_addr, 1
+41		jump	loop1
 
-38	return_0:
-38		sll	return_len, count, four
-39		addi	return_len, return_len, 255
-40		addi	tmp, zero, 8
-41		srl	return_len, return_len, tmp
-42		return_dout	return_len, zero, pq
-43		xori	pq, pq, 1
-44		addi	count, zero, 0
-
-45	jump_return:
-45		bge	col_index_num, col_end_index, end4
-46		addi	col_index_num, col_index_num, 1
-47		jump	loop4
-
-48	end4:
-48		set_col_bank	col_bank_mask, zero
-49		bge	col_bank_addr, col_bank_end_addr, end3
-50		addi	col_bank_addr, col_bank_addr, 1
-51		addi	col_index_start_addr, col_index_start_addr, 1
-52		addi	col_index_end_addr, col_index_end_addr, 1
-53		jump	loop3
-
-54	end3:
-54		bge	row_index_num, row_end_index, end2
-55		addi	row_index_num, row_index_num, 1
-56		jump	loop2
-
-57	end2:
-57		set_row_bank	row_bank_mask, zero
-58		bge	row_bank_addr, row_bank_end_addr, end1
-59		addi	row_bank_addr, row_bank_addr, 1
-60		addi	row_index_start_addr, row_index_start_addr, 1
-61		addi	row_index_end_addr, row_index_end_addr, 1
-62		jump	loop1
-
-63	end1:
-63		bge	count, one, return_1
-64		jump	exit
-
-65	return_1:
-65		sll	return_len, count, four
-66		addi	return_len, return_len, 255
-67		addi	tmp, zero, 8
-68		srl	return_len, return_len, tmp
-69		return_dout	return_len, zero, pq
-
-70	exit:
-70		exit	
+42	end1:
+42		exit	
 
 
 
 汇编代码:
-	consti	count_max_c, 32
-	consti	pq_c, 0
 	consti	row_bank_din_ram_s_c, 0
-	consti	row_bank_din_ram_e_c, 1
-	consti	col_bank_din_ram_s_c, 2
-	consti	col_bank_din_ram_e_c, 3
-	consti	row_index_din_ram_s_c, 4
-	consti	row_index_din_ram_e_c, 6
-	consti	col_index_din_ram_s_c, 8
-	consti	col_index_din_ram_e_c, 12
+	consti	row_bank_din_ram_e_c, 0
+	consti	col_bank_din_ram_s_c, 8
+	consti	col_bank_din_ram_e_c, 8
+	consti	row_index_din_ram_s_c, 16
+	consti	row_index_din_ram_e_c, 24
+	consti	col_index_din_ram_s_c, 32
+	consti	col_index_din_ram_e_c, 40
 
 start:	
+	cim_rstn	
 	addi	one, zero, 1
 	addi	four, zero, 4
-	addi	count, zero, 0
-	addi	count_max, zero, count_max_c
-	sll	count_max, count_max, four
-	addi	pq, zero, pq_c
 	addi	row_bank_addr, zero, row_bank_din_ram_s_c
 	addi	row_bank_end_addr, zero, row_bank_din_ram_e_c
 	addi	row_index_start_addr, zero, row_index_din_ram_s_c
@@ -216,39 +149,11 @@ loop3:
 	sll	col_bank_mask, one, col_bank_num
 	load_din_ram	col_index_num, col_index_start_addr
 	load_din_ram	col_end_index, col_index_end_addr
-	bge	col_bank_num, four, tia_big4
-
-tia_nobig4:	
-	add	tia_base, col_bank_num, four
-	jump	tia_end
-
-tia_big4:	
-	sub	tia_base, col_bank_num, four
-
-tia_end:	
-	sll	tia_base, tia_base, one
 
 loop4:	
 	sll	col_index_mask, one, col_index_num
 	set_col_bank	col_bank_mask, col_index_mask
-	srl	tia_offset, col_index_num, four
-	add	tia_num, tia_base, tia_offset
-	sll	tia_mask, one, tia_num
-	read_row_pulse_tia	tia_mask, count, pq
-	addi	count, count, 1
-	bge	count, count_max, return_0
-	jump	jump_return
-
-return_0:	
-	sll	return_len, count, four
-	addi	return_len, return_len, 255
-	addi	tmp, zero, 8
-	srl	return_len, return_len, tmp
-	return_dout	return_len, zero, pq
-	xori	pq, pq, 1
-	addi	count, zero, 0
-
-jump_return:	
+	write_row_pulse	
 	bge	col_index_num, col_end_index, end4
 	addi	col_index_num, col_index_num, 1
 	jump	loop4
@@ -275,92 +180,53 @@ end2:
 	jump	loop1
 
 end1:	
-	bge	count, one, return_1
-	jump	exit
-
-return_1:	
-	sll	return_len, count, four
-	addi	return_len, return_len, 255
-	addi	tmp, zero, 8
-	srl	return_len, return_len, tmp
-	return_dout	return_len, zero, pq
-
-exit:	
 	exit	
 
 
 
 字节码:
 模式: 4
-	帧头:                      	字节码: 55 aa 04
-	指令: pl_addi              	字节码: 0a 01 01 00
-	指令: pl_addi              	字节码: 0a 04 02 00
-	指令: pl_addi              	字节码: 0a 00 03 00
-	指令: pl_addi              	字节码: 0a 20 04 00
-	指令: pl_sll               	字节码: 10 04 04 02
-	指令: pl_addi              	字节码: 0a 00 05 00
-	指令: pl_addi              	字节码: 0a 00 06 00
-	指令: pl_addi              	字节码: 0a 01 07 00
-	指令: pl_addi              	字节码: 0a 04 08 00
-	指令: pl_addi              	字节码: 0a 06 09 00
-	指令: pl_load_din_ram      	字节码: 0c 00 0a 06
-	指令: pl_sll               	字节码: 10 0b 01 0a
-	指令: pl_load_din_ram      	字节码: 0c 00 0c 08
-	指令: pl_load_din_ram      	字节码: 0c 00 0d 09
-	指令: pl_sll               	字节码: 10 0e 01 0c
-	指令: pl_set_row_bank      	字节码: 12 00 0b 0e
-	指令: pl_addi              	字节码: 0a 02 0f 00
-	指令: pl_addi              	字节码: 0a 03 10 00
-	指令: pl_addi              	字节码: 0a 08 11 00
-	指令: pl_addi              	字节码: 0a 0c 12 00
-	指令: pl_load_din_ram      	字节码: 0c 00 13 0f
-	指令: pl_sll               	字节码: 10 14 01 13
-	指令: pl_load_din_ram      	字节码: 0c 00 15 11
-	指令: pl_load_din_ram      	字节码: 0c 00 16 12
-	指令: pl_bge               	字节码: 09 06 d3 02
-	指令: pl_add               	字节码: 0d 17 13 02
-	指令: pl_jump              	字节码: 00 00 00 1c
-	指令: pl_sub               	字节码: 0e 17 13 02
-	指令: pl_sll               	字节码: 10 17 17 01
-	指令: pl_sll               	字节码: 10 18 01 15
-	指令: pl_set_col_bank      	字节码: 13 00 14 18
-	指令: pl_srl               	字节码: 11 19 15 02
-	指令: pl_add               	字节码: 0d 1a 17 19
-	指令: pl_sll               	字节码: 10 1b 01 1a
-	指令: pl_read_row_pulse_tia	字节码: 14 1b 03 05
-	指令: pl_addi              	字节码: 0a 01 03 03
-	指令: pl_bge               	字节码: 09 09 83 04
-	指令: pl_jump              	字节码: 00 00 00 2d
-	指令: pl_sll               	字节码: 10 1c 03 02
-	指令: pl_addi              	字节码: 0a ff 1c 1c
-	指令: pl_addi              	字节码: 0a 08 1d 00
-	指令: pl_srl               	字节码: 11 1c 1c 1d
-	指令: pl_return_dout       	字节码: 16 1c 00 05
-	指令: pl_xori              	字节码: 0f 01 05 05
-	指令: pl_addi              	字节码: 0a 00 03 00
-	指令: pl_bge               	字节码: 09 0c 15 16
-	指令: pl_addi              	字节码: 0a 01 15 15
-	指令: pl_jump              	字节码: 00 00 00 1d
-	指令: pl_set_col_bank      	字节码: 13 00 14 00
-	指令: pl_bge               	字节码: 09 0d 8f 10
-	指令: pl_addi              	字节码: 0a 01 0f 0f
-	指令: pl_addi              	字节码: 0a 01 11 11
-	指令: pl_addi              	字节码: 0a 01 12 12
-	指令: pl_jump              	字节码: 00 00 00 14
-	指令: pl_bge               	字节码: 09 0e 4c 0d
-	指令: pl_addi              	字节码: 0a 01 0c 0c
-	指令: pl_jump              	字节码: 00 00 00 0e
-	指令: pl_set_row_bank      	字节码: 12 00 0b 00
-	指令: pl_bge               	字节码: 09 0f c6 07
-	指令: pl_addi              	字节码: 0a 01 06 06
-	指令: pl_addi              	字节码: 0a 01 08 08
-	指令: pl_addi              	字节码: 0a 01 09 09
-	指令: pl_jump              	字节码: 00 00 00 0a
-	指令: pl_bge               	字节码: 09 10 43 01
-	指令: pl_jump              	字节码: 00 00 00 46
-	指令: pl_sll               	字节码: 10 1c 03 02
-	指令: pl_addi              	字节码: 0a ff 1c 1c
-	指令: pl_addi              	字节码: 0a 08 1d 00
-	指令: pl_srl               	字节码: 11 1c 1c 1d
-	指令: pl_return_dout       	字节码: 16 1c 00 05
-	指令: pl_exit              	字节码: 0b 00 00 00
+	帧头:                   	字节码: 55 aa 04
+	指令: pl_cim_rstn       	字节码: 08 00 00 00
+	指令: pl_addi           	字节码: 0a 01 01 00
+	指令: pl_addi           	字节码: 0a 04 02 00
+	指令: pl_addi           	字节码: 0a 00 03 00
+	指令: pl_addi           	字节码: 0a 00 04 00
+	指令: pl_addi           	字节码: 0a 10 05 00
+	指令: pl_addi           	字节码: 0a 18 06 00
+	指令: pl_load_din_ram   	字节码: 0c 00 07 03
+	指令: pl_sll            	字节码: 10 08 01 07
+	指令: pl_load_din_ram   	字节码: 0c 00 09 05
+	指令: pl_load_din_ram   	字节码: 0c 00 0a 06
+	指令: pl_sll            	字节码: 10 0b 01 09
+	指令: pl_set_row_bank   	字节码: 12 00 08 0b
+	指令: pl_addi           	字节码: 0a 08 0c 00
+	指令: pl_addi           	字节码: 0a 08 0d 00
+	指令: pl_addi           	字节码: 0a 20 0e 00
+	指令: pl_addi           	字节码: 0a 28 0f 00
+	指令: pl_load_din_ram   	字节码: 0c 00 10 0c
+	指令: pl_sll            	字节码: 10 11 01 10
+	指令: pl_load_din_ram   	字节码: 0c 00 12 0e
+	指令: pl_load_din_ram   	字节码: 0c 00 13 0f
+	指令: pl_sll            	字节码: 10 14 01 12
+	指令: pl_set_col_bank   	字节码: 13 00 11 14
+	指令: pl_write_row_pulse	字节码: 06 00 00 00
+	指令: pl_bge            	字节码: 09 06 d2 13
+	指令: pl_addi           	字节码: 0a 01 12 12
+	指令: pl_jump           	字节码: 00 00 00 15
+	指令: pl_set_col_bank   	字节码: 13 00 11 00
+	指令: pl_bge            	字节码: 09 08 4c 0d
+	指令: pl_addi           	字节码: 0a 01 0c 0c
+	指令: pl_addi           	字节码: 0a 01 0e 0e
+	指令: pl_addi           	字节码: 0a 01 0f 0f
+	指令: pl_jump           	字节码: 00 00 00 11
+	指令: pl_bge            	字节码: 09 09 09 0a
+	指令: pl_addi           	字节码: 0a 01 09 09
+	指令: pl_jump           	字节码: 00 00 00 0b
+	指令: pl_set_row_bank   	字节码: 12 00 08 00
+	指令: pl_bge            	字节码: 09 0a 83 04
+	指令: pl_addi           	字节码: 0a 01 03 03
+	指令: pl_addi           	字节码: 0a 01 05 05
+	指令: pl_addi           	字节码: 0a 01 06 06
+	指令: pl_jump           	字节码: 00 00 00 07
+	指令: pl_exit           	字节码: 0b 00 00 00

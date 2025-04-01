@@ -553,6 +553,11 @@ class CHIP():
         # packet添加指令时都会对指令进行浅拷贝
         ins_data.clear()
 
+    def execute(self,message_check:str="cc550000"):
+        pkts=Packet()
+        pkts.append_single([CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_ins_run))],mode=1)
+        self.ps.send_packets(pkts,message_check=message_check)
+
     def execute_send_din_data(self,din_ram_data:list,din_ram_start:int):
         """
             Args:
@@ -1190,10 +1195,11 @@ class CHIP():
         return res_row_bank,res_col_bank,res_tia_map
     
     def read_chunk_parallel2(self,row_num_start:int,row_num_end:int,col_num_start:int,col_num_end:int,
-                       read_voltage:float,tg:float = 5,
-                       gain:int = 1,from_row:bool = True, out_type = 0,
-                       compute:bool = False,
-                       tia_split:Union[list[list[int]|None]]=None,use_last_data:bool=False):
+                            row_index:list[list[int]]=None, col_index:list[list[int]]= None,
+                            read_voltage:float=0.1,tg:float = 5,
+                            gain:int = 1,from_row:bool = True, out_type = 0,
+                            compute:bool = False,
+                            tia_split:Union[list[list[int]|None]]=None,use_last_data:bool=False):
         """
             左闭右开区间[row_num_start,row_num_end)
         """
@@ -1213,15 +1219,22 @@ class CHIP():
             res_row_bank,res_col_bank,res_tia_map = self.read_parallel2_data
         else:
             if from_row:
-                row_index = list(range(row_num_start,row_num_end)) if compute else[[i] for i in range(row_num_start,row_num_end,2)]+[[i] for i in range(row_num_start+1,row_num_end,2)]
-                col_index = [[i for i in range(col_num_start,col_num_end,2)]+[i for i in range(col_num_start+1,col_num_end,2)]]
+                if row_index is None:
+                    row_index = [list(range(row_num_start,row_num_end))] if compute else[[i] for i in range(row_num_start,row_num_end,2)]+[[i] for i in range(row_num_start+1,row_num_end,2)]
+                if col_index is None:
+                    col_index = [[i for i in range(col_num_start,col_num_end,2)]+[i for i in range(col_num_start+1,col_num_end,2)]]
             else:
-                row_index = [[i for i in range(row_num_start,row_num_end,2)]+[i for i in range(row_num_start+1,row_num_end,2)]]
-                col_index = list(range(col_num_start,col_num_end))if compute else [[i] for i in range(col_num_start,col_num_end,2)]+[[i] for i in range(col_num_start+1,col_num_end,2)]
+                if row_index is None:
+                    row_index = [[i for i in range(row_num_start,row_num_end,2)]+[i for i in range(row_num_start+1,row_num_end,2)]]
+                if col_index is None:
+                    col_index = [list(range(col_num_start,col_num_end))] if compute else [[i] for i in range(col_num_start,col_num_end,2)]+[[i] for i in range(col_num_start+1,col_num_end,2)]
             res_row_bank,res_col_bank,res_tia_map = self.send_parallel_chunk_read_din_ram2(row_index,col_index,tia_split,din_ram_start)
             self.read_parallel2_data = (res_row_bank,res_col_bank,res_tia_map)
 
-        res = np.zeros((row,col))
+        if compute:
+            res = np.zeros((1,col)) if from_row else np.zeros((row,1))
+        else:
+            res = np.zeros((row,col))
         ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)                                              # 得到配置电压的指令序列
         read_nums = 0
         read_batch_start,read_batch_end = 0,0
@@ -1257,7 +1270,13 @@ class CHIP():
                 voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
                 for i in range(read_batch_start,read_batch_end):
                     for row,col,tia in res_tia_map[i]:
-                        res[row-row_num_start,col-col_num_start]=voltage[i-read_batch_start,tia]
+                        if compute:
+                            if from_row:
+                                res[0,col-col_num_start] = voltage[i-read_batch_start,tia]
+                            else:
+                                res[row-row_num_start,0] = voltage[i-read_batch_start,tia]
+                        else:
+                            res[row-row_num_start,col-col_num_start]=voltage[i-read_batch_start,tia]
                 
                 read_batch_start = read_batch_end
 
@@ -1274,7 +1293,13 @@ class CHIP():
             voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
             for i in range(read_batch_start,read_batch_end):
                 for row,col,tia in res_tia_map[i]:
-                    res[row-row_num_start,col-col_num_start]=voltage[i-read_batch_start,tia]
+                    if compute:
+                        if from_row:
+                            res[0,col-col_num_start] = voltage[i-read_batch_start,tia]
+                        else:
+                            res[row-row_num_start,0] = voltage[i-read_batch_start,tia]
+                    else:
+                        res[row-row_num_start,col-col_num_start]=voltage[i-read_batch_start,tia]
 
         #(f"共发送指令{read_nums}次")
         if out_type == 0:
@@ -1361,7 +1386,7 @@ class CHIP():
         
         row_bank_data_last, col_bank_data_last = (0,0),(0,0)
         point_nums = len(res_row_bank)
-        #print(f"需要读{point_nums}个点")
+        # print(f"需要读{point_nums}个点")
         last_point_pos = 0
         for k in range(point_nums):
             # 是否需要清空原来的bank
@@ -1431,7 +1456,7 @@ class CHIP():
         row_bank_data_last, col_bank_data_last = (0,0),(0,0)
         v_last = 0
         point_nums = len(res_row_bank)
-        #print(f"需要写{point_nums}个点")
+        # print(f"需要写{point_nums}个点")
         for k in range(point_nums):
             # 是否需要清空原来的bank
             if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last[0] != res_col_bank[k][0]):
@@ -1656,7 +1681,7 @@ class CHIP():
         return res,row_data,col_data
     
     def read_point3(self,row_num_start:int,row_num_end:int,col_num_start:int,col_num_end:int,
-                    read_voltage:float,tg:float = 5,gain:int = 1,from_row:bool = True, out_type = 0):
+                    read_voltage:float,tg:float = 5,gain:int = 1,from_row:bool = True, out_type = 0,):
         """
             Args:
                 row_num_start: 行号左边界
@@ -1671,13 +1696,16 @@ class CHIP():
         """
         assert row_num_start>=0 and row_num_start<256 and row_num_end>=0 and row_num_end<=256, "超过界限"
         assert col_num_start>=0 and col_num_start<256 and col_num_end>=0 and col_num_end<=256, "超过界限"
-        if row_num_start>=row_num_end or col_num_start>=row_num_end:
+        if row_num_start>=row_num_end or col_num_start>=col_num_end:
             # print("0个点需要读。")
-            return []
+            return np.array([])
         self.read_voltage = read_voltage
         self.set_tia_gain(gain)
         self.set_op_mode2(read=True,from_row=from_row)
-        compiler = self.get_compiler("read_point3.txt")
+        if from_row:
+            compiler = self.get_compiler("read_point3.txt")
+        else:
+            compiler = self.get_compiler("read_point3_col.txt")
 
         din_ram_start = 0
         ins_ram_start = 0
@@ -1701,6 +1729,7 @@ class CHIP():
         col_length = col_num_end-col_num_start
         res = np.zeros((row_length,col_length))
 
+        # print(f"需要读{row_length*col_length}个点")
         point_num = row_length*col_length
         num_max = count_max_c*16
         num = num_max
@@ -1727,3 +1756,37 @@ class CHIP():
             return self.voltage_to_cond(voltage=res, read_voltage=read_voltage)
         elif out_type == 2:
             return self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
+        
+
+    def write_point3(self,row_num_start:int,row_num_end:int,col_num_start:int,col_num_end:int,
+                     write_voltage:float,tg:float,pulse_width:float,set_device:bool = True):
+        """
+            Args:
+                row_num_start: 行号左边界
+                row_num_end: 行号右边界
+                col_num_start: 列号左边界
+                col_num_end: 列号右边界
+
+            Returns:
+                对应块大小的矩阵
+            
+                左闭右开
+        """
+        assert row_num_start>=0 and row_num_start<256 and row_num_end>=0 and row_num_end<=256, "超过界限"
+        assert col_num_start>=0 and col_num_start<256 and col_num_end>=0 and col_num_end<=256, "超过界限"
+
+        self.write_voltage = write_voltage
+        self.set_op_mode2(read=False,from_row=set_device)
+        self.set_pulse_width(pulse_width)
+        compiler = self.get_compiler("set_reset.txt")
+
+        const_data,row_data,col_data = self.send_din_ram3(row_num_start,row_num_end,col_num_start,col_num_end,din_ram_start=0)
+
+        for k,v in const_data.items():
+            compiler.add_const_variable(k,v)
+
+        ins_data = self.get_dac_ins2(v=write_voltage,tg=tg)
+        compiler.add_offset(len(ins_data))
+        ins_data = ins_data + compiler.get_ins_data()
+
+        self.execute_ins(ins_data=ins_data,ins_ram_start = 0)

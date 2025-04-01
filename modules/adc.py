@@ -158,6 +158,7 @@ class ADC():
         """
             读取的电压值换算成电导(单位:us)
             voltage为np数组
+            0挡最大,2挡第二,1挡第3,3挡最小
         """
         if self.gain == 0:
             return voltage/((read_voltage+1e-20)*6.0241*(self.big_resistance+self.small_resistance))*1e6
@@ -314,6 +315,7 @@ class ADC():
         flag =False
         message = self.ps.receive_packet(int((data_length*16+255)/256)*32).hex()
         if message[0:8]=="cc550000":
+            print("55cc在数据里面")
             message = message[8:]+self.ps.receive_packet(4).hex()
             flag = True
     
