@@ -730,6 +730,7 @@ INS_RUN_TIME_H32=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------RETURN_LENGTH:45
 RETURN_LENGTH=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.RW,
@@ -741,6 +742,7 @@ RETURN_LENGTH=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------RETURN_ADDR:46
 RETURN_ADDR=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.RW,
@@ -752,6 +754,7 @@ RETURN_ADDR=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------RETURN_RAM_NUM:47
 RETURN_RAM_NUM=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.RW,
@@ -763,6 +766,7 @@ RETURN_RAM_NUM=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------RETURN_FLG:48
 RETURN_FLG=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.RW,
@@ -774,6 +778,7 @@ RETURN_FLG=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------EXT_GPIO:49
 EXT_GPIO=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.RW,
