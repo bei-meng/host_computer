@@ -8,3 +8,4 @@ result/
 images/
 
 network/__pycache__
+.idea/
