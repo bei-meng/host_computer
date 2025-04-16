@@ -145,11 +145,18 @@ class CHIP():
         pkts=Packet()
         if self.deviceType == 1:
             self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(self.op_mode != "read"))],mode=1)
-            pkts.append_cmdlist([
-                CMD(ROW_CTRL,command_data=CmdData(1)),                                                  # 1配置行到施加电压,
-                CMD(COL_CTRL,command_data=CmdData(not from_row)),                                                  # 0配置列到TIA,
-                CMD(ROW_COL_SW,command_data=CmdData(from_row)),                                             # 1PCB上的TIA接在列,
-            ],mode=1)
+            if self.op_mode=="write":
+                pkts.append_cmdlist([
+                    CMD(ROW_CTRL,command_data=CmdData(1)),                                                  # 1配置行到施加电压,
+                    CMD(COL_CTRL,command_data=CmdData(not from_row)),                                                  # 0配置列到TIA,
+                    CMD(ROW_COL_SW,command_data=CmdData(from_row)),                                             # 1PCB上的TIA接在列,
+                ],mode=1)
+            else:
+                pkts.append_cmdlist([
+                    CMD(ROW_CTRL,command_data=CmdData(from_row)),                                                  # 1配置行到施加电压,
+                    CMD(COL_CTRL,command_data=CmdData(not from_row)),                                                  # 0配置列到TIA,
+                    CMD(ROW_COL_SW,command_data=CmdData(from_row)),                                             # 1PCB上的TIA接在列,
+                ],mode=1)
         else:
             pkts.append_cmdlist([
                 CMD(ROW_CTRL,command_data=CmdData(from_row)),                                                  # 1配置行到施加电压,
@@ -519,9 +526,14 @@ class CHIP():
         ins_data=[]
         if self.deviceType == 1:
             self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(self.op_mode != "read"))],mode=1)
-            ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(1<<16)))                                                  # 1配置行到施加电压,
-            ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
-            ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
+            if self.op_mode == "write":
+                ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(1<<16)))                                                  # 1配置行到施加电压,
+                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
+                ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
+            else:
+                ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(int(from_row)<<16)))                                                  # 1配置行到施加电压,
+                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
+                ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
         else:
             ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(int(from_row)<<16)))                                                  # 1配置行到施加电压,
             ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
@@ -1195,7 +1207,7 @@ class CHIP():
         
         return res_row_bank,res_col_bank,res_tia_map
     
-    def read_chunk_parallel2(self,row_num_start:int,row_num_end:int,col_num_start:int,col_num_end:int,
+    def read_chunk_parallel2(self,row_num_start:int=0,row_num_end:int=256,col_num_start:int=0,col_num_end:int=256,
                             row_index:list[list[int]]=None, col_index:list[list[int]]= None,
                             read_voltage:float=0.1,tg:float = 5,
                             gain:int = 1,from_row:bool = True, out_type = 0,
@@ -1203,6 +1215,11 @@ class CHIP():
                             tia_split:Union[list[list[int]|None]]=None,use_last_data:bool=False):
         """
             左闭右开区间[row_num_start,row_num_end)
+            如果没有给出row_index和col_index,那么会使用row_num_start和row_num_end限定区域自动生成
+            如果不是进行推理,只是单纯并行读,
+            从行给信号,row_index形式为[[行0],[行2],[行3]...],col_index形式为[[所有列号(会自动切分tia的batch)]]
+            如果是进行推理,
+            从行给信号读的话,row_index形式为[[所有行的行号]],col_index形式为[[所有列号(会自动切分tia的batch)]]
         """
         self.read_voltage = read_voltage
         self.set_tia_gain(gain)
@@ -1385,12 +1402,13 @@ class CHIP():
         # ----------------------------------------------准备指令序列
         ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)                                              # 得到配置电压的指令序列
         
-        row_bank_data_last, col_bank_data_last = (0,0),(0,0)
+        row_bank_data_last, col_bank_data_last = (-1,-1),(-1,-1)
         point_nums = len(res_row_bank)
         # print(f"需要读{point_nums}个点")
         last_point_pos = 0
         for k in range(point_nums):
             # 是否需要清空原来的bank
+            # print((row_bank_data_last[0] != res_row_bank[k][0]),(col_bank_data_last[0] != res_col_bank[k][0]))
             if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last[0] != res_col_bank[k][0]):
                 ins_data.append( CMD(PL_CIM_RESET) )
             elif row_bank_data_last[0] != res_row_bank[k][0]:
@@ -1454,7 +1472,7 @@ class CHIP():
         change_tg = type(tg)==np.ndarray
         ins_data = self.get_dac_ins2(v=write_voltage,tg=None if change_tg else tg)                                             # 配置电压
 
-        row_bank_data_last, col_bank_data_last = (0,0),(0,0)
+        row_bank_data_last, col_bank_data_last = (-1,-1),(-1,-1)
         v_last = 0
         point_nums = len(res_row_bank)
         # print(f"需要写{point_nums}个点")
@@ -1549,7 +1567,9 @@ class CHIP():
 
     def compute(self,crossbar:np.ndarray,read_voltage:float,tg:float = 5,gain:int = 1,from_row:bool = True, out_type = 0):
         """
-            读器件, row_index为行索引, col_index为列索引
+            并行推理
+            从行给信号进行推理时,每次推理一列,这一列里面可以开启任意行(选中的行会全打开)
+            
         """
         self.read_voltage = read_voltage
         self.set_tia_gain(gain)

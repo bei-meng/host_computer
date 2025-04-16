@@ -1,4 +1,5 @@
 import numpy as np
+import scipy
 from scipy.io import savemat
 
 class DataLoader():
@@ -13,3 +14,7 @@ class DataLoader():
     def load_csv(self,csv_path,skip_header = 0):
         data = np.genfromtxt(csv_path, delimiter=',', skip_header=skip_header)
         return np.array(data)
+    
+    def load_mat(self,mat_path):
+        mat_data = scipy.io.loadmat(mat_path)
+        return mat_data
