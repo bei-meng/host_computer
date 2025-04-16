@@ -92,6 +92,23 @@ class DAC_INFO():
     # self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
     # self.dac.set_voltage(0,dac_num=1,dac_channel=3)             #
 
+    # ReRAM512
+    # self.dac.set_voltage(0,dac_num=0,dac_channel=0)             #
+    # self.dac.set_voltage(0,dac_num=0,dac_channel=1)             #
+    # self.dac.set_voltage(0,dac_num=0,dac_channel=2)             #
+    # self.dac.set_voltage(0,dac_num=0,dac_channel=3)             #
+
+    # self.dac.set_voltage(0,dac_num=0,dac_channel=4)             #
+    # self.dac.set_voltage(0,dac_num=0,dac_channel=5)             #
+    # self.dac.set_voltage(0,dac_num=0,dac_channel=6)             # TG
+    # self.dac.set_voltage(0,dac_num=0,dac_channel=7)             #
+
+    # self.dac.set_voltage(v,dac_num=1,dac_channel=0)             # ROW_Va
+    # self.dac.set_voltage(0,dac_num=1,dac_channel=1)             #  
+    # self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
+    # self.dac.set_voltage(0,dac_num=1,dac_channel=3)             #
+
+
     # ECRAM
     # self.dac.set_voltage(v,dac_num=0,dac_channel=0)             # ROW_Va电压
     # self.dac.set_voltage(v,dac_num=0,dac_channel=1)             # ROW_Va电压
@@ -120,6 +137,9 @@ class DAC_INFO():
     ECRAM_COL_VC = [9]
     ECRAM_GL = [10]
     ECRAM_GR = [11]
+
+    RERAM512_TG = [8]
+    RERAM512_VIN = [11]
 
 class INS2_INFO():
     """

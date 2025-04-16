@@ -3,6 +3,7 @@ import numpy as np
 class CHIPSETTING:
     # 芯片配置
     deviceType = 0                                              # 0为ReRAM,1为ECRAM
+    IsRERAM512 = False                                          # 是否是reream512
 
     chip_bank_num = 8                                           # 8个bank
     chip_tia_num = 16                                           # 16个tia
@@ -193,6 +194,9 @@ class CHIPSETTING:
     
     def TIA_index_map(self,num,col=True):
         return self.num_to_tia_col[num] if col else self.num_to_tia_row[num]
+    
+    def TIA_index_map_512k(self,num):
+        return self._TIA_index_map(num,col=False)
 
     def _TIA_index_map(self,num,col=True):
         """
@@ -202,13 +206,22 @@ class CHIPSETTING:
         num += 1
         assert num > 0 and num < 257,"numToBank_Index: num超过范围!"
         if self.deviceType==0 and col:
-            # 先判断奇数偶数
-            if num&1:
-                index_base,index_offset = 32,1
-                TIA_base = 8
+            if (self.IsRERAM512):   # 512k阵列的映射不同
+                # 先判断奇数偶数
+                if num&1:
+                    index_base,index_offset = 32,1
+                    TIA_base = 0
+                else:
+                    index_base,index_offset = 32,2
+                    TIA_base = 8
             else:
-                index_base,index_offset = 32,2
-                TIA_base = 0
+                # 先判断奇数偶数
+                if num&1:
+                    index_base,index_offset = 32,1
+                    TIA_base = 8
+                else:
+                    index_base,index_offset = 32,2
+                    TIA_base = 0
         else:
             # 先判断奇数偶数
             if num&1:

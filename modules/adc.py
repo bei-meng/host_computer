@@ -315,7 +315,6 @@ class ADC():
         flag =False
         message = self.ps.receive_packet(int((data_length*16+255)/256)*32).hex()
         if message[0:8]=="cc550000":
-            print("55cc在数据里面")
             message = message[8:]+self.ps.receive_packet(4).hex()
             flag = True
     

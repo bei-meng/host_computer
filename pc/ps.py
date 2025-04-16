@@ -15,6 +15,7 @@ class PS():
         self.local_port = None      # 这里让他自动选择端口
 
         self.debug = debug
+        self.connected = False
 
         self.historic_pkts = []
 
@@ -24,6 +25,7 @@ class PS():
             self.local_ip, self.local_port = self.socket.getsockname()
             print(f"Connected to {self.host}:{self.port}\nlocal ip: {self.local_ip} local port: {self.local_port}")
 
+            self.connected = True
             self.socket.settimeout(5)
         except Exception as e:
             print(f"Failed to connect: {e}")
