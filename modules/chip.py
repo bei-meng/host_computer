@@ -20,7 +20,7 @@ class CHIP():
         对chip进行的操作
     """
     deviceType = 0                  # 器件类型0: RERAM,1: ECRAM
-    IsRERAM512 = False             # 是否是reream512
+    IsRERAM512 = False              # 是否是reream512
     chip_sel = 0                    # 选择18个阵列中的一个
 
     op_mode = None                  # 当前所处模式
@@ -39,6 +39,8 @@ class CHIP():
     init = True
 
     read_parallel2_data = None
+
+    need_reset = False               # 两个芯片同用需要reset另一个芯片
 
     def __init__(self, ps:PS,init = True):
         self.ps = ps
@@ -179,6 +181,9 @@ class CHIP():
         pkts=Packet()
         if self.IsRERAM512:
             pkts.append_cmdlist([CMD(COL_CTRL,command_data=CmdData(0)),CMD(COL_CTRL,command_data=CmdData(1)),],mode=1)
+            pkts.append_cmdlist([CMD(CIM_RESET,command_data=CmdData(0)),
+                                 CMD(CIM_RESET,command_data=CmdData(1)),
+                                 CMD(CIM_RESET,command_data=CmdData(0))],mode=1)
         else:
             pkts.append_cmdlist([CMD(CIM_RESET,command_data=CmdData(0)),CMD(CIM_RESET,command_data=CmdData(1)),],mode=1)
         self.ps.send_packets(pkts)   
@@ -793,8 +798,8 @@ class CHIP():
         record = []
         for col_batch,col in enumerate(res_col_bank):                                                   # 因为只有16路TIA, 所以可能会有多个列的batch, 每个batch最大读16路TIA
             if self.IsRERAM512:
-                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0)))
-                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1)))
+                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
+                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
             else:
                 ins_data.append(CMD(PL_CIM_RESET))
             for bank,din_ram_pos in col:                                                                # 每个col_batch, 可能需要配置多个bank
@@ -915,8 +920,8 @@ class CHIP():
         row_bank_record = [[],[]]                                                                       # 用于优化多行单独写的情况, 如果前后bank相同, 后面就不需要手动清0
         col_bank_record = [[],[]]                                                                       # 0号是旧的, 1号是新的
         if self.IsRERAM512:
-            ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0)))
-            ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1)))
+            ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
+            ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
         else:
             ins_data.append(CMD(PL_CIM_RESET))
 
@@ -1133,8 +1138,8 @@ class CHIP():
                         add_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(col_bank[0]<<8|col_bank[1])))  # 配置列bank
             else:
                 if self.IsRERAM512:
-                    add_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0)))
-                    add_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1)))
+                    add_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
+                    add_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
                 else:
                     add_ins_data.append( CMD(PL_CIM_RESET))
                 for row_bank in row_banks:
@@ -1318,8 +1323,8 @@ class CHIP():
                         add_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(col_bank[0]<<8|col_bank[1])))  # 配置列bank
             else:
                 if self.IsRERAM512:
-                    add_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0)))
-                    add_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1)))
+                    add_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
+                    add_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
                 else:
                     add_ins_data.append( CMD(PL_CIM_RESET))
                 for row_bank in row_banks:
@@ -1458,11 +1463,13 @@ class CHIP():
         last_point_pos = 0
         for k in range(point_nums):
             # 是否需要清空原来的bank
+            if self.need_reset:
+                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
             # print((row_bank_data_last[0] != res_row_bank[k][0]),(col_bank_data_last[0] != res_col_bank[k][0]))
             if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last[0] != res_col_bank[k][0]):
                 if self.IsRERAM512:
-                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0)))
-                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1)))
+                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
+                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
                 else:
                     ins_data.append(CMD(PL_CIM_RESET))
             elif row_bank_data_last[0] != res_row_bank[k][0]:
@@ -1476,6 +1483,9 @@ class CHIP():
                 ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(res_col_bank[k][0]<<8|res_col_bank[k][1])))
 
             row_bank_data_last,col_bank_data_last = res_row_bank[k],res_col_bank[k]
+            if self.need_reset:
+                if not from_row:
+                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))   
 
             ins_data.append(CMD(read_ins,command_data=CmdData(dout_ram_pos)))
             dout_ram_pos += 1
@@ -1531,11 +1541,13 @@ class CHIP():
         point_nums = len(res_row_bank)
         # print(f"需要写{point_nums}个点")
         for k in range(point_nums):
+            if self.need_reset:
+                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
             # 是否需要清空原来的bank
             if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last[0] != res_col_bank[k][0]):
                 if self.IsRERAM512:
-                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0)))
-                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1)))
+                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
+                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
                 else:
                     ins_data.append(CMD(PL_CIM_RESET))
             elif row_bank_data_last[0] != res_row_bank[k][0]:
@@ -1547,6 +1559,10 @@ class CHIP():
                 ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(res_row_bank[k][0]<<8|res_row_bank[k][1])))
             if col_bank_data_last!=res_col_bank[k]:
                 ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(res_col_bank[k][0]<<8|res_col_bank[k][1])))
+
+            if self.need_reset:
+                if not set_device:
+                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))  
 
             row_bank_data_last,col_bank_data_last = res_row_bank[k],res_col_bank[k]
             # 改变tg的电压
@@ -1655,8 +1671,8 @@ class CHIP():
         for k in range(cal_nums):
             tmp_ins_data = []
             if self.IsRERAM512:
-                tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0)))
-                tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1)))
+                tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
+                tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
             else:
                 tmp_ins_data.append(CMD(PL_CIM_RESET))
 
@@ -1884,7 +1900,7 @@ class CHIP():
         self.chip_sel = chip_sel
 
         # 将chip_sel映射到gpio信号
-        map_chipsel_gpio = [0, 1, 4, 5, 16, 17, 20, 21, 64, 65, 68, 69, 80, 81, 84, 85, 256, 257, 260]
+        map_chipsel_gpio = [0, 1, 4, 5, 16, 17, 20, 21, 64, 65, 68, 69, 80, 81, 84, 85, 256, 257, 260, 261]
         gpio = map_chipsel_gpio[chip_sel]
 
         # 检查gpio的内容

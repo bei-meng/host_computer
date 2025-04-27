@@ -26,7 +26,7 @@ class PS():
             print(f"Connected to {self.host}:{self.port}\nlocal ip: {self.local_ip} local port: {self.local_port}")
 
             self.connected = True
-            self.socket.settimeout(5)
+            self.socket.settimeout(1)
         except Exception as e:
             print(f"Failed to connect: {e}")
 

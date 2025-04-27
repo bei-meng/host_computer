@@ -26,6 +26,24 @@ def plot_v_cond(v,cond,figsize=(12,4),title=""):
     plt.legend()
     plt.show()
 
+
+# def plot_cond(data,vmin = 0,vmax = 1400,title = "",label = "us",path = None):
+#     """
+#     :param data为256*256的np矩阵
+#     """
+#     # viridis， plasma， inferno， magma， cividis
+#     # RdBu 、 RdYlBu 、 coolwarm 、 seismic
+#     cmap = plt.cm.gray
+#     norm = Normalize(vmin=vmin, vmax=vmax)
+#     im = plt.imshow(data, cmap=cmap,norm=norm)
+#     cbar = plt.colorbar(im)
+#     cbar.set_label(label)
+#     plt.title(title)
+#     if path is not None:
+#         plt.savefig(path)  # 保存为 PNG 格式
+#     plt.show()
+
+
 def plot_cond(data,vmin = 0,vmax = 1400,title = "",label = "us",path = None):
     """
     :param data为256*256的np矩阵
