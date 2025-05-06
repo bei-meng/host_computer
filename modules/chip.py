@@ -103,7 +103,7 @@ class CHIP():
                 CMD(SER_PARA_SEL,command_data=CmdData(1)),              # 切换到并行模式
             ],mode=1)
             self.ps.send_packets(pkts)
-            # self.set_cim_reset()
+            self.set_cim_reset()
             # 不为空就执行初始化
             if self.adc is not None:
                 self.adc.initOp()
@@ -764,6 +764,7 @@ class CHIP():
         """
             读器件, row_index为行索引, col_index为列索引
         """
+        assert self.setting.IsNew32==False,"此函数在新版PCB上已经废弃!"
         assert self.op_mode == "read","未设置为读模式。"
         self.read_voltage = read_voltage
 
@@ -850,6 +851,7 @@ class CHIP():
         """
             out_type: 0为电压, 1为电导(uS), 2为电阻(KΩ)
         """
+        assert self.setting.IsNew32==False,"此函数在新版PCB上已经废弃!"
         assert out_type >= 0 and out_type <=2, "read_crossbar2: 返回类型错误。"
         assert len(row_index)>0, "read_crossbar2: row_index不能为空"
         assert len(col_index)>0, "read_crossbar2: col_index不能为空"

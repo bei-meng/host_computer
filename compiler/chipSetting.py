@@ -206,6 +206,8 @@ class CHIPSETTING:
             注意: num从0索引开始
             将对应的行或列索引映射为对应的TIA偏移
         """
+        if self.IsNew32:
+            return self._TIA_index_map_new32(num,col)
         num += 1
         assert num > 0 and num < 257,"numToBank_Index: num超过范围!"
         if self.deviceType==0 and col:
@@ -238,42 +240,64 @@ class CHIPSETTING:
 
         return TIA_base+TIA_offset
     
-    # def _TIA_index_map_new32(self,num,col):
-    #     """
-    #         注意: num从0索引开始
-    #         将对应的行或列索引映射为对应的TIA偏移
-    #     """
-    #     num += 1
-    #     assert num > 0 and num < 257,"numToBank_Index: num超过范围!"
-    #     if self.deviceType==1:
-    #         if col:
-                
-    #     if self.deviceType==0 and col:
-    #         if (self.IsRERAM512):   # 512k阵列的映射不同
-    #             # 先判断奇数偶数
-    #             if num&1:
-    #                 index_base,index_offset = 16,1
-    #                 TIA_base = 0
-    #             else:
-    #                 index_base,index_offset = 16,2
-    #                 TIA_base = 16
-    #         else:
-    #             # 先判断奇数偶数
-    #             if num&1:
-    #                 index_base,index_offset = 16,1
-    #                 TIA_base = 16
-    #             else:
-    #                 index_base,index_offset = 16,2
-    #                 TIA_base = 0
-    #     else:
-    #         # 先判断奇数偶数
-    #         if num&1:
-    #             index_base,index_offset = 16,1
-    #             TIA_base = 0
-    #         else:
-    #             index_base,index_offset = 16,2
-    #             TIA_base = 16
-                
-    #     TIA_offset = int((num-index_offset)/index_base)
+    def _TIA_index_map_new32(self,num,col):
+        """
+            注意: num从0索引开始
+            将对应的行或列索引映射为对应的TIA偏移
+        """
+        num += 1
+        assert num > 0 and num < 257,"numToBank_Index: num超过范围!"
 
-    #     return TIA_base+TIA_offset
+        if self.deviceType==0:
+            if col:
+                if (self.IsRERAM512):   # 512k阵列的映射不同
+                    # 先判断奇数偶数
+                    if num&1:
+                        index_base,index_offset = 16,1
+                        TIA_base = 0
+                    else:
+                        index_base,index_offset = 16,2
+                        TIA_base = 16
+                else:
+                    # 奇数列，TIA从16开始
+                    # 先判断奇数偶数
+                    if num&1:
+                        index_base,index_offset = 16,1
+                        TIA_base = 16
+                    else:
+                        index_base,index_offset = 16,2
+                        TIA_base = 0
+            else:
+                # 奇数行，TIA从0开始
+                # 先判断奇数偶数
+                if num&1:
+                    index_base,index_offset = 16,1
+                    TIA_base = 0
+                else:
+                    index_base,index_offset = 16,2
+                    TIA_base = 16
+
+            TIA_offset = int((num-index_offset)/index_base)
+            return TIA_base+TIA_offset
+        else:
+            if col:
+                # 奇数列0-14
+                if num&1:
+                    index_base,index_offset = 32,1
+                    TIA_base = 0
+                # 偶数行17-31
+                else:
+                    index_base,index_offset = 32,2
+                    TIA_base = 17
+            else:
+                # 先判断奇数偶数
+                if num&1:
+                    index_base,index_offset = 32,1
+                    TIA_base = 1
+                else:
+                    index_base,index_offset = 32,2
+                    TIA_base = 17
+                
+            TIA_offset = int((num-index_offset)/index_base)
+            return TIA_base+TIA_offset*2
+        
