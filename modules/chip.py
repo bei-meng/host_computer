@@ -19,8 +19,6 @@ class CHIP():
     """
         对chip进行的操作
     """
-    deviceType = 0                  # 器件类型0: RERAM,1: ECRAM
-    IsRERAM512 = False              # 是否是reream512
     chip_sel = 0                    # 选择18个阵列中的一个
 
     op_mode = None                  # 当前所处模式
@@ -42,11 +40,11 @@ class CHIP():
 
     need_reset = False               # 两个芯片同用需要reset另一个芯片
 
-    def __init__(self, ps:PS,init = True):
+    def __init__(self, ps:PS,deviceType:int = 0,IsNew32:bool=False,IsRERAM512:bool=False,init = True):
         self.ps = ps
         self.init = init
         self.initOp()
-        self.setting = CHIPSETTING(self.deviceType)
+        self.setting = CHIPSETTING(deviceType=deviceType,IsNew32=IsNew32,IsRERAM512=IsRERAM512)
         self.adc = ADC(ps,self.setting,init)
         self.dac = DAC(ps,self.setting,init)
         self.clk_manager = CLK_MANAGER(ps,init)
@@ -76,7 +74,7 @@ class CHIP():
         """
             输出相关信息
         """
-        device = "ECRAM" if self.deviceType else "ReRAM"
+        device = "ECRAM" if self.setting.deviceType else "ReRAM"
         row_col = "行" if self.from_row else "列"
         if self.op_mode == "read":
             res = f"操作模式: {self.op_mode}\t器件: {device}\t读电压: {self.read_voltage}v\t从行\列给电压: {row_col}\tTIA增益: {self.adc.gain}"
@@ -112,15 +110,14 @@ class CHIP():
             if self.dac is not None:
                 self.dac.initOp()
 
-    def set_device_cfg(self,deviceType = 0):
+    def set_device_cfg(self,deviceType:int = 0,IsNew32:bool=False,IsRERAM512:bool=False):
         """
             设置device的cfg
         """
-        self.deviceType = deviceType
         pkts=Packet()
-        pkts.append_cmdlist([CMD(DEVICE_CFG,command_data=CmdData(self.deviceType)),],mode=1)
+        pkts.append_cmdlist([CMD(DEVICE_CFG,command_data=CmdData(deviceType)),],mode=1)
         self.ps.send_packets(pkts)
-        self.setting.set_device(deviceType)
+        self.setting.set_device(deviceType=deviceType,IsNew32=IsNew32,IsRERAM512=IsRERAM512)
 
 
     def set_pulse_width(self,pulsewidth:float):
@@ -146,7 +143,7 @@ class CHIP():
         self.op_mode = "read" if read else "write"
         self.from_row = from_row
         pkts=Packet()
-        if self.deviceType == 1:
+        if self.setting.deviceType == 1:
             self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(self.op_mode != "read"))],mode=1)
             if self.op_mode=="write":
                 pkts.append_cmdlist([
@@ -161,7 +158,7 @@ class CHIP():
                     CMD(ROW_COL_SW,command_data=CmdData(from_row)),                                             # 1PCB上的TIA接在列,
                 ],mode=1)
         else:
-            if self.IsRERAM512:
+            if self.setting.IsRERAM512:
                 pkts.append_cmdlist([
                     CMD(ROW_COL_SW,command_data=CmdData(from_row)),                                                # 1PCB上的TIA接在列,
                 ],mode=1)
@@ -179,7 +176,7 @@ class CHIP():
             发送reset的指令
         """
         pkts=Packet()
-        if self.IsRERAM512:
+        if self.setting.IsRERAM512:
             pkts.append_cmdlist([CMD(COL_CTRL,command_data=CmdData(0)),CMD(COL_CTRL,command_data=CmdData(1)),],mode=1)
             pkts.append_cmdlist([CMD(CIM_RESET,command_data=CmdData(0)),
                                  CMD(CIM_RESET,command_data=CmdData(1)),
@@ -297,8 +294,8 @@ class CHIP():
                 ECRAM: 行读, 设置ROW_Va为v; 列读, 设置COL_Va为v
         """
         self.read_voltage = v
-        if self.deviceType==0:
-            if self.IsRERAM512:
+        if self.setting.deviceType==0:
+            if self.setting.IsRERAM512:
                 # print("配置电压")
                 self.dac.set_voltage(tg,dac_num=1,dac_channel=0)            # TG
                 self.dac.set_voltage(v,dac_num=1,dac_channel=3)             # ROW_Va
@@ -309,7 +306,7 @@ class CHIP():
                 else:   
                     self.dac.set_voltage(tg,dac_num=0,dac_channel=6)            # TG
                     self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
-        elif self.deviceType==1:    
+        elif self.setting.deviceType==1:    
             # 新版1T1E需要ROW, COL的Va电压都加
             if self.from_row:  
                 self.dac.set_voltage(v,dac_num=0,dac_channel=0)             # ROW_Va电压
@@ -329,8 +326,8 @@ class CHIP():
                 ReRAM: 设置TG, ROW_Va和COL_Va都会设置为v\n
         """
         self.write_voltage = v
-        if self.deviceType==0:
-            if self.IsRERAM512:
+        if self.setting.deviceType==0:
+            if self.setting.IsRERAM512:
                 self.dac.set_voltage(tg,dac_num=1,dac_channel=0)            # TG
                 self.dac.set_voltage(v,dac_num=1,dac_channel=3)             # ROW_Va
             else:
@@ -340,7 +337,7 @@ class CHIP():
                 else:   
                     self.dac.set_voltage(tg,dac_num=0,dac_channel=6)            # TG
                     self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # COL_Va
-        elif self.deviceType==1:    
+        elif self.setting.deviceType==1:    
             if self.from_row:     
                 self.dac.set_voltage(v,dac_num=1,dac_channel=2)             # GL
                 self.dac.set_voltage(v,dac_num=1,dac_channel=3)             # GR
@@ -548,7 +545,7 @@ class CHIP():
         self.from_row = from_row
         self.op_mode = "read" if read else "write"
         ins_data=[]
-        if self.deviceType == 1:
+        if self.setting.deviceType == 1:
             self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(self.op_mode != "read"))],mode=1)
             if self.op_mode == "write":
                 ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(1<<16)))                                                  # 1配置行到施加电压,
@@ -559,7 +556,7 @@ class CHIP():
                 ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
                 ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
         else:
-            if self.IsRERAM512:
+            if self.setting.IsRERAM512:
                 ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))
             else:
                 ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(int(from_row)<<16)))                                                  # 1配置行到施加电压,
@@ -644,27 +641,27 @@ class CHIP():
         if v is not None:
             v16 = self.dac.VToBytes(v)
             if self.op_mode == "read":
-                if self.deviceType==0:                      # ReRAM
-                    if self.IsRERAM512:
+                if self.setting.deviceType==0:                      # ReRAM
+                    if self.setting.IsRERAM512:
                         for i in DAC_INFO.RERAM512_VIN: dac_v.append((i,v16))
                     else:
                         if self.from_row:                       # 从行读
                             for i in DAC_INFO.RERAM_ROW_VA: dac_v.append((i,v16))
                         else:                                   # 从列读
                             for i in DAC_INFO.RERAM_COL_VA: dac_v.append((i,v16))
-                elif self.deviceType==1:                    # ECRAM
+                elif self.setting.deviceType==1:                    # ECRAM
                         for i in DAC_INFO.ECRAM_ROW_VA: dac_v.append((i,v16))
                         for i in DAC_INFO.ECRAM_COL_VA: dac_v.append((i,v16))
             elif self.op_mode == "write":
-                if self.deviceType==0:                      # ReRAM
-                    if self.IsRERAM512:
+                if self.setting.deviceType==0:                      # ReRAM
+                    if self.setting.IsRERAM512:
                         for i in DAC_INFO.RERAM512_VIN: dac_v.append((i,v16))
                     else:
                         if self.from_row:                       # 从行读
                             for i in DAC_INFO.RERAM_ROW_VA: dac_v.append((i,v16))
                         else:                                   # 从列读
                             for i in DAC_INFO.RERAM_COL_VA: dac_v.append((i,v16))
-                elif self.deviceType==1:                    # ECRAM
+                elif self.setting.deviceType==1:                    # ECRAM
                     if self.from_row:                       # 从行写
                         for i in DAC_INFO.ECRAM_GL: dac_v.append((i,v16))
                         for i in DAC_INFO.ECRAM_GR: dac_v.append((i,v16))
@@ -678,20 +675,20 @@ class CHIP():
         if tg is not None:
             tg16 = self.dac.VToBytes(tg)
             if self.op_mode == "read":
-                if self.deviceType==0:                      # ReRAM
-                    if self.IsRERAM512:
+                if self.setting.deviceType==0:                      # ReRAM
+                    if self.setting.IsRERAM512:
                         for i in DAC_INFO.RERAM512_TG:dac_v.append((i,tg16))
                     else:
                         for i in DAC_INFO.RERAM_TG: dac_v.append((i,tg16))
-                elif self.deviceType==1:                    # ECRAM
+                elif self.setting.deviceType==1:                    # ECRAM
                     pass
             elif self.op_mode == "write":
-                if self.deviceType==0:                      # ReRAM
-                    if self.IsRERAM512:
+                if self.setting.deviceType==0:                      # ReRAM
+                    if self.setting.IsRERAM512:
                         for i in DAC_INFO.RERAM512_TG:dac_v.append((i,tg16))
                     else:
                         for i in DAC_INFO.RERAM_TG: dac_v.append((i,tg16))
-                elif self.deviceType==1:                    # ECRAM
+                elif self.setting.deviceType==1:                    # ECRAM
                     pass
 
         for dac_data in dac_v:
@@ -797,7 +794,7 @@ class CHIP():
         # ----------------------------------------------记录数据映射，最后用于TIA的映射输出
         record = []
         for col_batch,col in enumerate(res_col_bank):                                                   # 因为只有16路TIA, 所以可能会有多个列的batch, 每个batch最大读16路TIA
-            if self.IsRERAM512:
+            if self.setting.IsRERAM512:
                 ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
                 ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
             else:
@@ -919,7 +916,7 @@ class CHIP():
 
         row_bank_record = [[],[]]                                                                       # 用于优化多行单独写的情况, 如果前后bank相同, 后面就不需要手动清0
         col_bank_record = [[],[]]                                                                       # 0号是旧的, 1号是新的
-        if self.IsRERAM512:
+        if self.setting.IsRERAM512:
             ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
             ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
         else:
@@ -1137,7 +1134,7 @@ class CHIP():
                     for col_bank in col_banks:
                         add_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(col_bank[0]<<8|col_bank[1])))  # 配置列bank
             else:
-                if self.IsRERAM512:
+                if self.setting.IsRERAM512:
                     add_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
                     add_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
                 else:
@@ -1322,7 +1319,7 @@ class CHIP():
                     for col_bank in col_banks:
                         add_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(col_bank[0]<<8|col_bank[1])))  # 配置列bank
             else:
-                if self.IsRERAM512:
+                if self.setting.IsRERAM512:
                     add_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
                     add_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
                 else:
@@ -1467,7 +1464,7 @@ class CHIP():
                 ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
             # print((row_bank_data_last[0] != res_row_bank[k][0]),(col_bank_data_last[0] != res_col_bank[k][0]))
             if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last[0] != res_col_bank[k][0]):
-                if self.IsRERAM512:
+                if self.setting.IsRERAM512:
                     ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
                     ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
                 else:
@@ -1545,7 +1542,7 @@ class CHIP():
                 ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
             # 是否需要清空原来的bank
             if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last[0] != res_col_bank[k][0]):
-                if self.IsRERAM512:
+                if self.setting.IsRERAM512:
                     ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
                     ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
                 else:
@@ -1670,7 +1667,7 @@ class CHIP():
         last_point_pos = 0
         for k in range(cal_nums):
             tmp_ins_data = []
-            if self.IsRERAM512:
+            if self.setting.IsRERAM512:
                 tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
                 tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
             else:
