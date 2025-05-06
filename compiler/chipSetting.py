@@ -4,6 +4,7 @@ class CHIPSETTING:
     # 芯片配置
     deviceType = 0                                              # 0为ReRAM,1为ECRAM
     IsRERAM512 = False                                          # 是否是reream512
+    IsNew32 = False                                             # 是否是新的32路tia的板子
 
     chip_bank_num = 8                                           # 8个bank
     chip_tia_num = 16                                           # 16个tia
@@ -30,14 +31,16 @@ class CHIPSETTING:
     num_to_tia_col = None
     num_to_bank_index_tia_row = None
 
-    def __init__(self,deviceType:int):
-        self.set_device(deviceType)
+    def __init__(self,deviceType:int,IsNew32:bool=False,IsRERAM512:bool=False):
+        self.set_device(deviceType,IsNew32,IsRERAM512)
 
     #------------------------------------------------------------------------------------------
     # ************************************** 各种索引映射 **************************************
     #------------------------------------------------------------------------------------------
-    def set_device(self,deviceType:int):
+    def set_device(self,deviceType:int,IsNew32:bool=False,IsRERAM512:bool=False):
         self.deviceType = deviceType
+        self.IsRERAM512 = IsRERAM512
+        self.IsNew32 = IsNew32
         # 空间换时间
         self.num_to_bank_index = [self._numToBank_Index(i) for i in range(self.chip_latch_num)]
         self.num_to_tia_row = [self._TIA_index_map(i,col=False) for i in range(self.chip_latch_num)]
@@ -234,3 +237,43 @@ class CHIPSETTING:
         TIA_offset = int((num-index_offset)/index_base)
 
         return TIA_base+TIA_offset
+    
+    # def _TIA_index_map_new32(self,num,col):
+    #     """
+    #         注意: num从0索引开始
+    #         将对应的行或列索引映射为对应的TIA偏移
+    #     """
+    #     num += 1
+    #     assert num > 0 and num < 257,"numToBank_Index: num超过范围!"
+    #     if self.deviceType==1:
+    #         if col:
+                
+    #     if self.deviceType==0 and col:
+    #         if (self.IsRERAM512):   # 512k阵列的映射不同
+    #             # 先判断奇数偶数
+    #             if num&1:
+    #                 index_base,index_offset = 16,1
+    #                 TIA_base = 0
+    #             else:
+    #                 index_base,index_offset = 16,2
+    #                 TIA_base = 16
+    #         else:
+    #             # 先判断奇数偶数
+    #             if num&1:
+    #                 index_base,index_offset = 16,1
+    #                 TIA_base = 16
+    #             else:
+    #                 index_base,index_offset = 16,2
+    #                 TIA_base = 0
+    #     else:
+    #         # 先判断奇数偶数
+    #         if num&1:
+    #             index_base,index_offset = 16,1
+    #             TIA_base = 0
+    #         else:
+    #             index_base,index_offset = 16,2
+    #             TIA_base = 16
+                
+    #     TIA_offset = int((num-index_offset)/index_base)
+
+    #     return TIA_base+TIA_offset

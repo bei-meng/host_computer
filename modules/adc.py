@@ -259,7 +259,7 @@ class ADC():
         
         
         tia16_length = 64
-        tia_num = 16
+        tia_num = self.setting.chip_tia_num
         tia_length = 4
         
         message=message.hex()
@@ -290,7 +290,7 @@ class ADC():
         self.ps.send_packets(pkts,message_check=None)
         
         tia16_length = 64
-        tia_num = 16
+        tia_num = self.setting.chip_tia_num
         tia_length = 4
 
         # 接收信息, num条dout_ram值, 每条dout_ram长为256/8=32B

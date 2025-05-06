@@ -53,7 +53,7 @@ class App:
         chip=CHIP(PS(host="192.168.1.11", port = 7, debug=0),init=True)
         chip.set_device_cfg(deviceType=0)
         chip.adc.set_gap(adc_cs_gap=100,adc_first_gap=20,adc_last_gap=10)
-        chip.add_compiler("./code/")
+        chip.add_compiler("./compiler/code/")
         self.chip_task2=chip
 
 
