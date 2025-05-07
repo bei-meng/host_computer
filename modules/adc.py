@@ -15,11 +15,13 @@ class ADC():
     adc_first_gap = 0xa
     adc_last_gap = 0xa
 
-    big_resistance = 10e3                             # 单位: Ω
-    small_resistance = 200                            # 单位: Ω
+    big_resistance = 10e3                               # 单位: Ω
+    small_resistance = 200                              # 单位: Ω
+
+    base = 1.25/(2**15-1)                                   # 32767 是0x7FFF对应的正最大值
     
     gain = 0
-    row_col_sw = 0 
+    # row_col_sw = 0 
 
     ps = None
     setting = None
@@ -58,18 +60,18 @@ class ADC():
 
             self.set_gap(adc_cs_gap=100,adc_first_gap=10,adc_last_gap=10)
 
-    def set_row_col_sw(self,row_col_sw = 0):
-        """
-            pcb上row或col的TIA, 0:row,1:col
-        """
-        pkts=Packet()
-        pkts.append_cmdlist([
-            CMD(ROW_COL_SW,command_data=CmdData(row_col_sw)),
-        ],mode=1)
+    # def set_row_col_sw(self,row_col_sw = 0):
+    #     """
+    #         pcb上row或col的TIA, 0:row,1:col
+    #     """
+    #     pkts=Packet()
+    #     pkts.append_cmdlist([
+    #         CMD(ROW_COL_SW,command_data=CmdData(row_col_sw)),
+    #     ],mode=1)
 
-        # 发送指令
-        self.ps.send_packets(pkts)
-        self.row_col_sw = row_col_sw
+    #     # 发送指令
+    #     self.ps.send_packets(pkts)
+    #     self.row_col_sw = row_col_sw
     
 
     def set_spi_div(self,adc_spi_div = 2,):
@@ -244,8 +246,7 @@ class ADC():
         # 这里超过1440TCP包限制后就非常慢，几乎慢100倍
         tmp_length = data_length
         while tmp_length>0:
-            dout_size = int(self.setting.dout_ram_size/8)
-            recv_size = min(int(1440/dout_size),tmp_length)
+            recv_size = min(int(1440/self.setting.dout_ram_size_B),tmp_length)
             tmp_length -= recv_size
             pkts=Packet()
             pkts.append_single([
@@ -255,20 +256,14 @@ class ADC():
             dout_ram_start +=recv_size
             # 接收信息, num条dout_ram值, 每条dout_ram长为256/8=32B
             self.ps.send_packets(pkts,message_check=None)
-            message += self.ps.receive_packet(recv_size*dout_size)
+            message += self.ps.receive_packet(recv_size*self.setting.dout_ram_size_B)
         
-        
-        tia16_length = 64
-        tia_num = self.setting.chip_tia_num
-        tia_length = 4
-        
-        message=message.hex()
-        # 切分数据为16路TIA, 转成16进制后, 每条dout_ram长32*2个16进制宽度(4bit)
-        message_tia = [message[i*tia16_length:(i+1)*tia16_length] for i in range(data_length)]
-        vres = [[self.hex_to_voltage(tia16[i*tia_length:(i+1)*tia_length]) for i in range(tia_num)] for tia16 in message_tia]
+        data_B = data_length*self.setting.dout_ram_size_B 
+        message = self.ps.receive_packet(max(self.setting.receive_packet_B,data_B))[:data_B]
+        int16_array = np.frombuffer(message, dtype=np.dtype('>i2'))
+        voltage = int16_array * self.base
+        return voltage.reshape(data_length,self.setting.chip_tia_num)
 
-        return np.array(vres)
-    
     def get_out2(self,data_length:int,dout_ram_start:int) -> np.ndarray:
         """
             Args:
@@ -288,18 +283,14 @@ class ADC():
             CMD(PL_DATA_LENGTH,command_data=CmdData(max(96,data_length)))
         ],mode=6)
         self.ps.send_packets(pkts,message_check=None)
-        
-        tia16_length = 64
-        tia_num = self.setting.chip_tia_num
-        tia_length = 4
 
         # 接收信息, num条dout_ram值, 每条dout_ram长为256/8=32B
-        message = self.ps.receive_packet(max(96,data_length)*32).hex()
-        # 切分数据为16路TIA, 转成16进制后, 每条dout_ram长32*2个16进制宽度(4bit)
-        message_tia = [message[i*tia16_length:(i+1)*tia16_length] for i in range(data_length)]
-        vres = [[self.hex_to_voltage(tia16[i*tia_length:(i+1)*tia_length]) for i in range(tia_num)] for tia16 in message_tia]
-
-        return np.array(vres)
+        data_B = data_length*self.setting.dout_ram_size_B 
+        message = self.ps.receive_packet(max(self.setting.receive_packet_B,data_B))[:data_B]
+        # 大端字节序解析
+        int16_array = np.frombuffer(message, dtype=np.dtype('>i2'))
+        voltage = int16_array * self.base
+        return voltage.reshape(data_length,self.setting.chip_tia_num)
  
     def get_out3(self,data_length:int)->np.ndarray:
         """
@@ -311,14 +302,9 @@ class ADC():
 
             从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的tia的值
         """
-        # return np.array([i for i in range(data_length)])
-        flag =False
-        message = self.ps.receive_packet(int((data_length*16+255)/256)*32).hex()
-        if message[0:8]=="cc550000":
-            message = message[8:]+self.ps.receive_packet(4).hex()
-            flag = True
-    
-        # 每条数据2B,16位占4个16进制数
-        res = [message[i*4:(i+1)*4] for i in range(data_length)]
-        voltage = [self.hex_to_voltage(i) for i in res]
-        return np.array(voltage),flag
+        data_B = int((data_length*16+self.setting.dout_ram_size-1)/self.setting.dout_ram_size)*self.setting.dout_ram_size_B
+        message = self.ps.receive_packet(data_B)
+        # 大端字节序解析
+        int16_array = np.frombuffer(message, dtype=np.dtype('>i2'))
+        voltage = int16_array * self.base
+        return voltage,False
