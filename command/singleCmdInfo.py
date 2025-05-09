@@ -630,8 +630,8 @@ OP_ADC_AVRG_DONE_DELAY_CYC=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
-#-------------------------------------------------------------------OP_DAC_AVRG_DONE_DELAY_CYC:35
-OP_DAC_AVRG_DONE_DELAY_CYC=dict(
+#-------------------------------------------------------------------OP_DAC_CFG_DONE_DELAY_CYC:35
+OP_DAC_CFG_DONE_DELAY_CYC=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.RW,
     n_addr_bytes = N_ADDR_BYTES.ONE,

@@ -45,23 +45,36 @@ class CLK_MANAGER():
 
         self.pulse_cyc = pulse_cyc
 
-    def set_cyc(self,delay1 = 20,delay2 = 100):        
+    def set_cyc(self,delay1 = 20,delay2 = 20,delay3 = 100):        
         pkts=Packet()
         pkts.append_cmdlist([
+            # bank配置指令,完成后等待多少cycle
             CMD(OP_BANK_CFG_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            # cfg_cim_data_in指令，完成后等多少cycle
             CMD(OP_CIM_DATA_CFG_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            # reg_clk指令，完成后等多少cycle
             CMD(REG_CLK_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            # latch_clk指令，完成后等待周期数
             CMD(LATCH_CLK_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            # adc求平均后等多久
             CMD(OP_ADC_AVRG_DONE_DELAY_CYC,command_data=CmdData(delay1)),
-            CMD(OP_DAC_AVRG_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            # dac配置后等多久
+            CMD(OP_DAC_CFG_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            # 给行脉冲，结束后，等待周期数
             CMD(OP_ROW_PULSE_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            # 给列脉冲，结束后，等待周期数
             CMD(OP_COL_PULSE_DONE_DELAY_CYC,command_data=CmdData(delay1)),
+            # cim_reset，结束后，等待周期数
             CMD(OP_CIM_RSTN_DONE_DELAY_CYC,command_data=CmdData(delay1)),
 
+            # cim_reset的脉冲宽度
             CMD(CIM_RSTN_CYC,command_data=CmdData(delay2)),
+            # latch_clk的脉宽
             CMD(LATCH_CLK_CYC,command_data=CmdData(delay2)),
+            # reg_clk的脉宽
             CMD(REG_CLK_CYC,command_data=CmdData(delay2)),
-            CMD(LATCH_CYC,command_data=CmdData(delay2)),
+            # PCB上锁存器的latch cycle数
+            CMD(LATCH_CYC,command_data=CmdData(delay3)),
         ],mode=1)
         self.ps.send_packets(pkts)
     

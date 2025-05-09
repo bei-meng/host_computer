@@ -44,13 +44,24 @@ class CHIPSETTING:
     def set_device(self,deviceType:int,IsNew32:bool=False,IsRERAM512:bool=False):
         self.deviceType = deviceType
         self.IsRERAM512 = IsRERAM512
-        self.IsNew32 = IsNew32
+        self.set_new32(IsNew32)
         # 空间换时间
         self.num_to_bank_index = [self._numToBank_Index(i) for i in range(self.chip_latch_num)]
         self.num_to_tia_row = [self._TIA_index_map(i,col=False) for i in range(self.chip_latch_num)]
         self.num_to_tia_col = [self._TIA_index_map(i,col=True) for i in range(self.chip_latch_num)]
         self.num_to_bank_index_tia_row = [(bank,index,tia) for (bank,index),tia in zip(self.num_to_bank_index,self.num_to_tia_row)]
         self.num_to_bank_index_tia_col = [(bank,index,tia) for (bank,index),tia in zip(self.num_to_bank_index,self.num_to_tia_col)]
+
+    def set_new32(self,IsNew32:bool):
+        self.IsNew32 = IsNew32
+        if self.IsNew32:
+            self.chip_tia_num = 32
+            self.dout_ram_size = 512
+            self.dout_ram_size_B = 64
+        else:
+            self.chip_tia_num = 16
+            self.dout_ram_size = 256
+            self.dout_ram_size_B = 32
 
     def numToBank_Index(self,num):
         return self.num_to_bank_index[num]
