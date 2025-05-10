@@ -42,16 +42,37 @@ class ADC():
             pkts=Packet()
             pkts.append_cmdlist([
                 CMD(ADC0_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc0)),              # cfg_adc0
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc0)),              # cfg_adc0
 
                 CMD(ADC1_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc1)),              # cfg_adc1
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc1)),              # cfg_adc1
 
                 CMD(ADC2_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc2)),              # cfg_adc2
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc2)),              # cfg_adc2
 
                 CMD(ADC3_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc3)),              # cfg_adc3
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc3)),              # cfg_adc3
+
+                CMD(ADC4_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc4)),              # cfg_adc4
+
+                CMD(ADC5_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc5)),              # cfg_adc5
+
+                CMD(ADC6_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc6)),              # cfg_adc6
+
+                CMD(ADC7_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
+                CMD(FAST_COMMAND_1,command_data=CmdData(
+                    FAST_COMMAND1_CONF.cfg_adc0|
+                    FAST_COMMAND1_CONF.cfg_adc1|
+                    FAST_COMMAND1_CONF.cfg_adc2|
+                    FAST_COMMAND1_CONF.cfg_adc3|
+                    FAST_COMMAND1_CONF.cfg_adc4|
+                    FAST_COMMAND1_CONF.cfg_adc5|
+                    FAST_COMMAND1_CONF.cfg_adc6|
+                    FAST_COMMAND1_CONF.cfg_adc7
+                    )),              # cfg_adc7
             ],mode=1)
 
             # 发送指令

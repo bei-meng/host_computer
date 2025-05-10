@@ -52,6 +52,8 @@ class DAC():
             self.broadcast = False
             self.gain = 2
 
+            self.set_dac_ctr(dac_ctr=0xFFFF)
+
     def set_voltage(self,v,dac_num:int,dac_channel:int):
         """
             将第dac_num的DAC的第dac_channel通道设置为对应的电压值
@@ -82,7 +84,7 @@ class DAC():
         self.ps.send_packets(pkts)
         self.dac_spi_div = dac_spi_div
 
-    def set_dac_ctr(self,dac_ctr = 0x0fff):
+    def set_dac_ctr(self,dac_ctr = 0xffff):
         """
             设置DAC的工作频率？
         """

@@ -69,7 +69,12 @@ class FAST_COMMAND1_CONF():
     cfg_row_read = 1<<13
     cfg_col_read = 1<<14
     cfg_ins_run = 1<<15
-    
+
+    cfg_adc4 = 1<<16
+    cfg_adc5 = 1<<17
+    cfg_adc6 = 1<<18
+    cfg_adc7 = 1<<19
+
     negative_reg_clk = 1<<31                                    # 临时的指令
 
 class DAC_INFO():
@@ -416,7 +421,7 @@ DAC_CTR=dict(
     n_addr_bytes = N_ADDR_BYTES.ONE,
     n_data_bytes = N_DATA_BYTES.FOUR,
     command_name = "dac_ctr",
-    command_data = CmdData(0x0FFF),
+    command_data = CmdData(0xFFFF),
     command_description = """CTR_A3-A6_W  	bit11
         CTR_A7-A10_W  	bit10
         CTR_A5-A8_E  	bit9
@@ -811,7 +816,50 @@ EXT_GPIO=dict(
 COMMAND_ADDR+=1         # 命令的地址自增1
 
 
-
+#-------------------------------------------------------------------ADC4_IN:50
+ADC4_IN=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "adc4_in",
+    command_data = CmdData(0),
+    command_description = "高16bit: 0, 低16bit, spi写入ADC寄存器的16bit值"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+#-------------------------------------------------------------------ADC5_IN:51
+ADC5_IN=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "adc5_in",
+    command_data = CmdData(0),
+    command_description = "高16bit: 0, 低16bit, spi写入ADC寄存器的16bit值"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+#-------------------------------------------------------------------ADC6_IN:52
+ADC6_IN=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "adc6_in",
+    command_data = CmdData(0),
+    command_description = "高16bit: 0, 低16bit, spi写入ADC寄存器的16bit值"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+#-------------------------------------------------------------------ADC7_IN:6
+ADC7_IN=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "adc7_in",
+    command_data = CmdData(0),
+    command_description = "高16bit: 0, 低16bit, spi写入ADC寄存器的16bit值"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
 
 
