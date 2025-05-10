@@ -6,6 +6,6 @@ pc/__pycache__/
 util/__pycache__/
 result/
 images/
-
+data/
 network/__pycache__
 .idea/
