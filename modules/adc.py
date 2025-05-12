@@ -63,6 +63,7 @@ class ADC():
                 # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc6)),              # cfg_adc6
 
                 CMD(ADC7_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc7)),              # cfg_adc7
                 CMD(FAST_COMMAND_1,command_data=CmdData(
                     FAST_COMMAND1_CONF.cfg_adc0|
                     FAST_COMMAND1_CONF.cfg_adc1|
