@@ -176,7 +176,7 @@ class ADC():
             修改TIA增益的阻值
         """
         self.big_resistance = big_resistance
-        self.small_resistance = 200
+        self.small_resistance = small_resistance
 
     def voltage_to_cond(self,voltage,read_voltage):
         """

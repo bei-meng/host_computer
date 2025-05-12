@@ -95,9 +95,9 @@ class CHIP():
         if self.init:
             pkts=Packet()
             pkts.append_cmdlist([
-                CMD(FLT,command_data=CmdData(0x0FFF)),                  # 配置flt
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le1)),         # cfg_flt_le1
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le2)),         # cfg_flt_le2
+                # CMD(FLT,command_data=CmdData(0x0FFF)),                  # 配置flt
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le1)),         # cfg_flt_le1
+                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le2)),         # cfg_flt_le2
                 CMD(CIM_RESET,command_data=CmdData(1)),                 # reset指令
                 CMD(CIM_SS,command_data=CmdData(1)),                    # reg写入数据打开
                 CMD(SER_PARA_SEL,command_data=CmdData(1)),              # 切换到并行模式
@@ -215,6 +215,7 @@ class CHIP():
         pkts=Packet()
         for i in bank_data:
             bank,index = self.setting.get_bank_index32(i)
+            print("配置",bank,hex(index))
             index = value if value is not None else index
             pkts.append_cmdlist([
                 # 行reg配置
