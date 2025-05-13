@@ -43,8 +43,8 @@ class CHIP():
     def __init__(self, ps:PS,deviceType:int = 0,IsNew32:bool=False,IsRERAM512:bool=False,init = True):
         self.ps = ps
         self.init = init
-        self.initOp()
         self.setting = CHIPSETTING(deviceType=deviceType,IsNew32=IsNew32,IsRERAM512=IsRERAM512)
+        self.initOp()
         self.adc = ADC(ps,self.setting,init)
         self.dac = DAC(ps,self.setting,init)
         self.clk_manager = CLK_MANAGER(ps,init)

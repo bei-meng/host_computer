@@ -111,7 +111,7 @@ class ADC():
         pkts.append_cmdlist([
             CMD(ADC_FIRST_GAP,command_data=CmdData(self.adc_first_gap)),
             CMD(ADC_CS_GAP,command_data=CmdData(self.adc_cs_gap)),
-            CMD(ADC_LAST_GAP,command_data=CmdData(self.adc_cs_gap)),
+            CMD(ADC_LAST_GAP,command_data=CmdData(self.adc_last_gap)),
         ],mode=1)
 
         # 发送指令
