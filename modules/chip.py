@@ -6,6 +6,7 @@ from pc import PS
 from modules.adc import ADC
 from modules.dac import DAC
 from modules.clkManager import CLK_MANAGER
+from modules.compensation import COMPENSATION
 from compiler.chipSetting import CHIPSETTING
 
 
@@ -31,6 +32,7 @@ class CHIP():
     dac:DAC = None
     clk_manager:CLK_MANAGER = None
     setting:CHIPSETTING = None
+    compensation:COMPENSATION = None
 
     compilers = None
 
@@ -43,11 +45,12 @@ class CHIP():
     def __init__(self, ps:PS,deviceType:int = 0,IsNew32:bool=False,IsRERAM512:bool=False,init = True):
         self.ps = ps
         self.init = init
-        self.initOp()
         self.setting = CHIPSETTING(deviceType=deviceType,IsNew32=IsNew32,IsRERAM512=IsRERAM512)
+        self.initOp()
         self.adc = ADC(ps,self.setting,init)
         self.dac = DAC(ps,self.setting,init)
         self.clk_manager = CLK_MANAGER(ps,init)
+        self.compensation = COMPENSATION()
         
         self.compilers = {}
 
@@ -95,9 +98,9 @@ class CHIP():
         if self.init:
             pkts=Packet()
             pkts.append_cmdlist([
-                # CMD(FLT,command_data=CmdData(0x0FFF)),                  # 配置flt
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le1)),         # cfg_flt_le1
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le2)),         # cfg_flt_le2
+                CMD(FLT,command_data=CmdData(0x0FFF)),                  # 配置flt
+                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le1)),         # cfg_flt_le1
+                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le2)),         # cfg_flt_le2
                 CMD(CIM_RESET,command_data=CmdData(1)),                 # reset指令
                 CMD(CIM_SS,command_data=CmdData(1)),                    # reg写入数据打开
                 CMD(SER_PARA_SEL,command_data=CmdData(1)),              # 切换到并行模式
@@ -215,7 +218,7 @@ class CHIP():
         pkts=Packet()
         for i in bank_data:
             bank,index = self.setting.get_bank_index32(i)
-            print("配置",bank,hex(index))
+            # print("配置",bank,hex(index))
             index = value if value is not None else index
             pkts.append_cmdlist([
                 # 行reg配置
@@ -501,9 +504,10 @@ class CHIP():
         self.set_latch([col_index],row=not self.from_row,value=None)                        # 配置列
         self.generate_write_pulse()                                                         # 产生写脉冲
 
-    def write_ecram_one(self,row,col,v,isSet=True):
+    def write_ecram_one(self,row,col,v,pulse_width,isSet=True):
         self.set_op_mode(read=False,from_row=isSet)
         self.set_dac_write_V(v)
+        self.set_pulse_width(pulsewidth=pulse_width)
         self.set_cim_reset()
         if isSet:
             self.set_latch([row],row=True,value=None)

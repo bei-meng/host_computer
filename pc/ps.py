@@ -4,7 +4,7 @@ import socket
 from command import CMD,CmdData,Packet
 
 class PS():
-    def __init__(self, host, port, delay=10*1e-3, debug = 0):
+    def __init__(self, host, port, delay=0, debug = 0):
         self.host = host
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -16,6 +16,7 @@ class PS():
 
         self.debug = debug
         self.connected = False
+        self.delay = delay
 
         self.historic_pkts = []
 
@@ -84,6 +85,8 @@ class PS():
                 print(pkts)
             for cmd in pkts.get_bytes_list():
                 self.socket.sendall(cmd)
+                if self.delay>1e-3:
+                    time.sleep(self.delay)
                 if message_check is not None:
                     self.receive_packet_check(bytes_num=4,message_check=message_check)
         except socket.error:

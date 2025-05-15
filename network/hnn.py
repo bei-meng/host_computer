@@ -1,7 +1,9 @@
 import math
 import numpy as np
 
+# 权重的位置信息
 good_device = np.load("./data/good_point_100_100_1_4.npy")
+# 用于补偿线组的
 r_out = np.load("./data/chip_1_4_col_r_out.npy")
 r_w = np.load("./data/chip_1_4_col_r_wire.npy")
 cond_min,cond_max,cond_reference = 0,1100,550
@@ -12,7 +14,6 @@ class hnn():
     net_size = 100  # 例如 100 表示 10×10
     num_imgs = 5
     side = int(np.sqrt(net_size))  # 图像边长
-    threshold = 128
     selected_patterns = None
     processed_patterns = None
     damaged_patterns = None
@@ -54,7 +55,15 @@ class hnn():
 
     def forward_unsigned_from_row(self,chip,row_index,col_index,forward_type=2):
         """
+            Args:
+                row_index是需要开的行号[0,255]列表
+                col_index是输出的列好[0,255]列表
+                forward_type:
+                    =1 表示并行列输出
+                    =2 表示逐列输出
+                    =3 逐点读然后计算推理结果
             从行给信号进行推理
+
         """
         col_nums = len(col_index)
         row_nums = len(row_index)

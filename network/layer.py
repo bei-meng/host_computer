@@ -1,258 +1,181 @@
-from modules import ADC,DAC,CHIP
-from network.writeConfig import WriteConfig
 import numpy as np
-
+import math
+from modules import CHIP
 class Layer():
-    chip = None                         # 芯片模块
-    # -------------------------------------------------------------权重配置
-    weight_target = None                # 目标权重
-    weight_real = None                  # 实际读到的权重
-    cond_real = None                    # 实际电导
+    chip = None
+    compensation = None
 
-    min_cond = 200                      # 最低电导
-    max_cond = 1000                     # 最高电导
-    min_weight = None                   # 权重最小值
-    max_weight = None                   # 权重最大值
+    weight_target=None
+    weight_real=None
 
-    weight_map = None                   # 权重映射结果
-    weight_diff = True                  # 差分器件
-    weight_transpose = True             # 转置权重
-    pos = None                          # 权重位置，左上角位置和右下角位置
-    # -------------------------------------------------------------推理配置
+    map_cond = None
 
-    def __init__(self,chip:CHIP):
+    cond_min = None
+    cond_max = None
+    cond_reference = None
+    cond_range = None
+    weight_min,weight_max = None,None
+
+    row_index = None
+    col_index = None
+
+    # tia_split=[0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3]
+    tia_split=[0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,]
+    # tia_split=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,]
+    from_row = True
+
+    chip:CHIP = None
+
+    # 推理相关参数
+    value = 0.875
+    interval = 25
+    forward_type = 2
+
+
+    need_read = np.zeros((256,256),dtype=bool)
+
+    def __init__(self,chip:CHIP,weight_target,weight_min=-1,weight_max=1,cond_min=0,cond_max=1100,cond_reference=550):
         """
-        Args:
-            chip:芯片模块,通过调用这个模块读写权重和推理
-            weight_diff:是否使用差分器件表示权重
-            transpose:是否转置权重
+            初始化权重的参数
         """
-        self.chip = chip
+        self.chip:CHIP = chip
+        self.cond_min = cond_min
+        self.cond_max = cond_max
+        self.cond_reference = cond_reference
+        self.cond_range = cond_max-cond_reference
 
-    def set_weight(self,weight:np.ndarray,min_weight,max_weight,pos:tuple[int,int,int,int],weight_diff:bool = True):
+        self.map_cond = weight_target/weight_max*self.cond_range
+        self.weight_min = weight_min
+        self.weight_max = weight_max
+        self.weight_target = weight_target
+
+    def set_weight_map_form_file(self,filename):
         """
-        Args:
-            weight:设置目标权重权重
-            pos:权重位置，左上角位置(和是否转置无关的位置)和右下角位置(和是否转置无关的位置)
-
-            默认会进行转置
+            从文件中加载权重映射
         """
-        # 左闭右开区间
-        self.weight_diff = weight_diff
-        self.weight_target = weight.copy().T
-        self.pos = pos
-        self.min_weight = min_weight
-        self.max_weight = max_weight
+        weight_pos = np.load(filename)
+        self.set_weight_map(np.array(weight_pos["row"]),np.array(weight_pos["col"]))
 
-    def weight_setting(self,min_cond=200,max_cond=1000):
-        self.min_cond = min_cond
-        self.max_cond = max_cond
 
-    # """
-    # 差分器件写权重：
-    #     1. 先把一个器件的权重写到尽可能接近目标值的地方,多次写之后,再调整另一个差分器件,结束
-    #     2. 写一个器件一次,再写另一个器件一次,循环往复
-    #     3. 写一个器件5次,再写另一个器件5次,循环往复
-    #     4. 一直set到目标点
-    # """
-    def write_weight(self,write_config:WriteConfig,loop_times = 10,write_verify_time = 10,threshold = 25,reset = False):
-        pos = self.pos
-        need_write = np.zeros((256,256),dtype=bool)
-        target_cond = np.zeros((256,256))
-        weight_cond = self.weight_to_cond(self.weight_target)
-        if reset:
-            self.reset_pos(pos,write_config)
-        if self.weight_diff:
-            for i in range(loop_times):
-                cond_neg = self.cond_to_diff_cond(self.read_cond_point(pos,write_config.from_row),num=1)
-                target_cond = self.get_write_target_cond(target_cond,pos,weight_cond+cond_neg,0)
-                need_write = self.get_write_addr(need_write,pos,0) & (target_cond>0)
-                target_cond.clip(100, 1200, out=target_cond)
-                self.write_verify(write_time=int(write_verify_time/2),need_read=need_write,target_cond=target_cond,threshold=threshold,write_config=write_config)
-
-                cond_pos = self.cond_to_diff_cond(self.read_cond_point(pos,write_config.from_row),num=0)
-                target_cond = self.get_write_target_cond(target_cond,pos,cond_pos-weight_cond,1)
-                need_write = self.get_write_addr(need_write,pos,1) & (target_cond>0)
-                target_cond.clip(100,1200,out=target_cond)
-                self.write_verify(write_time=int(write_verify_time/2),need_read=need_write,target_cond=target_cond,threshold=threshold,write_config=write_config)
-
-    def write_weight2(self,write_config:WriteConfig,write_verify_time = 10,threshold = 25,reset = False):
+    def set_weight_map(self,row_index,col_index):
         """
-            正负权重分开写
+            设置权重的行列号映射
         """
-        pos = self.pos
-        need_write = np.zeros((256,256),dtype=bool)
-        target_cond = np.zeros((256,256))
-        weight_cond = self.weight_to_cond(self.weight_target)
-        if reset:
-            self.reset_pos(pos,write_config)
-        if self.weight_diff:
-            read_weight = self.read_cond_point(pos,write_config.from_row)
-            # 先只写正权重
-            weight_cond_pos = weight_cond.copy()
-            weight_cond_pos[weight_cond_pos<0] = -10000
-
-            cond_neg = self.cond_to_diff_cond(read_weight,num=1)
-            target_cond = self.get_write_target_cond(target_cond,pos,weight_cond_pos+cond_neg,0)
-            # 
-            need_write = self.get_write_addr(need_write,pos,0) & (target_cond>0)
-            target_cond.clip(50, 1200, out=target_cond)
-            self.write_verify(write_time=int(write_verify_time),need_read=need_write,target_cond=target_cond,threshold=threshold,write_config=write_config)
+        self.row_index = row_index
+        self.col_index = col_index
 
 
-            # 再只写负权重
-            weight_cond_neg = weight_cond.copy()
-            weight_cond_neg[weight_cond_neg>0] = 10000
-
-            cond_pos = self.cond_to_diff_cond(read_weight,num=0)
-            target_cond = self.get_write_target_cond(target_cond,pos,cond_pos-weight_cond_neg,1)
-
-            need_write = self.get_write_addr(need_write,pos,1) & (target_cond>0)
-            target_cond.clip(50,1200,out=target_cond)
-            self.write_verify(write_time=int(write_verify_time),need_read=need_write,target_cond=target_cond,threshold=threshold,write_config=write_config)
-
-
-    def reset_pos(self,pos,write_config:WriteConfig):
-        chip = self.chip
-        row,col = chip.setting.chip_latch_num,chip.setting.chip_latch_num
-        # 先把要写权重的地方reset掉
-        need_write = np.zeros((row,col))
-        need_write[pos[0]:pos[1],pos[2]:pos[3]] = 1
-        self.chip.write_point2(crossbar=need_write,
-                               write_voltage=write_config.reset_voltage,tg=write_config.reset_tg,pulse_width=write_config.reset_pulse_width,
-                               set_device=False)
-
-    def read_cond_point(self,pos,from_row):
-        """
-            读出一块的权重值
-        """
-        chip = self.chip
-        x1,x2,y1,y2 = pos
-
-        voltage_base = chip.read_point3(x1,x2,y1,y2,read_voltage=0,tg=5,gain=1,from_row=from_row,out_type=0)
-        voltage = chip.read_point3(x1,x2,y1,y2,read_voltage=0.1,tg=5,gain=1,from_row=from_row,out_type=0)
-        res = chip.voltage_to_cond(voltage-voltage_base)
-        return res
-
-    def write_verify(self,write_time,need_read,target_cond,threshold,write_config:WriteConfig):
-        chip = self.chip
-        tg_v=(target_cond-write_config.intercept)/write_config.slope
-        for i in range(write_time):
-            print(f"写验证{i}")
-            voltage_base = chip.read_point2(crossbar=need_read,read_voltage=0,tg=5,gain=1,from_row=write_config.from_row,out_type=0)
-            voltage = chip.read_point2(crossbar=need_read,read_voltage=0.1,tg=5,gain=1,from_row=write_config.from_row,out_type=0)
-            cond_sub_base = chip.voltage_to_cond(voltage-voltage_base)
-
-            condition_reset = ((cond_sub_base > (target_cond+threshold)))&need_read
-            condition_set = ((cond_sub_base < (target_cond-threshold)))&need_read
-            
-            if i>0:
-                if i<3:
-                    tg_v[condition_reset] -= 0.08
-                    tg_v[condition_set] += 0.08
-                elif i<6:
-                    tg_v[condition_reset] -= 0.04
-                    tg_v[condition_set] += 0.04
-                else:
-                    tg_v[condition_reset] -= 0.02
-                    tg_v[condition_set] += 0.02
-
-                tg_v.clip(0, 5, out=tg_v)
-
-            # reset的点
-            chip.write_point2(crossbar=condition_reset,write_voltage=write_config.reset_voltage,tg=write_config.reset_tg,pulse_width=write_config.reset_pulse_width,set_device=False)
-            chip.write_point2(crossbar=condition_reset,write_voltage=write_config.set_voltage,tg=tg_v,pulse_width=write_config.set_pulse_width,set_device=True)
-
-            # set的点
-            chip.write_point2(crossbar=condition_set,write_voltage=write_config.set_voltage,tg=tg_v,pulse_width=write_config.set_pulse_width,set_device=True)
-
-        return tg_v
-    def cond_to_diff_cond(self,cond,num):
-        """
-            对应区域的差分电导转成差分对中的正电导或负电导
-        """
-        return cond[num::2,:]
+    def get_weight_pos(self):
+        return np.ix_(self.row_index, self.col_index)
     
-    def diff_cond_to_cond(self,cond):
-        """
-            差分电导转成减去之后的值
-        """
-        even_columns = cond[::2,:]  # 从第0行开始，间隔2
-        odd_columns = cond[1::2,:]  # 从第1行开始，间隔2
-        cond = even_columns - odd_columns
-        return cond
+    def get_target_cond(self):
+        return self.map_cond + self.cond_reference
 
-    def get_write_addr(self,crossbar,pos,num):
+
+    def calculate_value_from_r(self,resistence,nums):
         """
-            返回差分权重的写地址
+            将计算出来的电阻,单位Ω
+            nums:输入的行数/列数
         """
-        x1,x2,y1,y2 = pos
-        crossbar[:]=False
-        crossbar[(x1+num):x2:2,y1:y2] = True
-        return crossbar
+        parallel_i = 1/resistence - self.cond_reference*1e-6*nums
+        parallel_value = parallel_i/(self.cond_range*1e-6)*self.weight_max
+        return parallel_value.flatten()
     
-    def get_write_target_cond(self,crossbar,pos,cond,num):
+    def calculate_value_from_c(self,cond,nums):
         """
-            返回差分权重
+            将计算出来的电阻,单位us
+            nums:输入的行数/列数
         """
-        x1,x2,y1,y2 = pos
-        crossbar[:]=0
-        crossbar[(x1+num):x2:2,y1:y2] = cond
-        return crossbar
-
-
-    def weight_to_cond(self,weight):
-        """
-            返回权重对应的电导,差分是最终的电导差值,非差分是实际单个器件的电导值
-        """
-        if self.weight_diff:
-            # 权重映射电导范围从-(max_cond-min_cond)到（max_cond-min_cond)，总范围大小（max_cond-min_cond）*2
-            cond = weight/self.max_weight*(self.max_cond-self.min_cond)
-        else:
-            # 权重映射电导范围从min_cond到max_cond,总范围大小max_cond-min_cond
-            cond = (weight - self.min_weight)/(self.max_weight-self.min_weight)*(self.max_cond-self.min_cond)+self.min_cond
-        
-        return cond
+        real_i =np.sum(cond,axis=0) - self.cond_reference*nums
+        real_value = real_i/(self.cond_range)*self.weight_max
+        return real_value.flatten()
     
-    def cond_to_weight(self,cond):
-        if self.weight_diff:
-            return cond/(self.max_cond-self.min_cond)*self.max_weight
 
-    def forward(self,state_flat:np.ndarray):
+    def read_cond_point(self,from_row=True):
+        self.need_read[:]=False
+        weight_pos = np.ix_(self.row_index, self.col_index)
+        self.need_read[weight_pos] = True
+
+        voltage_base = self.chip.read_point2(crossbar=self.need_read,read_voltage=0,tg=5,gain=1,from_row=from_row,out_type=0)
+        voltage = self.chip.read_point2(crossbar=self.need_read,read_voltage=0.1,tg=5,gain=1,from_row=from_row,out_type=0)
+        resistence = self.chip.voltage_to_resistance(voltage = voltage-voltage_base)
+        cond = self.chip.compensation.compensation_point(resistence=resistence,from_row=from_row,return_type=0)
+        return cond[weight_pos]
+    
+    def read_weight_point(self,from_row=True):
         """
-            state_flat:为1*100的np数组
-            split_type = 0,就是采用
+            读出真实权重
         """
-        x1,x2,y1,y2 = self.pos
-        # 先处理正输入
-        col_index = np.where(state_flat > 0)[1]+y1
-        col_index = col_index.tolist()
-        if col_index:
-            v_base = self.chip.read_chunk_parallel2(x1,x2,y1,y2,row_index=None,col_index=[col_index],read_voltage=0,tg=5,gain=3,
-                                                from_row=not self.weight_transpose,out_type=0,compute=True)
-            v_pos = self.chip.read_chunk_parallel2(x1,x2,y1,y2,row_index=None,col_index=[col_index],read_voltage=0.1,tg=5,gain=3,
-                                                        from_row=not self.weight_transpose,out_type=0,compute=True)
-            # 返回的是200*1的np数组
-            v_cond_pos = self.chip.voltage_to_cond(v_pos-v_base)
-
-        else:
-            v_cond_pos = np.zeros((y2-y1,1))
+        cond = self.read_cond_point(from_row)
+        weight = (cond-self.cond_reference)/self.cond_range*self.weight_max
+        return weight
+    
+    def forward_unsigned_from_row(self,row_index,col_index,forward_type,value):
+        """
+            Args:
+                row_index输入的行/列号
+                col_index输出的行/列号
+                forward_type:
+                    =1 表示并行列输出
+                    =2 表示逐列输出
+                    =3 逐点读然后计算推理结果
+        """
+        from_row = True
+        col_nums,row_nums = len(col_index),len(row_index)
         
-        # 再处理负输入
-        col_index = np.where(state_flat < 0)[1]+y1
-        col_index = col_index.tolist()
-        if col_index:
-            v_base = self.chip.read_chunk_parallel2(x1,x2,y1,y2,row_index=None,col_index=[col_index],read_voltage=0,tg=5,gain=3,
-                                        from_row=not self.weight_transpose,out_type=0,compute=True)
-            v_neg = self.chip.read_chunk_parallel2(x1,x2,y1,y2,row_index=None,col_index=[col_index],read_voltage=0.1,tg=5,gain=3,
-                                                        from_row=not self.weight_transpose,out_type=0,compute=True)
-            v_cond_neg = self.chip.voltage_to_cond(v_neg-v_base)
-        else:
-            v_cond_neg = np.zeros_like(v_cond_pos)
-        v_cond = v_cond_pos - v_cond_neg
-        v_cond = self.diff_cond_to_cond(v_cond)
+        gain = 1 if row_nums<=10 else 3
+        if forward_type==1:
+            voltage_base = self.chip.read_chunk_parallel2(row_index=[row_index],col_index=[col_index],read_voltage=0,tg=5,gain=gain,from_row=from_row,out_type=0,compute=True,tia_split=self.tia_split)
+            voltage = self.chip.read_chunk_parallel2(row_index=[row_index],col_index=[col_index],read_voltage=0.1,tg=5,gain=gain, from_row=from_row,out_type=0,compute=True,tia_split=self.tia_split)
+            resistence = self.chip.voltage_to_resistance(voltage = voltage-voltage_base).flatten()
+            resistence = self.chip.compensation.compensation_forward(row_index,resistence,from_row,value=value,return_type=2)[col_index]
+            return self.calculate_value_from_r(resistence=resistence,nums=row_nums)
+        elif forward_type==2:
+            self.need_read[:]=False
+            weight_pos = np.ix_(row_index, col_index)
+            self.need_read[weight_pos] = True
+
+            voltage_base=self.chip.compute(crossbar=self.need_read,read_voltage=0,tg=5,gain=gain,from_row=from_row,out_type=0)
+            voltage=self.chip.compute(crossbar=self.need_read,read_voltage=0.1,tg=5,gain=gain,from_row=from_row,out_type=0)
+            resistence = self.chip.voltage_to_resistance(voltage = voltage-voltage_base).flatten()
+            resistence = self.chip.compensation.compensation_forward(row_index,resistence,from_row,value=value,return_type=2)[col_index]
+            return self.calculate_value_from_r(resistence=resistence,nums=row_nums)
+        elif forward_type==3:
+            self.need_read[:]=False
+            weight_pos = np.ix_(row_index, col_index)
+            self.need_read[weight_pos] = True
+
+            voltage_base = self.chip.read_point2(crossbar=self.need_read,read_voltage=0,tg=5,gain=1,from_row=from_row,out_type=0)[weight_pos]
+            voltage = self.chip.read_point2(crossbar=self.need_read,read_voltage=0.1,tg=5,gain=1,from_row=from_row,out_type=0)[weight_pos]
+            cond = self.chip.voltage_to_cond(voltage=voltage-voltage_base)
+            return self.calculate_value_from_c(cond=cond,nums=row_nums) 
+
+
+    def forward_from_row(self,x:np.ndarray):
+        """
+            x为输入,会转换为一维数组
+        """
+        x = x.reshape(1,-1)
+        interval = self.interval
+        col_index = self.col_index
+
+
+        value_pos = np.zeros((len(col_index)))
+        value_neg = np.zeros((len(col_index)))
         
-        return self.cond_to_weight(v_cond)
+        row_index = self.row_index[np.where(x > 0)[1]]
+        row_nums = len(row_index)
+        if row_nums>0:
+            steps = math.ceil(row_nums/interval)
+            for i in range(steps):
+                value_pos += self.forward_unsigned_from_row(row_index[i*interval:min((i+1)*interval,row_nums)],col_index,forward_type=self.forward_type,value=self.value)
+        
 
+        row_index = self.row_index[np.where(x < 0)[1]]
+        row_nums = len(row_index)
+        if row_nums>0:
+            steps = math.ceil(row_nums/interval)
+            for i in range(steps):
+                value_neg += self.forward_unsigned_from_row(row_index[i*interval:min((i+1)*interval,row_nums)],col_index,forward_type=self.forward_type,value=self.value)
 
-
+        return value_pos-value_neg
