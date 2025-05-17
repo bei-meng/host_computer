@@ -254,14 +254,15 @@ class CHIP():
             tmp = tmp | (1<<i)
         pkts=Packet()
         pkts.append_cmdlist([
-            # 行reg配置
-            CMD(CIM_DATA_IN,command_data=CmdData(value)),                                       # 第xindex位置1
-            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_cim_data_in)),       # cfg_cim_data_in
-            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_reg_clk)),           # cfg_reg_clk
             # 行bank配置
             CMD(ROW_COL_SEL,command_data=CmdData(row_col_sel)),                                 # 设置为行/列模式
             CMD(CIM_BANK_SEL,command_data=CmdData(tmp)),                                        # bank选择
             CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_bank_sel)),          # cfg_bank_sel
+            # 行reg配置
+            CMD(CIM_DATA_IN,command_data=CmdData(value)),                                       # 第xindex位置1
+            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_cim_data_in)),       # cfg_cim_data_in
+            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_reg_clk)),           # cfg_reg_clk
+
             CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_latch_clk)),         # cfg_latch_clk
         ],mode=1)   
         self.ps.send_packets(pkts)
@@ -625,7 +626,7 @@ class CHIP():
     def clear_dac_v2(self):
         """
             Functions:
-                将16路DAC通道电压设置为0
+                将12路DAC通道电压设置为0
         """
         ins_data=[CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16)) for i in range(12)]
         self.execute_ins(ins_data=ins_data,ins_ram_start=0)
@@ -768,7 +769,7 @@ class CHIP():
         """
             读器件, row_index为行索引, col_index为列索引
         """
-        # assert self.setting.IsNew32==False,"此函数在新版PCB上已经废弃!"
+        assert False,"此函数已经废弃!"
         assert self.op_mode == "read","未设置为读模式。"
         self.read_voltage = read_voltage
 
@@ -855,7 +856,7 @@ class CHIP():
         """
             out_type: 0为电压, 1为电导(uS), 2为电阻(KΩ)
         """
-        # assert self.setting.IsNew32==False,"此函数在新版PCB上已经废弃!"
+        assert False,"此函数已经废弃!"
         assert out_type >= 0 and out_type <=2, "read_crossbar2: 返回类型错误。"
         assert len(row_index)>0, "read_crossbar2: row_index不能为空"
         assert len(col_index)>0, "read_crossbar2: col_index不能为空"
@@ -895,6 +896,7 @@ class CHIP():
         """
             写器件, row_index为行索引, col_index为列索引
         """
+        assert False,"此函数已经废弃!"
         assert self.op_mode == "write","未设置为写模式。"
         self.write_voltage = write_voltage
         # ----------------------------------------------从行还是列去写
@@ -963,6 +965,7 @@ class CHIP():
 
     def write_crossbar2(self,row_index:list,col_index:list,write_voltage:float,tg:float,pulse_width:float,
                        set_device:bool = True):
+        assert False,"此函数已经废弃!"
         assert len(row_index)>0, "read_crossbar2: row_index不能为空"
         assert len(col_index)>0, "read_crossbar2: col_index不能为空"
         self.set_op_mode2(read=False,from_row=set_device)
@@ -1387,8 +1390,10 @@ class CHIP():
         
     #------------------------------------------------------------------------------------------
     # ******************************** 点读写相关操作(非并行) **********************************
-    #------------------------------------------------------------------------------------------    
-    def send_point_din_ram2(self,points:list[tuple[int,int]],din_ram_start:int = 0,) -> tuple[list[tuple[int,int]],list[tuple[int,int]],list[int]]:
+    #------------------------------------------------------------------------------------------ 
+
+    def send_point_din_ram2(self,points:list[tuple[int,int]],din_ram_start:int = 0,inversion=False
+                            ) -> tuple[list[tuple[int,int]],list[tuple[int,int]],list[int]]:
         """
             Args:
                 points: 需要配置的点的数据, 行列数据
@@ -1407,11 +1412,15 @@ class CHIP():
         res_col_bank = []                                                                               # 等会配列bank指令执行需要的数据, 单层list
         res_tia_map  = []                                                                               # 每个点对应的TIA映射,需要提前选好从行列读, 单层list
         din_ram_bank_index_map = {}                                                                     # 用于节约din空间
-
+        if inversion:
+            din_ram_pos = din_ram_pos+1
+            din_ram_data.append(CMD(PL_DATA,command_data=CmdData(0xFFFF_FFFF)))
         # --------------------------------------------------增加映射
-        def add_map(res_bank:list,index:int) -> None:                                                   # 增加bank和din_ram_data里面的index的映射
+        def add_map(res_bank:list,index:int,inversion:bool=False) -> None:                              # 增加bank和din_ram_data里面的index的映射
             nonlocal din_ram_pos
             bank32,index32 = self.setting.get_bank_index32([index])
+            if inversion:                                                                               # ECRAM的行配置需要取反
+                index32 = 0xFFFF_FFFF ^ index32
             if din_ram_bank_index_map.get(index32,None) is None:
                 din_ram_bank_index_map[index32] = din_ram_pos                                           # 如果前面没有用过这个index, 记录下来
                 din_ram_data.append(CMD(PL_DATA,command_data=CmdData(index32)))
@@ -1419,7 +1428,7 @@ class CHIP():
             res_bank.append((bank32,din_ram_bank_index_map[index32]))
 
         for row,col in points:
-            add_map(res_row_bank,row)
+            add_map(res_row_bank,row,inversion)
             add_map(res_col_bank,col)
             if self.op_mode == "read":
                 if self.from_row:
@@ -1431,7 +1440,7 @@ class CHIP():
         self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
         
         return res_row_bank,res_col_bank,res_tia_map
-        
+    
     def read_point2(self,crossbar:np.ndarray,read_voltage:float,tg:float = 5,gain:int = 1,from_row:bool = True, out_type = 0):
         """
             读器件, row_index为行索引, col_index为列索引
@@ -1465,42 +1474,48 @@ class CHIP():
         # print(f"需要读{point_nums}个点")
         last_point_pos = 0
         for k in range(point_nums):
+            tmp_ins_data = []
             # 是否需要清空原来的bank
             if self.need_reset:
-                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
+                tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
             # print((row_bank_data_last[0] != res_row_bank[k][0]),(col_bank_data_last[0] != res_col_bank[k][0]))
             if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last[0] != res_col_bank[k][0]):
                 if self.setting.IsRERAM512:
-                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
-                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
+                    tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
+                    tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
                 else:
-                    ins_data.append(CMD(PL_CIM_RESET))
+                    tmp_ins_data.append(CMD(PL_CIM_RESET))
             elif row_bank_data_last[0] != res_row_bank[k][0]:
-                ins_data.append( CMD(PL_ROW_BANK,command_data=CmdData(row_bank_data_last[0]<<8|0)) )
+                tmp_ins_data.append( CMD(PL_ROW_BANK,command_data=CmdData(row_bank_data_last[0]<<8|0)) )
             elif col_bank_data_last[0] != res_col_bank[k][0]:
-                ins_data.append( CMD(PL_COL_BANK,command_data=CmdData(col_bank_data_last[0]<<8|0)) )
+                tmp_ins_data.append( CMD(PL_COL_BANK,command_data=CmdData(col_bank_data_last[0]<<8|0)) )
             # 是否需要重新配置bank
             if row_bank_data_last!=res_row_bank[k]:
-                ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(res_row_bank[k][0]<<8|res_row_bank[k][1])))
+                tmp_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(res_row_bank[k][0]<<8|res_row_bank[k][1])))
             if col_bank_data_last!=res_col_bank[k]:
-                ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(res_col_bank[k][0]<<8|res_col_bank[k][1])))
+                tmp_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(res_col_bank[k][0]<<8|res_col_bank[k][1])))
 
             row_bank_data_last,col_bank_data_last = res_row_bank[k],res_col_bank[k]
             if self.need_reset:
                 if not from_row:
-                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))   
+                    tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))   
 
-            ins_data.append(CMD(read_ins,command_data=CmdData(dout_ram_pos)))
-            dout_ram_pos += 1
+            tmp_ins_data.append(CMD(read_ins,command_data=CmdData(dout_ram_pos)))
             
             # 检测是否超过阈值, 超过就先执行命令
-            if len(ins_data) >= self.setting.ins_ram_length-7 or dout_ram_pos >= self.setting.dout_ram_length:
+            if len(ins_data) +len(tmp_ins_data)>= self.setting.ins_ram_length-2 or dout_ram_pos >= self.setting.dout_ram_length:
                 self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
                 voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
-                for i in range(last_point_pos,k+1):
+                for i in range(last_point_pos,k):
                     res[points[i]] = voltage[i-last_point_pos,res_tia_map[i]]
+
+
+                last_point_pos = k
                 dout_ram_pos = dout_ram_start
-                last_point_pos = k+1
+                tmp_ins_data[-1]=CMD(read_ins,command_data=CmdData(dout_ram_pos))
+
+            ins_data += tmp_ins_data
+            dout_ram_pos += 1
 
         if len(ins_data)>0:
             self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
@@ -1515,8 +1530,64 @@ class CHIP():
         elif out_type == 2:
             return self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
 
+    def write_point2_ecram(self,crossbar:np.ndarray,write_voltage:float,pulse_width:float,set_device:bool = True):
+
+        self.write_voltage = write_voltage
+        self.set_op_mode2(read=False,from_row=set_device)
+        self.set_pulse_width(pulse_width)
+
+        # --------------------------------------------------配置写的点的数据, 因为行/列对应的bank是间隔1, 所以为了避免更多的切行列bank, 尽量使得一个bank的挨在一起
+        # crossbar为0时, if会自动转成False
+        row,col = crossbar.shape
+        points = []
+        for i_start in range(2):
+            for i in range(i_start,row,2):
+                points += [(i,j) for j in range(0,col,2) if crossbar[i,j]] + [(i,j) for j in range(1,col,2) if crossbar[i,j]]
+
+        # ----------------------------------------------ins_ram,din_ram的地址
+        write_ins = PL_WRITE_ROW_PULSE if set_device else PL_WRITE_COL_PULSE
+        ins_ram_start = 0
+        din_ram_start = 0
+
+        res_row_bank,res_col_bank,_ = self.send_point_din_ram2(points,din_ram_start = din_ram_start,inversion=not set_device)
+        # ----------------------------------------------准备指令序列
+        ins_data = self.get_dac_ins2(v=write_voltage,tg=None)                                               # 配置电压
+        row_bank_data_last, col_bank_data_last = (-1,-1),(-1,-1)
+        point_nums = len(res_row_bank)
+        # print(f"需要写{point_nums}个点")
+        for k in range(point_nums):
+            tmp_ins_data = []
+            # 是否需要清空原来的bank
+            if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last[0] != res_col_bank[k][0]):
+                tmp_ins_data.append(CMD(PL_CIM_RESET))
+                if not set_device:
+                    tmp_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(0xFF<<8|1)))
+            elif row_bank_data_last[0] != res_row_bank[k][0]:
+                if not set_device:
+                    tmp_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(0xFF<<8|1)))
+                else:
+                    tmp_ins_data.append( CMD(PL_ROW_BANK,command_data=CmdData(row_bank_data_last[0]<<8|0)) )
+            elif col_bank_data_last[0] != res_col_bank[k][0]:
+                tmp_ins_data.append( CMD(PL_COL_BANK,command_data=CmdData(col_bank_data_last[0]<<8|0)) )
+            # 是否需要重新配置bank
+            if row_bank_data_last!=res_row_bank[k][0]:
+                tmp_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(res_row_bank[k][0]<<8|res_row_bank[k][1])))
+            if col_bank_data_last!=res_col_bank[k]:
+                tmp_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(res_col_bank[k][0]<<8|res_col_bank[k][1])))
+
+
+            row_bank_data_last,col_bank_data_last = res_row_bank[k],res_col_bank[k]
+
+            tmp_ins_data.append(CMD(write_ins))
+            if len(ins_data)+len(tmp_ins_data) >= self.setting.ins_ram_length-2:
+                self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
+
+            ins_data += tmp_ins_data
+
+        if len(ins_data)>0:
+            self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
+
     def write_point2(self,crossbar:np.ndarray,write_voltage:float,tg:Union[float|np.ndarray],pulse_width:float,set_device:bool = True):
-        
         self.write_voltage = write_voltage
         self.set_op_mode2(read=False,from_row=set_device)
         self.set_pulse_width(pulse_width)
@@ -1544,41 +1615,44 @@ class CHIP():
         point_nums = len(res_row_bank)
         # print(f"需要写{point_nums}个点")
         for k in range(point_nums):
+            tmp_ins_data = []
             if self.need_reset:
-                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
+                tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
             # 是否需要清空原来的bank
             if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last[0] != res_col_bank[k][0]):
                 if self.setting.IsRERAM512:
-                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
-                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
+                    tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
+                    tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
                 else:
-                    ins_data.append(CMD(PL_CIM_RESET))
+                    tmp_ins_data.append(CMD(PL_CIM_RESET))
             elif row_bank_data_last[0] != res_row_bank[k][0]:
-                ins_data.append( CMD(PL_ROW_BANK,command_data=CmdData(row_bank_data_last[0]<<8|0)) )
+                tmp_ins_data.append( CMD(PL_ROW_BANK,command_data=CmdData(row_bank_data_last[0]<<8|0)) )
             elif col_bank_data_last[0] != res_col_bank[k][0]:
-                ins_data.append( CMD(PL_COL_BANK,command_data=CmdData(col_bank_data_last[0]<<8|0)) )
+                tmp_ins_data.append( CMD(PL_COL_BANK,command_data=CmdData(col_bank_data_last[0]<<8|0)) )
             # 是否需要重新配置bank
             if row_bank_data_last!=res_row_bank[k]:
-                ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(res_row_bank[k][0]<<8|res_row_bank[k][1])))
+                tmp_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(res_row_bank[k][0]<<8|res_row_bank[k][1])))
             if col_bank_data_last!=res_col_bank[k]:
-                ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(res_col_bank[k][0]<<8|res_col_bank[k][1])))
+                tmp_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(res_col_bank[k][0]<<8|res_col_bank[k][1])))
 
             if self.need_reset:
                 if not set_device:
-                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))  
+                    tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))  
 
             row_bank_data_last,col_bank_data_last = res_row_bank[k],res_col_bank[k]
             # 改变tg的电压
             if change_tg:
                 tg_v = tg[points[k][0],points[k][1]]
                 if tg_v!=v_last:
-                    ins_data +=self.get_dac_ins2(tg=tg_v)
+                    tmp_ins_data +=self.get_dac_ins2(tg=tg_v)
                     v_last = tg_v
             # 写指令
-            ins_data.append(CMD(write_ins))
+            tmp_ins_data.append(CMD(write_ins))
             
-            if len(ins_data) >= self.setting.ins_ram_length-7:
+            if len(ins_data)+len(tmp_ins_data) >= self.setting.ins_ram_length-2:
                 self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
+
+            ins_data += tmp_ins_data
 
         if len(ins_data)>0:
             self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
@@ -1858,7 +1932,7 @@ class CHIP():
         elif out_type == 2:
             return self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
     
-    def set_reset(self,row_num_start:int,row_num_end:int,col_num_start:int,col_num_end:int,
+    def set_reset3(self,row_num_start:int,row_num_end:int,col_num_start:int,col_num_end:int,
                      write_voltage:float,tg:float,pulse_width:float,set_device:bool = True):
         """
             Args:

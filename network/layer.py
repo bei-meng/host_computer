@@ -3,21 +3,21 @@ import math
 from modules import CHIP
 class Layer():
     chip = None
-    compensation = None
 
-    weight_target=None
-    weight_real=None
+    weight_target=None              # 目标权重
+    weight_real=None                # 器件真实权重
 
-    map_cond = None
+    map_cond = None                 # 映射的电导,已经加过reference
 
-    cond_min = None
-    cond_max = None
-    cond_reference = None
-    cond_range = None
-    weight_min,weight_max = None,None
+    cond_min = None                 # 使用的最小电导
+    cond_max = None                 # 使用的最大电导
+    cond_reference = None           # 参考电导，0值
+    cond_range = None               # 电导上下范围
+    weight_min = None               # 最小权重
+    weight_max = None               # 最大权重
 
-    row_index = None
-    col_index = None
+    row_index = None                # 权重映射的行号
+    col_index = None                # 权重映射的列号
 
     # tia_split=[0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3]
     tia_split=[0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,]
@@ -49,6 +49,12 @@ class Layer():
         self.weight_max = weight_max
         self.weight_target = weight_target
 
+    def set_forward_paramater(self,forward_type,interval,value):
+        self.forward_type=  forward_type
+        self.interval = interval
+        self.value = value
+        
+
     def set_weight_map_form_file(self,filename):
         """
             从文件中加载权重映射
@@ -66,9 +72,15 @@ class Layer():
 
 
     def get_weight_pos(self):
+        """
+            获取权重的映射位置
+        """
         return np.ix_(self.row_index, self.col_index)
     
     def get_target_cond(self):
+        """
+            获取实际写的电导大小
+        """
         return self.map_cond + self.cond_reference
 
 
@@ -108,6 +120,7 @@ class Layer():
         """
         cond = self.read_cond_point(from_row)
         weight = (cond-self.cond_reference)/self.cond_range*self.weight_max
+        self.weight_real = weight
         return weight
     
     def forward_unsigned_from_row(self,row_index,col_index,forward_type,value):
