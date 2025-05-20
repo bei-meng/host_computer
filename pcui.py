@@ -50,12 +50,16 @@ class App:
 
         self.chip.set_cim_reset()
 
-        chip=CHIP(PS(host="192.168.1.11", port = 7, debug=0),init=True)
+        #-----------------------------------------------------------------------hnn的芯片
+        chip=CHIP(PS(host="192.168.1.10", port = 7, debug=0),init=True)
         chip.set_device_cfg(deviceType=0)
-        chip.adc.set_gap(adc_cs_gap=100,adc_first_gap=20,adc_last_gap=10)
-        chip.add_compiler("./code/")
-        self.chip_task2=chip
-
+        chip.adc.set_gap(adc_cs_gap=100,adc_first_gap=20,adc_last_gap=20)
+        chip.adc.set_gain_resistor(big_resistance=22e-3,small_resistance=200)
+        chip.clk_manager.set_cyc(delay1=20,delay2=50)
+        chip.add_compiler("../compiler/code/")
+        chip.compensation.initop("../chip_data/chip8_/")
+        self.hnn_chip = chip
+        self.hnn = hnn(chip=chip)
 
     def create_layout(self):
 
@@ -234,7 +238,7 @@ class App:
         for index,state in enumerate(self.noisy_imgs):
             state_flat = state.flatten()
             for _ in range(10):
-                new_state = np.where(self.hnn.forward_from_row(self.chip_task2,state_flat) >= 0, 1, -1)
+                new_state = np.where(self.hnn.layer.forward_from_row(state_flat) >= 0, 1, -1)
                 if np.array_equal(new_state, state_flat):
                     break
                 state_flat = new_state
