@@ -18,6 +18,21 @@ from network.hnn import hnn
 from network.svm import svm
 class App:
     def __init__(self, root):
+
+        #-----------------------------------------------------------------------hnn的芯片
+        chip=CHIP(PS(host="192.168.1.10", port = 7, debug=0),init=True)
+        chip.set_device_cfg(deviceType=0)
+        chip.adc.set_gap(adc_cs_gap=100,adc_first_gap=20,adc_last_gap=20)
+        chip.adc.set_gain_resistor(big_resistance=22e-3,small_resistance=200)
+        chip.clk_manager.set_cyc(delay1=20,delay2=50)
+        chip.add_compiler("./compiler/code/")
+        chip.compensation.initop("./chip_data/chip8_/")
+        self.hnn_chip = chip
+        self.hnn = hnn(chip=chip)
+        self.svm = svm(chip=chip)
+
+
+
         self.root = root
         self.root.title("Tkinter 界面示例")
         self.root.geometry("1000x800")
@@ -32,7 +47,7 @@ class App:
         self.create_layout()
 
 
-        self.chip = CHIP(PS(host="192.168.1.10", port = 7, debug=0),init=True)
+        self.chip = CHIP(PS(host="192.168.1.11", port = 7, debug=0),init=True)
         self.connected = True
         self.chip.IsRERAM512 = True
         self.chip.setting.IsRERAM512 = True
@@ -50,16 +65,7 @@ class App:
 
         self.chip.set_cim_reset()
 
-        #-----------------------------------------------------------------------hnn的芯片
-        chip=CHIP(PS(host="192.168.1.10", port = 7, debug=0),init=True)
-        chip.set_device_cfg(deviceType=0)
-        chip.adc.set_gap(adc_cs_gap=100,adc_first_gap=20,adc_last_gap=20)
-        chip.adc.set_gain_resistor(big_resistance=22e-3,small_resistance=200)
-        chip.clk_manager.set_cyc(delay1=20,delay2=50)
-        chip.add_compiler("../compiler/code/")
-        chip.compensation.initop("../chip_data/chip8_/")
-        self.hnn_chip = chip
-        self.hnn = hnn(chip=chip)
+
 
     def create_layout(self):
 
@@ -123,36 +129,42 @@ class App:
         for i in range(3):
             addr_frame.columnconfigure(i, weight=1)
 
+        entry_width = 7
         # 生成数量
         ttk.Label(addr_frame, text="生成数量:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
-        self.num_entry = ttk.Entry(addr_frame)
+        self.num_entry = ttk.Entry(addr_frame, width=entry_width)
         self.num_entry.insert(0, "3")
-        self.num_entry.grid(row=0, column=1, columnspan=2, sticky="we", padx=5, pady=2)
+        self.num_entry.grid(row=0, column=1, padx=5, pady=2)
+
+        # 新增一个小数输入框（无标签）
+        self.float_entry = ttk.Entry(addr_frame, width=entry_width)
+        self.float_entry.insert(0, "0.5")
+        self.float_entry.grid(row=0, column=2, padx=5, pady=2)
 
         # chip 范围
         ttk.Label(addr_frame, text="chip 范围:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
-        self.chip_min_entry = ttk.Entry(addr_frame, width=5)
+        self.chip_min_entry = ttk.Entry(addr_frame, width=entry_width)
         self.chip_min_entry.insert(0, "1")
         self.chip_min_entry.grid(row=1, column=1, padx=5, pady=2)
-        self.chip_max_entry = ttk.Entry(addr_frame, width=5)
+        self.chip_max_entry = ttk.Entry(addr_frame, width=entry_width)
         self.chip_max_entry.insert(0, "18")
         self.chip_max_entry.grid(row=1, column=2, padx=5, pady=2)
 
         # row 范围
         ttk.Label(addr_frame, text="row 范围:").grid(row=2, column=0, sticky="w", padx=5, pady=2)
-        self.row_min_entry = ttk.Entry(addr_frame, width=5)
+        self.row_min_entry = ttk.Entry(addr_frame, width=entry_width)
         self.row_min_entry.insert(0, "1")
         self.row_min_entry.grid(row=2, column=1, padx=5, pady=2)
-        self.row_max_entry = ttk.Entry(addr_frame, width=5)
+        self.row_max_entry = ttk.Entry(addr_frame, width=entry_width)
         self.row_max_entry.insert(0, "256")
         self.row_max_entry.grid(row=2, column=2, padx=5, pady=2)
 
         # col 范围
         ttk.Label(addr_frame, text="col 范围:").grid(row=3, column=0, sticky="w", padx=5, pady=2)
-        self.col_min_entry = ttk.Entry(addr_frame, width=5)
+        self.col_min_entry = ttk.Entry(addr_frame, width=entry_width)
         self.col_min_entry.insert(0, "1")
         self.col_min_entry.grid(row=3, column=1, padx=5, pady=2)
-        self.col_max_entry = ttk.Entry(addr_frame, width=5)
+        self.col_max_entry = ttk.Entry(addr_frame, width=entry_width)
         self.col_max_entry.insert(0, "256")
         self.col_max_entry.grid(row=3, column=2, padx=5, pady=2)
 
@@ -196,22 +208,13 @@ class App:
 
     def array_to_photoimage(self, arr):
         """将10x10 numpy数组转换为可显示的PhotoImage"""
-        # print("转换前：")
-        # print(arr)
         arr1 = np.where(arr == -1, 0, 255)
-        # print("转换后：")
-        # print(arr1)
-        # print(arr)
         img = Image.fromarray(arr1.astype('uint8'), mode='L')  # 'L' 表示灰度图，注意类型转换
         img = img.resize((70, 70), Image.NEAREST)  # 放大显示
         return ImageTk.PhotoImage(img)
 
     def set_hnn_origin_img(self):
-        self.hnn = hnn()
         self.original_imgs = self.hnn.get_origin()
-        # for index in range(5):
-        #     original_img = self.get_img10x10()
-        #     self.original_imgs.append(original_img)
 
     def start_noising(self):
         self.noisy_imgs = self.hnn.get_damaged()
@@ -237,7 +240,7 @@ class App:
     def start_restoration(self):
         for index,state in enumerate(self.noisy_imgs):
             state_flat = state.flatten()
-            for _ in range(10):
+            for _ in range(15):
                 new_state = np.where(self.hnn.layer.forward_from_row(state_flat) >= 0, 1, -1)
                 if np.array_equal(new_state, state_flat):
                     break
@@ -364,17 +367,11 @@ class App:
         threading.Thread(target=self.start_svm).start()
 
     def set_svm_label(self):
-        self.svm = svm()
         # 100个标签
         self.svm_label = self.svm.get_correct_labels().reshape(100,1)
 
     def start_svm(self):
-        # chip=CHIP(PS(host="192.168.1.11", port = 7, debug=0),init=True)
-        # chip.set_device_cfg(deviceType=0)
-        # chip.adc.set_gap(adc_cs_gap=100,adc_first_gap=20,adc_last_gap=10)
-        # chip.add_compiler("./code/")
-        # self.chip_task2=chip
-        self.svm_predicted = self.svm.forward(self.chip_task2).reshape(100,1)
+        self.svm_predicted = self.svm.forward().reshape(100,1)
 
         def update_result_tree():
             correct_count = 0
@@ -396,12 +393,12 @@ class App:
         self.root.after(0, update_result_tree)
 
     def connect_device(self):
-        if (self.chip.ps.connected):
-            self.log(f"网口连接成功:{self.chip.ps.host}:{self.chip.ps.port}，正在初始化")
+        if (self.hnn_chip.ps.connected):
+            self.log(f"网口连接成功:{self.hnn_chip.ps.host}:{self.hnn_chip.ps.port}，正在初始化")
 
             self.log("初始化完成")
         else:
-            self.log(f"连接失败:{self.chip.ps.host}:{self.chip.ps.port}")
+            self.log(f"连接失败:{self.hnn_chip.ps.host}:{self.hnn_chip.ps.port}")
 
     def generate_random_addresses(self):
         # 获取输入值
@@ -436,20 +433,25 @@ class App:
         if not self.generated_addresses:
             self.log("先生成随机地址再读取")
             return
+        
+        # 启动一个新线程来执行耗时任务
+        threading.Thread(target=self.read_random_points_thread, daemon=True).start()
 
+    def read_random_points_thread(self):
+        delay = float(self.float_entry.get())
         cnt_addresses = len(self.generated_addresses)
-        self.log((f'读{cnt_addresses}个点：'))
+        self.log(f'读{cnt_addresses}个点：')
+
         for i in range(cnt_addresses):
             chip_sel = self.generated_addresses[i][0]
             row_num = self.generated_addresses[i][1]
             col_num = self.generated_addresses[i][2]
 
-            # 调用读的过程
             v, c, r = self.read_point(0.1, chip_sel, row_num, col_num)
-            # v=self.chip.read_point3(row_num,row_num+1,col_num,col_num+1,read_voltage=0.1,tg=5,gain=1,from_row=True,out_type=0)
-            # c=self.chip.voltage_to_cond(v)
-            # r=self.chip.voltage_to_resistance
-            self.log(
+            time.sleep(delay)
+
+            # 在主线程中更新日志
+            self.root.after(0, self.log, 
                 f'第{i + 1:>2}个点，chip={chip_sel:>2}, row={row_num:>3}, col={col_num:>3} 测试结果：{r:.3f} kΩ   {c:.3f} uS')
 
     def read_point(self, v_read, chip_sel, row, col):
@@ -457,6 +459,15 @@ class App:
         chip_sel -= 1  # 减1是因为上位机程序中的编号都是从零开始的
         row -= 1
         col -= 1
+
+        if chip_sel == 0:   # chip0为hnn_chip
+            need_read = np.zeros((256,256))
+            need_read[row,col]=1
+            ans=self.hnn_chip.read_point2(crossbar=need_read,read_voltage=v_read,tg=5,gain=1,from_row=True,out_type=0)
+            v = ans[row,col]
+            r = self.hnn_chip.voltage_to_resistance(voltage=v)
+            c = self.hnn_chip.voltage_to_cond(voltage=v)
+            return v, c, r
 
         self.chip.set_dac_read_V(v_read)
         self.chip.set_chip_sel(chip_sel)

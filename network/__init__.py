@@ -1,2 +1,1 @@
-from network.layer import Layer
-from network.writeConfig import WriteConfig
+from network.layer import Layer,svmLayer,hnnLayer
