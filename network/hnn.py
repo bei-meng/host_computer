@@ -22,10 +22,10 @@ class hnn():
         # self.layer.set_weight_map_form_file("./data/hnn/weight_pos_100_100_chip_8_.npz")
         self.layer.set_weight_map_form_file("./data/hnn/weight_pos_100_100_chip_6_.npz")
         compensation_para:dict={
-            "value":0.65,
+            "value":0.7,
             "real_mean":550,
-            "odd_offset":2,
-            "even_offset":4,
+            "odd_offset":1,
+            "even_offset":5,
             "odd_mult":1,
             "even_mult":1,
             "all_mult":1,

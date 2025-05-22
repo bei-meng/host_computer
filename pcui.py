@@ -363,6 +363,13 @@ class App:
         svm_frame.grid_columnconfigure(1, weight=1)  # 使第二列能够扩展
 
     def start_svm_thread(self):
+        # 如果表格有内容，则清空表格
+        if self.result_tree.get_children():
+            for item in self.result_tree.get_children():
+                self.result_tree.delete(item)
+
+        # 将准确率标签恢复为默认值
+        self.accuracy_label.config(text="准确率：--%")
         # 启动线程调用下位机API
         threading.Thread(target=self.start_svm).start()
 
@@ -452,7 +459,7 @@ class App:
 
             # 在主线程中更新日志
             self.root.after(0, self.log, 
-                f'第{i + 1:>2}个点，chip={chip_sel:>2}, row={row_num:>3}, col={col_num:>3} 测试结果：{r:.3f} kΩ   {c:.3f} uS')
+                f'第{i + 1:>2}个点，chip={chip_sel:>2}, row={row_num:>3}, col={col_num:>3} 测试结果：{c:.3f} uS')
 
     def read_point(self, v_read, chip_sel, row, col):
 
