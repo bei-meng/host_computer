@@ -1,14 +1,6 @@
 import math
 import numpy as np
-
-# 权重的位置信息
-good_device = np.load("./data/good_point_100_100_1_4.npy")
-# 用于补偿线组的
-r_out = np.load("./data/chip_1_4_col_r_out.npy")
-r_w = np.load("./data/chip_1_4_col_r_wire.npy")
-cond_min,cond_max,cond_reference = 0,1100,550
-cond_range = cond_max-cond_reference
-weight_min,weight_max = -0.17,0.17
+from network.layer import hnnLayer
 
 class hnn():
     net_size = 100  # 例如 100 表示 10×10
@@ -18,11 +10,29 @@ class hnn():
     processed_patterns = None
     damaged_patterns = None
 
-    def __init__(self):
+    def __init__(self,chip):
         """
             加载数据集,进行预处理
         """
         self.processed_patterns = np.load("./data/hnn/processed_patterns.npy")
+        # dl = DataLoader()
+        # weight = dl.load_csv("../data/hnn/HNN_W_matrix_origin.csv")
+
+        self.layer=hnnLayer(chip=chip,weight_target=0,weight_min=-0.17,weight_max=0.17,cond_min=0,cond_max=1100,cond_reference=550)
+        # self.layer.set_weight_map_form_file("./data/hnn/weight_pos_100_100_chip_8_.npz")
+        self.layer.set_weight_map_form_file("./data/hnn/weight_pos_100_100_chip_6_.npz")
+        compensation_para:dict={
+            "value":0.7,
+            "real_mean":550,
+            "odd_offset":1,
+            "even_offset":5,
+            "odd_mult":1,
+            "even_mult":1,
+            "all_mult":1,
+            "add_wire":True
+        }
+
+        self.layer.set_forward_paramater(forward_type=2,interval=18,compensation_para=compensation_para)
 
     def get_origin(self):
         """
@@ -31,7 +41,7 @@ class hnn():
         return self.processed_patterns
 
 
-    def damage_pattern(self,pattern, damage_rate=0.1):
+    def damage_pattern(self,pattern, damage_rate):
         """
             损坏图片
         """
@@ -42,105 +52,12 @@ class hnn():
         damaged[flip_indices] *= -1
         return damaged.reshape((self.side, self.side))
 
-    def get_damaged(self,damage_rate=0.1):
+    def get_damaged(self,damage_rate=0.15):
         """
-            获取损害后的图片
+            获取损坏后的图片
         """
         self.damaged_patterns = []
         for p in self.processed_patterns:
             damaged = self.damage_pattern(p, damage_rate)
             self.damaged_patterns.append(damaged)
         return self.damaged_patterns
-
-
-    def forward_unsigned_from_row(self,chip,row_index,col_index,forward_type=2):
-        """
-            Args:
-                row_index是需要开的行号[0,255]列表
-                col_index是输出的列好[0,255]列表
-                forward_type:
-                    =1 表示并行列输出
-                    =2 表示逐列输出
-                    =3 逐点读然后计算推理结果
-            从行给信号进行推理
-
-        """
-        col_nums = len(col_index)
-        row_nums = len(row_index)
-        from_row = True
-        if col_nums <= 0:
-            return np.zeros((len(row_index),1))
-        
-        min_row,max_row = np.min(row_index),np.max(row_index)
-        row_rw = np.array([(256-max_row)*r_w[i] if i%2==0 else (min_row)*r_w[i] for i in col_index])
-        gain = 1 if row_nums<=10 else 3
-        if forward_type==1:
-            # -------------------------------------
-            voltage_base = chip.read_chunk_parallel2(row_index=[row_index],col_index=[col_index],
-                                                        read_voltage=0,tg=5,gain=gain,from_row=from_row,out_type=0,compute=True
-                                                    # ,tia_split=[0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3]
-                                                    ,tia_split=[0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,]
-                                                    # ,tia_split=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,]
-                                                    )
-            voltage = chip.read_chunk_parallel2(row_index=[row_index],col_index=[col_index],
-                                                read_voltage=0.1,tg=5,gain=gain, from_row=from_row,out_type=0,compute=True
-                                                # ,tia_split=[0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3]
-                                                ,tia_split=[0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,]
-                                                # ,tia_split=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,]
-                                                )
-            parallel_r = chip.voltage_to_resistance(voltage = voltage-voltage_base)[:,col_index]*1e3 - r_out[col_index] - row_rw - r_w[col_index]*(row_nums**0.875)
-            # 单位A
-            parallel_i = 1/parallel_r - cond_reference*1e-6*row_nums
-            parallel_value = parallel_i/(cond_range*1e-6)*weight_max
-            return parallel_value.flatten()
-        elif forward_type==2:
-            need_read = np.zeros((256,256),dtype=bool)
-            weight_pos = np.ix_(row_index, col_index)
-            need_read[weight_pos] = True
-
-            voltage_base=chip.compute(crossbar=need_read,read_voltage=0,tg=5,gain=gain,from_row=from_row,out_type=0)
-            voltage=chip.compute(crossbar=need_read,read_voltage=0.1,tg=5,gain=gain,from_row=from_row,out_type=0)
-            not_parallel_r = chip.voltage_to_resistance(voltage = voltage-voltage_base)[:,col_index]*1e3 - r_out[col_index] - row_rw - r_w[col_index]*(row_nums**0.875)
-            # 单位A
-            not_parallel_i = 1/not_parallel_r - cond_reference*1e-6*row_nums
-            not_parallel_value = not_parallel_i/(cond_range*1e-6)*weight_max
-            return not_parallel_value.flatten()
-        elif forward_type==3:
-            need_read = np.zeros((256,256),dtype=bool)
-            weight_pos = np.ix_(row_index, col_index)
-            need_read[weight_pos] = True
-            voltage_base = chip.read_point2(crossbar=need_read,read_voltage=0,tg=5,gain=1,from_row=from_row,out_type=0)
-            voltage = chip.read_point2(crossbar=need_read,read_voltage=0.1,tg=5,gain=1,from_row=from_row,out_type=0)
-            cond = chip.voltage_to_cond(voltage=voltage-voltage_base)[weight_pos]
-
-            # 单位A
-            real_i =np.sum(cond,axis=0) - cond_reference*row_nums
-            real_value = real_i/(cond_range)*weight_max
-            return real_value.flatten()
-    
-
-    def forward_from_row(self,chip,state_flat:np.ndarray,interval=50,forward_type=2):
-        """
-            state_flat:为1*100的np数组
-            split_type = 0,就是采用
-        """
-        state_flat_new = state_flat.reshape(1,100)
-
-        col_index = good_device[1]
-        
-        row_index = good_device[0][np.where(state_flat_new > 0)[1]]
-        row_nums = len(row_index)
-        steps = math.ceil(row_nums/interval)
-        value_pos = np.zeros((len(col_index)))
-        for i in range(steps):
-            value_pos += self.forward_unsigned_from_row(chip,row_index[i*interval:min((i+1)*interval,row_nums)],col_index,forward_type=forward_type)
-        
-
-        row_index = good_device[0][np.where(state_flat_new < 0)[1]]
-        row_nums = len(row_index)
-        steps = math.ceil(row_nums/interval)
-        value_neg = np.zeros((len(col_index)))
-        for i in range(steps):
-            value_neg += self.forward_unsigned_from_row(chip,row_index[i*interval:min((i+1)*interval,row_nums)],col_index,forward_type=forward_type)
-
-        return value_pos-value_neg

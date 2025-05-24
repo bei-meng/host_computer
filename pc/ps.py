@@ -21,6 +21,7 @@ class PS():
         self.historic_pkts = []
 
         try:
+            # pass
             self.socket.bind((self.local_ip, 0))
             self.socket.connect((self.host, self.port))
             self.local_ip, self.local_port = self.socket.getsockname()
