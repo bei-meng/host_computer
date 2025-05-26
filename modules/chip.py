@@ -2139,8 +2139,11 @@ class CHIP():
         pkts.append_cmdlist([CMD(EXT_GPIO,command_data=CmdData(gpio)),],mode=1)
         self.ps.send_packets(pkts)
 
-
-    def crossbar_split_to_batch4(self,crossbar:np.ndarray,row_index:list[int],col_index:list[int],from_row:bool = True,split_type:int = 0):
+    #------------------------------------------------------------------------------------------
+    # *************************************** 模块化执行 ***************************************
+    #------------------------------------------------------------------------------------------
+    def crossbar_split_to_batch4(self,crossbar:np.ndarray,row_index:list[int],col_index:list[int],
+                                 from_row:bool = True,split_type:int = 0)->list[list[list[int],list[int]]]:
         """
             Args:
                 crossbar: n*n的np矩阵
@@ -2149,9 +2152,11 @@ class CHIP():
                 split_type: =0,表示逐行,逐列,这个使用crossbar\n
                             =1,表示逐行,列划分TIA,这个使用crossbar\n
                             =2,表示开所有行,逐列,这个使用crossbar\n
+
                             =3,表示开所有行,逐列,这个使用row_index和col_index\n
                             =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
                             =5,表示开所有行,所有列,这个使用row_index和col_index\n
+
                 from_row: True表示按上面的描述进行切分,False表示交换行列的切分方式\n
         """
         row, col = crossbar.shape
@@ -2170,7 +2175,8 @@ class CHIP():
                         cols = np.where(crossbar[i,:])[0].tolist()
                         if cols:
                             cols_tia_split = self.setting.tia_spliet_from_index(index=cols,col=True)
-                            operator_batch.extend([[rows,cols] for rows, cols in itertools.product([[i]], cols_tia_split)])
+                            # 这里优化一下，尽量先遍历配置bank少的, bank配置多的放在前面
+                            operator_batch.extend([[rows,cols] for cols,rows in itertools.product(cols_tia_split,[[i]])])
             else:
                 # 从列，就逐列，开所有行，下一步再进行TIA划分
                 for dj in range(2):
@@ -2178,7 +2184,8 @@ class CHIP():
                         rows = np.where(crossbar[:,j])[0].tolist()
                         if rows:
                             rows_tia_split = self.setting.tia_spliet_from_index(index=rows,col=False)
-                            operator_batch.extend([[rows,cols] for rows, cols in itertools.product(rows_tia_split, [[j]])])
+                            # 这里优化一下，尽量先遍历配置bank少的, bank配置多的放在前面
+                            operator_batch.extend([[rows,cols] for rows,cols in itertools.product(rows_tia_split,[[j]])])
         elif split_type == 2:               # 开所有行,逐列,这个使用crossbar
             if not from_row:
                 # 从列，就逐行开所有列
@@ -2194,16 +2201,18 @@ class CHIP():
                         if rows: operator_batch.extend([[rows,[j]]])
         elif split_type == 3:               # 开所有行,逐列,这个使用row_index和col_index
             if from_row:
-                operator_batch.extend([[rows,[col]] for rows, col in itertools.product([row_index], col_index)])
+                # 这里优化一下，尽量先遍历配置bank少的, bank配置多的放在前面,不过这里没区别
+                operator_batch.extend([[rows,[col]] for col,rows  in itertools.product(col_index, [row_index])])
             else:
-                operator_batch.extend([[[row],cols] for rows, col in itertools.product(row_index, [col_index])])
+                operator_batch.extend([[[row],cols] for row, cols in itertools.product(row_index, [col_index])])
         elif split_type == 4:               # 开所有行,列分TIA,这个使用row_index和col_index
             if from_row:
                 cols_tia_split = self.setting.tia_spliet_from_index(index=col_index,col=True)
                 operator_batch.extend([[rows,cols] for rows, cols in itertools.product([row_index], cols_tia_split)])
             else:
+                # 这里优化一下，尽量先遍历配置bank少的, bank配置多的放在前面,不过这里没区别
                 rows_tia_split = self.setting.tia_spliet_from_index(index=row_index,col=False)
-                operator_batch.extend([[rows,cols] for rows, cols in itertools.product(rows_tia_split, [col_index])])
+                operator_batch.extend([[rows,cols] for cols,rows in itertools.product([col_index], rows_tia_split)])
         elif split_type == 5:               # 开所有行,所有列,这个使用row_index和col_index
             operator_batch.append([row_index,col_index])
         else:
@@ -2222,6 +2231,7 @@ class CHIP():
                     =2,表示只反转对应行/列所在TIA之外的所有索引
 
             Returns:
+                din_ram_data: din_ram要发送的指令
                 res_row_bank: 一个个点需要配置的行bank和din_ram_data里面的index的映射\n
                 res_col_bank: 一个个点需要配置的列bank和din_ram_data里面的index的映射\n
                 res_tia_map: 每个点的TIA映射(写模式返回为空)
@@ -2237,6 +2247,8 @@ class CHIP():
 
         din_ram_data.append(CMD(PL_DATA,command_data=CmdData(0)))
         din_ram_data.append(CMD(PL_DATA,command_data=CmdData(0xFFFF_FFFF)))
+        din_ram_bank_index_map[0] = 0
+        din_ram_bank_index_map[0xFFFF_FFFF] = 1
         # --------------------------------------------------增加映射
         def add_map(res_bank:list,bank:int,indexs:list[int],inversion_type:int=0) -> None:                              # 增加bank和din_ram_data里面的index的映射
             nonlocal din_ram_pos
@@ -2286,13 +2298,201 @@ class CHIP():
         length = self.setting.check_din_ram(din_ram_data,din_ram_start)
         din_ram_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(length)))                
         din_ram_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(din_ram_start)))
-        return din_ram_data,res_row_bank,res_col_bank,
+        return din_ram_data,res_row_bank,res_col_bank,res_tia_map
 
+    def prepare_latch_ins4(self,crossbar:np.ndarray,row_index:list[int],col_index:list[int],din_ram_start:int = 0,
+              from_row:bool = True,split_type:int = 0,row_inversion_type:int = 0,col_inversion_type:int = 0):
+        """
+            Args:
+                crossbar: n*n的np矩阵
+                row_index: 行号列表
+                col_index: 列号列表
+                din_ram_start: din_ram存放的起始地址
+                split_type: =0,表示逐行,逐列,这个使用crossbar\n
+                            =1,表示逐行,列划分TIA,这个使用crossbar\n
+                            =2,表示开所有行,逐列,这个使用crossbar\n
+
+                            =3,表示开所有行,逐列,这个使用row_index和col_index\n
+                            =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
+                            =5,表示开所有行,所有列,这个使用row_index和col_index\n
+
+                from_row: True从行给信号,False从列给信号
+
+                inversion_type: 表示index是怎么配置的\n
+                            =0,表示不使用反转,正常映射\n
+                            =1,表示index中01反转\n
+                            =2,表示只反转对应行/列所在TIA之外的所有索引\n
+            
+            Return:
+                din_ram_data: 要发送的din_ram指令
+                operator_batch: 每个batch中的行/列数据
+                res_tia_map
+
+            为读写准备要配置的指令
+        """
+        row_banks_last,col_banks_last = None,None
+        row_bank_num_last,col_bank_num_last = None,None
+
+
+        operator_batch = self.crossbar_split_to_batch4(crossbar,row_index,col_index,from_row,split_type)
+        din_ram_data,res_row_bank,res_col_bank,res_tia_map = self.batch_to_din_ram4(operator_batch,din_ram_start,row_inversion_type,col_inversion_type)
+
+        ins_data = []
+
+        for row_banks,col_banks in zip(res_row_bank,res_col_bank):
+            add_ins_data = []
+            row_bank_num_new,col_bank_num_new = [row_bank[0] for row_bank in row_banks],[col_bank[0] for col_bank in col_banks]
+            # bank号相等,直接配置对应的bank就好
+            if row_bank_num_new==row_bank_num_last and col_bank_num_new==col_bank_num_last:
+                # bank号和index号不等
+                if row_banks_last!=row_banks:
+                    for row_bank in row_banks:
+                        add_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(row_bank[0]<<8|row_bank[1])))  # 配置行bank
+
+                # bank号和index号不等
+                if col_banks_last!=col_banks:
+                    for col_bank in col_banks:
+                        add_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(col_bank[0]<<8|col_bank[1])))  # 配置列bank
+            else:
+                # 进来第一步就会先reset行列
+                # 行bank号不等,需要先将行bank清零,再配置bank
+                if row_bank_num_new!=row_bank_num_last:
+                    # 清零类型和row_inversion_type有关
+                    if row_inversion_type>0:
+                        add_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(0xFF<<8|1)))
+                    else:
+                        add_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(0xFF<<8|0)))
+                    for row_bank in row_banks:
+                        add_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(row_bank[0]<<8|row_bank[1])))  # 配置行bank
+                # 列bank号不等,需要先将列bank清零,再配置bank
+                if col_bank_num_new==col_bank_num_last:
+                    # 清零类型和row_inversion_type有关
+                    if col_inversion_type>0:
+                        add_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(0xFF<<8|1)))
+                    else:
+                        add_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(0xFF<<8|0)))
+                    for col_bank in col_banks:
+                        add_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(col_bank[0]<<8|col_bank[1])))  # 配置列bank
+
+            # # 因为把row_ctrl和col_ctrl和sw分离了,所以PL_READ_ROW_PULSE和PL_READ_COL_PULSE,一样的效果
+            # add_ins_data.append(CMD(PL_READ_ROW_PULSE,command_data=CmdData(dout_ram_pos)))
+
+            row_banks_last,col_banks_last = row_banks,col_banks
+            row_bank_num_last,col_bank_num_last = row_bank_num_new,col_bank_num_new
+            
+            # 读写指令在外部进行处理，比如多重读
+            ins_data.append(add_ins_data)
+
+        return ins_data,din_ram_data,operator_batch,res_tia_map
 
     def read4(self,crossbar:np.ndarray,row_index:list[int],col_index:list[int],
-              read_voltage:float,tg:float = 5,gain:int = 1,from_row:bool = True, out_type = 0):
+              read_voltage:float,tg:float = 5,gain:int = 1,sub_base:bool = False,
+              from_row:bool = True,split_type:int = 0,row_inversion_type:int = 0,col_inversion_type:int = 0):
+        """
+            Args:
+                crossbar: n*n的np矩阵
+                row_index: 行号列表
+                col_index: 列号列表
+                sub_base: 表示减去0v读的电压
+
+                split_type: =0,表示逐行,逐列,这个使用crossbar\n
+                            =1,表示逐行,列划分TIA,这个使用crossbar\n
+                            =2,表示开所有行,逐列,这个使用crossbar\n
+
+                            =3,表示开所有行,逐列,这个使用row_index和col_index\n
+                            =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
+                            =5,表示开所有行,所有列,这个使用row_index和col_index\n
+
+                from_row: True从行给信号,False从列给信号
+
+                inversion_type: 表示index是怎么配置的\n
+                            =0,表示不使用反转,正常映射\n
+                            =1,表示index中01反转\n
+                            =2,表示只反转对应行/列所在TIA之外的所有索引\n
+            
+            Return:
+                din_ram_data: 要发送的din_ram指令
+                operator_batch: 每个batch中的行/列数据
+                res_tia_map
+
+            返回读出来的电压(V),电导(uS),电阻(kΩ)
+        """
         self.read_voltage = read_voltage
         self.set_tia_gain(gain)
         self.set_op_mode2(read=True,from_row=from_row)
 
-        operator_batch = self.crossbar_split_to_batch4(crossbar,row_index,col_index,from_row,split_type = 0)
+        din_ram_start,ins_ram_start = 0,0
+        dout_ram_start,dout_ram_pos = 0,0
+        pre_ins_data,din_ram_data,operator_batch,res_tia_map = self.prepare_latch_ins4(crossbar,row_index,col_index,din_ram_start,from_row,split_type,row_inversion_type,col_inversion_type)
+
+        # 发送din_ram的数据
+        self.send_cmd(cmd=pre_ins_data,mode=5)
+        din_ram_data.clear()
+
+        # 返回的数据
+        if split_type<2:
+            res = np.zeros((self.setting.chip_latch_num,self.setting.chip_latch_num))
+        elif from_row:
+            res = np.zeros((self.setting.chip_latch_num))
+        else:
+            res = np.zeros((self.setting.chip_latch_num))
+
+        def get_read_result(rows,cols,tias,curr,read_batch_start,res,voltage,sub_base):
+            # 大于等于2表示，开所有行/列
+            if split_type>=2:
+                if from_row:
+                    for col,tia in zip(cols,tias):
+                        res[col] = voltage[curr-read_batch_start,tia]+voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+                else:
+                    for row,tia in zip(rows,tias):
+                        res[row] = voltage[curr-read_batch_start,tia]+voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+            else:
+                if from_row:
+                    for col,tia in zip(cols,tias):
+                        res[rows[0],col]=voltage[curr-read_batch_start,tia]+voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+                else:
+                    for row,tia in zip(rows,tias):
+                        res[row,cols[0]] = voltage[curr-read_batch_start,tia]+voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+
+        ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)
+        read_batch_start,read_batch_end = 0,0
+        interval = 2 if sub_base else 1
+        # 遍历每个batch
+        for ins in pre_ins_data:
+            # 因为把row_ctrl和col_ctrl和sw分离了,所以PL_READ_ROW_PULSE和PL_READ_COL_PULSE,一样的效果
+            ins.append(CMD(PL_READ_ROW_PULSE,command_data=CmdData(dout_ram_pos)))
+            # 如果要减去base的话，就配置电压为0，再读一次就好
+            pos = len(ins)
+            if sub_base:
+                ins.extend(self.get_dac_ins2(v=0))
+                ins.append(CMD(PL_READ_ROW_PULSE,command_data=CmdData(dout_ram_pos+1)))
+            # 因为后面会加一个exit指令
+            if len(ins_data)+len(ins)+1 >= self.setting.ins_ram_length or dout_ram_pos+2 >= self.setting.dout_ram_length:
+                self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
+                voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
+                for i in range(read_batch_start,read_batch_end):
+                    rows,cols,tias = operator_batch[i],res_tia_map[i]
+                    get_read_result(rows,cols,tias,i*interval,read_batch_start*interval,res,voltage,sub_base)
+                
+                read_batch_start = read_batch_end
+                dout_ram_pos = dout_ram_start
+                # 读两次
+                if sub_base:
+                    ins[pos-1]=CMD(PL_READ_ROW_PULSE,command_data=CmdData(dout_ram_pos))
+                    ins[-1]=CMD(PL_READ_ROW_PULSE,command_data=CmdData(dout_ram_pos+1))
+                else:
+                    ins[-1]=CMD(PL_READ_ROW_PULSE,command_data=CmdData(dout_ram_pos))
+
+            ins_data.extend(ins)
+            dout_ram_pos += interval
+            read_batch_end += 1
+
+        if len(ins_data)>0:
+            self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
+            voltage = self.adc.get_out2(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start)
+            for i in range(read_batch_start,read_batch_end):
+                rows,cols,tias = operator_batch[i],res_tia_map[i]
+                get_read_result(rows,cols,tias,i*interval,read_batch_start*interval,res,voltage,sub_base)
+
+        # 返回电压电导电阻
+        return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
