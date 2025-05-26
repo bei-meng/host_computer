@@ -22,7 +22,6 @@ class SELECT():
         self.good_point[pos]=-65535
 
     def Reset(self,chip,need_read,write_times,start_v,delta_v,tg,threshold,reset_pulse_width,read_type=2,sub_base=False,vmax=1000,plot_cond=None):
-        chip=self
         voltage_base = np.zeros((256,256))
         voltage = np.zeros((256,256))
         cond_sub_base = None

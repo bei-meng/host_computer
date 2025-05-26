@@ -1,3 +1,4 @@
+chip_data/
 command/__pycache__/
 compiler/__pycache__/
 modules/__pycache__/
@@ -10,4 +11,4 @@ data/
 network/__pycache__
 .idea/
 
-chip_data/
+x

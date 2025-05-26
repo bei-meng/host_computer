@@ -35,6 +35,9 @@ class CHIPSETTING:
     num_to_tia_col = None
     num_to_bank_index_tia_row = None
 
+
+    tia_map = None                                              # 几路TIA并行
+
     def __init__(self,deviceType:int,IsNew32:bool=False,IsRERAM512:bool=False):
         self.set_device(deviceType,IsNew32,IsRERAM512)
 
@@ -63,9 +66,7 @@ class CHIPSETTING:
             self.dout_ram_size = 256
             self.dout_ram_size_B = 32
 
-    def numToBank_Index(self,num):
-        return self.num_to_bank_index[num]
-        
+    
     def _numToBank_Index(self,num:int) -> tuple[int,int]:
         """
             Args:
@@ -100,12 +101,27 @@ class CHIPSETTING:
         """
         bank_list = [[] for i in range(self.chip_bank_num)]
         for i in range(self.chip_latch_num):
-            bank,_ = self.numToBank_Index(i)
+            bank,_ = self.self.num_to_bank_index[i]
             bank_list[bank].append(i)
         res = []
         for i in bank_data:
             res = res + bank_list[i]
         return res
+    
+    def bank_split_from_index(self,index:list[int]):
+        """
+            Args:
+                index: 行/列索引
+
+            Returns:
+                [[int,int,...],[int,int,...],...]
+                返回的每个bank中的列表都是行列的index32位数据
+        """
+        bank_data = [[] for _ in range(self.chip_bank_num)]
+        for num in index:
+            bank, index = self.num_to_bank_index[num]
+            bank_data[bank].append(1<<index)
+        return bank_data
     
     def bank_split(self,data:list[tuple[int,int,int,int,int]],
                    all_data:bool = False) -> Union[list[list[int]],list[list[tuple[int,int,int,int,int]]]]:
@@ -140,6 +156,37 @@ class CHIPSETTING:
         for i in tia_data:
             res = res + tia_list[i]
         return res
+    
+    def tia_spliet_from_index(self,index:list[int],col:bool=True) -> list[list[tuple[int,int,int,int,int]]]:
+        """
+            Args:
+                index: 行/列索引
+
+            Returns:
+                [[int,int,...],[int,int,...],...]
+        """
+        batch = []
+        tia = [[] for _ in range(self.chip_tia_num)]
+        # ----------------------------------------------分成几路TIA
+        if self.tia_map:
+            tia_map = [self.tia_map[i] for i in self.num_to_tia_col] if col else [self.tia_map[i] for i in self.num_to_tia_row]
+        else:
+            tia_map = self.num_to_tia_col if col else self.num_to_tia_row
+        # ----------------------------------------------行/列号映射为TIA
+        for num in index:
+            tia[tia_map[num]].append(num)
+        
+        tia = [sublist for sublist in tia if sublist]
+        maxNum = 0
+        for sublist in tia:
+            maxNum = max(maxNum,len(sublist))
+        # ----------------------------------------------每路TIA选一路
+        while maxNum:
+            batch.append([sublist.pop() for sublist in tia if sublist])
+            maxNum -=1
+
+        return batch
+
     
     def tia_split(self,data:list[tuple[int,int,int,int,int]],tia_split:Union[list[int]|None]=None,
                   check_tia = True) -> list[list[tuple[int,int,int,int,int]]]:
@@ -182,7 +229,7 @@ class CHIPSETTING:
         """
         bank,index = 0,0
         for i in num:
-            bank_tmp,index_tmp = self.numToBank_Index(i)
+            bank_tmp,index_tmp = self.num_to_bank_index[i]
             bank = bank | (1<<bank_tmp)
             index = index | (1<<index_tmp)
         return bank,index
@@ -205,7 +252,7 @@ class CHIPSETTING:
         """
         res = []
         for pos,v in enumerate(num):
-            bank,index = self.numToBank_Index(v)
+            bank,index = self.num_to_bank_index[v]
             tia = self.TIA_index_map(v,col=col)
             res.append((pos,v,bank,index,tia))
         return res
@@ -316,3 +363,8 @@ class CHIPSETTING:
             TIA_offset = int((num-index_offset)/index_base)
             return TIA_base+TIA_offset*2
         
+
+    def check_din_ram(self,din_ram_data,din_ram_start):
+        num = len(din_ram_data)
+        assert num+din_ram_start <= self.setting.din_ram_length,f"check_din_ram: din_ram:{num+din_ram_start}超过界限。"
+        return num
