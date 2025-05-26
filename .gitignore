@@ -9,3 +9,5 @@ images/
 data/
 network/__pycache__
 .idea/
+
+chip_data/

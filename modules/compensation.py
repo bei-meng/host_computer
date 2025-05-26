@@ -79,7 +79,7 @@ class COMPENSATION():
 
         resistence = resistence*1e3 - self.row_r_out - rw - offset
         if compensation_para["add_wire"]:
-            resistence -= self.r_wire*((max_index-min_index)/nums)*(nums**compensation_para["value"])
+            resistence -= self.r_wire*((max_index-min_index+1)/nums)*(nums**compensation_para["value"])
 
         resistence *= mult
         if return_type==0:
@@ -255,3 +255,62 @@ class COMPENSATION():
             r_out[col]=mid
         np.save(filename,r_out)
         return r_out
+    
+
+    def get_compare(self,chip,col,value=0.875,oddoffset=0,evenoffset=2):
+        ans = np.zeros((5,256))
+        # ---------------------------------------------------------------逐点读，并去除线组和R_out的影响
+        need_read = np.zeros((256,256),dtype=bool)
+        need_read[:,col]=True
+        voltage_base = chip.read_point2(crossbar=need_read,read_voltage=0,tg=5,gain=1,from_row=True,out_type=0)
+        voltage = chip.read_point2(crossbar=need_read,read_voltage=0.1,tg=5,gain=1,from_row=True,out_type=0)
+        resistence = chip.voltage_to_resistance(voltage=voltage-voltage_base)
+        point_read_r = chip.compensation.compensation_point(resistence=resistence,from_row=True,return_type=2)[:,col]
+        point_read_c = 1/point_read_r*1e6
+
+        ans[0,0]=point_read_c[0]
+        for i in range(1,256):
+            ans[0,i]=point_read_c[i]+ans[0,i-1]
+
+        # ---------------------------------------------------------------多行累积输出结果
+        for i in range(256):
+            need_read[:] = False
+            need_read[:i+1,col]=True
+            gain = 1 if i < 20 else 3
+            voltage_base=chip.compute(crossbar=need_read,read_voltage=0,tg=5,gain=gain,from_row=True,out_type=0)
+            voltage=chip.compute(crossbar=need_read,read_voltage=0.1,tg=5,gain=gain,from_row=True,out_type=0)
+            if np.max(voltage)>1.1:
+                print(np.max(voltage))
+            ans[1,i] = chip.voltage_to_cond(voltage = voltage-voltage_base)[0,col]
+
+        # ---------------------------------------------------------------重构实际输出值
+        r_wire = 0.12
+        r_out = chip.compensation.col_r_out[col]
+
+        ans[2,0] = point_read_r[0]
+        for i in range(1,256):
+            ans[2,i] = (ans[2,i-1]+r_wire)*point_read_r[i]/(ans[2,i-1]+r_wire+point_read_r[i])
+
+        for i in range(256):
+            rw_sum = (255-i)*r_wire if col%2==0 else 0
+            ans[2,i] += rw_sum + r_out
+
+        ans[2,:] = 1/ans[2,:]*1e6
+
+        # ---------------------------------------------------------------实际输出值减去r_out
+        ans[3,:] = 1/ans[1,:]*1e6
+        for i in range(256):
+            rw_sum = (255-i)*r_wire if col%2==0 else 0
+            ans[3,i] -= rw_sum + r_out
+        ans[3,:] = 1/ans[3,:]*1e6
+
+        # ---------------------------------------------------------------实际输出值减去减去value
+        ans[4,:] = 1/ans[1,:]*1e6
+        for i in range(256):
+            max_index,min_index = i,0
+            rw_sum = (255-i)*r_wire+evenoffset if col%2==0 else 0+oddoffset
+            ans[4,i] -= rw_sum + r_out + self.r_wire*(max_index**value)
+        ans[4,:] = 1/ans[4,:]*1e6
+        return ans
+
+
