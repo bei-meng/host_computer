@@ -117,11 +117,13 @@ class CHIPSETTING:
                 [[int,int,...],[int,int,...],...]
                 返回的每个bank中的列表都是行列的index32位数据
         """
+        if len(index)==1:
+            return [index]
         bank_data = [[] for _ in range(self.chip_bank_num)]
         for num in index:
-            bank, index = self.num_to_bank_index[num]
-            bank_data[bank].append(1<<index)
-        return bank_data
+            bank, _ = self.num_to_bank_index[num]
+            bank_data[bank].append(num)
+        return [bank for bank in bank_data if bank]
     
     def bank_split(self,data:list[tuple[int,int,int,int,int]],
                    all_data:bool = False) -> Union[list[list[int]],list[list[tuple[int,int,int,int,int]]]]:
@@ -157,7 +159,7 @@ class CHIPSETTING:
             res = res + tia_list[i]
         return res
     
-    def tia_spliet_from_index(self,index:list[int],col:bool=True) -> list[list[tuple[int,int,int,int,int]]]:
+    def tia_split_from_index(self,index:list[int],col:bool=True) -> list[list[tuple[int,int,int,int,int]]]:
         """
             Args:
                 index: 行/列索引
@@ -165,6 +167,8 @@ class CHIPSETTING:
             Returns:
                 [[int,int,...],[int,int,...],...]
         """
+        if len(index)==1:
+            return [index]
         batch = []
         tia = [[] for _ in range(self.chip_tia_num)]
         # ----------------------------------------------分成几路TIA
@@ -366,5 +370,5 @@ class CHIPSETTING:
 
     def check_din_ram(self,din_ram_data,din_ram_start):
         num = len(din_ram_data)
-        assert num+din_ram_start <= self.setting.din_ram_length,f"check_din_ram: din_ram:{num+din_ram_start}超过界限。"
+        assert num+din_ram_start <= self.din_ram_length,f"check_din_ram: din_ram:{num+din_ram_start}超过界限。"
         return num
