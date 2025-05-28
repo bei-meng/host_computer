@@ -2385,7 +2385,7 @@ class CHIP():
 
     def read4(self,crossbar:np.ndarray=None,row_index:list[int]=None,col_index:list[int]=None,
               read_voltage:float=0.1,tg:float = 5,gain:int = 1,sub_base:bool = False,
-              from_row:bool = True,split_type:int = 0,row_inversion_type:int = 0,col_inversion_type:int = 0):
+              from_row:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0):
         """
             Args:
                 crossbar: n*n的np矩阵
@@ -2403,7 +2403,7 @@ class CHIP():
 
                 from_row: True从行给信号,False从列给信号
 
-                inversion_type: 表示index是怎么配置的\n
+                row_type/col_type: 表示index是怎么配置的\n
                             =0,表示不使用反转,正常映射\n
                             =1,表示index中01反转\n
                             =2,表示只反转对应行/列所在TIA之外的所有索引\n
@@ -2420,7 +2420,7 @@ class CHIP():
         din_ram_start,ins_ram_start = 0,0
         dout_ram_start,dout_ram_pos = 0,0
         read_ins = PL_READ_ROW_PULSE if from_row else PL_READ_COL_PULSE
-        pre_ins_data,din_ram_data,operator_batch,res_tia_map = self.prepare_latch_ins4(crossbar,row_index,col_index,din_ram_start,from_row,split_type,row_inversion_type,col_inversion_type)
+        pre_ins_data,din_ram_data,operator_batch,res_tia_map = self.prepare_latch_ins4(crossbar,row_index,col_index,din_ram_start,from_row,split_type,row_type,col_type)
 
         # 发送din_ram的数据
         self.send_cmd(cmd=din_ram_data,mode=5)
@@ -2500,8 +2500,8 @@ class CHIP():
         return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
     
     def write4(self,crossbar:np.ndarray=None,row_index:list[int]=None,col_index:list[int]=None,
-              write_voltage:float=0.1,tg:float = 5,pulse_width:float = 1e-6,
-              set_device:bool = True,split_type:int = 0,row_inversion_type:int = 0,col_inversion_type:int = 0):
+              write_voltage:float=1,tg:float = 5,pulse_width:float = 1e-6,
+              set_device:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0):
         """
             Args:
                 crossbar: n*n的np矩阵
@@ -2517,19 +2517,12 @@ class CHIP():
                             =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
                             =5,表示开所有行,所有列,这个使用row_index和col_index\n
 
-                set_device: True从行给信号,False从列给信号
+                set_device: True从行给信号,按split_type,False从列给信号,split_type中的行列互换
 
                 inversion_type: 表示index是怎么配置的\n
                             =0,表示不使用反转,正常映射\n
                             =1,表示index中01反转\n
                             =2,表示只反转对应行/列所在TIA之外的所有索引\n
-            
-            Return:
-                din_ram_data: 要发送的din_ram指令
-                operator_batch: 每个batch中的行/列数据
-                res_tia_map
-
-            返回读出来的电压(V),电导(uS),电阻(kΩ)
         """
         assert (crossbar is not None and split_type<=2) or (row_index is not None and col_index is not None and split_type>2),"write4: split_type接收数据错误!"
         self.write_voltage = write_voltage
@@ -2538,7 +2531,7 @@ class CHIP():
 
         din_ram_start,ins_ram_start = 0,0
         write_ins = PL_WRITE_ROW_PULSE if set_device else PL_WRITE_COL_PULSE
-        pre_ins_data,din_ram_data,operator_batch,res_tia_map = self.prepare_latch_ins4(crossbar,row_index,col_index,din_ram_start,set_device,split_type,row_inversion_type,col_inversion_type)
+        pre_ins_data,din_ram_data,operator_batch,res_tia_map = self.prepare_latch_ins4(crossbar,row_index,col_index,din_ram_start,set_device,split_type,row_type,col_type)
 
         # 发送din_ram的数据
         self.send_cmd(cmd=din_ram_data,mode=5)
