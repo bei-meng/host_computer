@@ -2260,7 +2260,7 @@ class CHIP():
             # ------------------------------------------------------------------------------------------# ECRAM特定修改
             if inversion_type == 0:
                 pass
-            if inversion_type == 1:                                                                     # ECRAM的行配置需要取反
+            if inversion_type == 1:                                                                     # ECRAM的配置取反
                 index32 = 0xFFFF_FFFF ^ index32
             elif inversion_type == 2:
                 if index32&0xFFFF >0:
