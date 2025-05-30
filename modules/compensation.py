@@ -70,7 +70,7 @@ class COMPENSATION():
         min_index,max_index = np.min(index),np.max(index)
         nums= len(index)
         # 奇数列，偶数列的偏移
-        offset = np.array([compensation_para["even_offset"] if i%2 == 0 else compensation_para["even_offset"] for i in range(latchsize)])
+        offset = np.array([compensation_para["even_offset"] if i%2 == 0 else compensation_para["odd_offset"] for i in range(latchsize)])
         # 奇数列，偶数列的mult
         mult = np.array([compensation_para["even_mult"] if i%2 == 0 else compensation_para["odd_mult"] for i in range(latchsize)])
         mult = mult*compensation_para["all_mult"]
