@@ -35,6 +35,14 @@ class CLK_MANAGER():
         self.init = init
         self.set_cyc()
 
+    def set_pulse_cyc_ins(self,pulsewidth:float):
+        pulse_cyc=int(pulsewidth/PULSE_CYC_LENGTH)
+        assert pulse_cyc>=0 ,"set_pulse_width: 脉宽超过界限！"
+
+        self.pulse_cyc = pulse_cyc
+
+        return [CMD(PULSE_CYC,command_data=CmdData(pulse_cyc))]
+
     def set_pulse_cyc(self,pulsewidth:float):
         pulse_cyc=int(pulsewidth/PULSE_CYC_LENGTH)
         assert pulse_cyc>=0 ,"set_pulse_width: 脉宽超过界限！"

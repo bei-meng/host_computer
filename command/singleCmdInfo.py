@@ -1474,9 +1474,41 @@ COMMAND_ADDR+=1         # 命令的地址自增1
 
 
 
+#------------------------------------------------------------------------------------------
+# **************************************** PS指令 ******************************************
+#------------------------------------------------------------------------------------------
 
+# ram的地址
+PS_DDR_ADDR=dict(
+    command_addr = 0,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ZERO,# 0
+    n_data_bytes = N_DATA_BYTES.FOUR,# 4
+    command_name = "ps_ddr_addr",
+    command_data = CmdData(0),
+    command_description = "DDR的地址"
+)
+# 数据长度
+PS_DATA_LENGTH=dict(
+    command_addr = 0,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ZERO,# 0
+    n_data_bytes = N_DATA_BYTES.FOUR,# 4
+    command_name = "ps_data_length",
+    command_data = CmdData(0),
+    command_description = "指令条数"
+)
 
-
+# ps start/finsh
+PS_START_FINSH=dict(
+    command_addr = 0,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ZERO,# 0
+    n_data_bytes = N_DATA_BYTES.ONE,# 1
+    command_name = "ps_start_finsh",
+    command_data = CmdData(0),
+    command_description = "start/finsh,0表示start,1表示finsh"
+)
 
 for cmd, obj in list(locals().items()):
     if isinstance(obj, dict) and (obj.get("command_addr",None)!=None):

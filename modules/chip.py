@@ -2293,9 +2293,9 @@ class CHIP():
                 else:
                     res_tia_map[-1].extend([self.setting.TIA_index_map(i,col=False) for i in rows])
 
-        length = self.setting.check_din_ram(din_ram_data,din_ram_start)
-        din_ram_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(length)))                
-        din_ram_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(din_ram_start)))
+        # length = self.setting.check_din_ram(din_ram_data,din_ram_start)
+        # din_ram_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(length)))                
+        # din_ram_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(din_ram_start)))
         return din_ram_data,res_row_bank,res_col_bank,res_tia_map
 
     def prepare_latch_ins4(self,crossbar:np.ndarray=None,row_index:list[int]=None,col_index:list[int]=None,din_ram_start:int = 0,
@@ -2383,7 +2383,7 @@ class CHIP():
 
         return ins_data,din_ram_data,operator_batch,res_tia_map
 
-    def read4(self,crossbar:np.ndarray=None,row_index:list[int]=None,col_index:list[int]=None,
+    def read4(self,crossbar:Union[np.ndarray,None]=None,row_index:Union[list[int],None]=None,col_index:Union[list[int],None]=None,
               read_voltage:float=0.1,tg:float = 5,gain:int = 1,sub_base:bool = False,
               from_row:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0):
         """
@@ -2423,8 +2423,9 @@ class CHIP():
         pre_ins_data,din_ram_data,operator_batch,res_tia_map = self.prepare_latch_ins4(crossbar,row_index,col_index,din_ram_start,from_row,split_type,row_type,col_type)
 
         # 发送din_ram的数据
-        self.send_cmd(cmd=din_ram_data,mode=5)
-        din_ram_data.clear()
+        # self.send_cmd(cmd=din_ram_data,mode=5)
+        # din_ram_data.clear()
+        self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
 
         # 返回的数据
         if split_type<2:
@@ -2500,7 +2501,7 @@ class CHIP():
         return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
     
     def write4(self,crossbar:np.ndarray=None,row_index:list[int]=None,col_index:list[int]=None,
-              write_voltage:float=1,tg:float = 5,pulse_width:float = 1e-6,
+              write_voltage:float=1,tg:Union[float|np.ndarray]= 5,pulse_width:float = 1e-6,
               set_device:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0):
         """
             Args:
@@ -2534,12 +2535,21 @@ class CHIP():
         pre_ins_data,din_ram_data,operator_batch,res_tia_map = self.prepare_latch_ins4(crossbar,row_index,col_index,din_ram_start,set_device,split_type,row_type,col_type)
 
         # 发送din_ram的数据
-        self.send_cmd(cmd=din_ram_data,mode=5)
-        din_ram_data.clear()
-        ins_data = self.get_dac_ins2(v=write_voltage,tg=tg)
+        # self.send_cmd(cmd=din_ram_data,mode=5)
+        # din_ram_data.clear()
+        self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
 
+        change_tg,tg_last = type(tg)==np.ndarray,-1
+        ins_data = self.get_dac_ins2(v=write_voltage,tg=None) if change_tg else self.get_dac_ins2(v=write_voltage,tg=tg)
         # 遍历每个batch
-        for ins in pre_ins_data:
+        for i,ins in enumerate(pre_ins_data):
+            # 改变tg的电压
+            if change_tg:
+                tg_v = tg[operator_batch[i][0][0],operator_batch[i][1][0]]
+                if tg_v!=tg_last:
+                    tmp_ins_data +=self.get_dac_ins2(tg=tg_v)
+                    tg_last = tg_v
+
             ins.append(CMD(write_ins))
             if len(ins_data)+len(ins)+1 >= self.setting.ins_ram_length:
                 self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
@@ -2547,3 +2557,126 @@ class CHIP():
 
         if len(ins_data)>0:
             self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
+
+
+    def send_ps_ddr5(self,ddr_data,mode,ps_ddr_pos):
+        """
+            给ddr发指令
+        """
+        ins_num = len(ddr_data)
+        if mode==8 or mode==9:
+            # 常规指令模式
+            ddr_data.insert(0,CMD(PS_DATA_LENGTH,command_data=CmdData(ins_num)))
+            ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))
+            ps_ddr_pos += ins_num+2
+        elif mode==10:
+            # register指令
+            ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))
+            ps_ddr_pos += ins_num*2 + 1
+        elif mode==11:
+            # 不管是finsh,还是start
+            ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))
+            ps_ddr_pos +=1
+        else:
+            print("发送ps的DDR数据出错")
+        pkts=Packet()
+        pkts.append_single(ddr_data,mode=mode)
+        self.ps.send_packets(pkts,message_check=None)
+        ddr_data.clear()
+        return ps_ddr_pos
+
+    def set_op_mode5(self,ps_ddr_pos,read=True,from_row=True,return_ins=False):
+        """
+            Args:
+                read: True配置为读模式, False配置为写模式
+                from_row: True配置为从行读/写, False配置为从列读/写
+
+            Functions:
+                如果模式和上次不一样,会将所有的DAC通道电压设置为0
+        """
+        ins_data=[]
+        if (read and self.op_mode != "read") or (not read and self.op_mode == "read"):
+            ins_data.extend([CMD(PL_DAC_V,command_data=CmdData((i+DAC_INFO.INDEX_START)<<16)) for i in range(12)])
+        self.from_row = from_row
+        self.op_mode = "read" if read else "write"
+            
+        if self.setting.deviceType == 1:
+            ps_ddr_pos = self.send_ps_ddr5(ddr_data=[CMD(SER_DATA,command_data=CmdData(self.op_mode != "read"))],mode=10,ps_ddr_pos=ps_ddr_pos)
+            if self.op_mode == "write":
+                ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(1<<16)))                                                  # 1配置行到施加电压,
+                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
+                ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
+            else:
+                ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(int(from_row)<<16)))                                                  # 1配置行到施加电压,
+                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
+                ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
+        else:
+            if self.setting.IsRERAM512:
+                ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))
+            else:
+                ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(int(from_row)<<16)))                                                  # 1配置行到施加电压,
+                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
+                ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
+        ps_ddr_pos = self.send_ps_ddr5(ddr_data=ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
+        return ps_ddr_pos
+
+
+    def write5(self,crossbar:np.ndarray=None,row_index:list[int]=None,col_index:list[int]=None,
+              write_voltage:float=1,tg:float = 5,pulse_width:float = 1e-6,
+              set_device:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0,
+              ps_ddr_pos=0):
+        """
+            Args:
+                crossbar: n*n的np矩阵
+                row_index: 行号列表
+                col_index: 列号列表
+                sub_base: 表示减去0v读的电压
+
+                split_type: =0,表示逐行,逐列,这个使用crossbar\n
+                            =1,表示逐行,列划分TIA,这个使用crossbar\n
+                            =2,表示开所有行,逐列,这个使用crossbar\n
+
+                            =3,表示开所有行,逐列,这个使用row_index和col_index\n
+                            =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
+                            =5,表示开所有行,所有列,这个使用row_index和col_index\n
+
+                set_device: True从行给信号,按split_type,False从列给信号,split_type中的行列互换
+
+                inversion_type: 表示index是怎么配置的\n
+                            =0,表示不使用反转,正常映射\n
+                            =1,表示index中01反转\n
+                            =2,表示只反转对应行/列所在TIA之外的所有索引\n
+        """
+        assert (crossbar is not None and split_type<=2) or (row_index is not None and col_index is not None and split_type>2),"write4: split_type接收数据错误!"
+        self.write_voltage = write_voltage
+        ps_ddr_pos = self.set_op_mode5(ps_ddr_pos=ps_ddr_pos,read=False,from_row=set_device)
+        ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.clk_manager.set_pulse_cyc_ins(pulsewidth=pulse_width),mode=10,ps_ddr_pos=ps_ddr_pos)
+
+        
+        write_ins = PL_WRITE_ROW_PULSE if set_device else PL_WRITE_COL_PULSE
+        pre_ins_data,din_ram_data,operator_batch,res_tia_map = self.prepare_latch_ins4(crossbar,row_index,col_index,0,set_device,split_type,row_type,col_type)
+
+        # 发送din_ram的数据
+        ps_ddr_pos = self.send_ps_ddr5(din_ram_data,mode=8,ps_ddr_pos=ps_ddr_pos)
+        change_tg,tg_last = type(tg)==np.ndarray,-1
+        ins_data = self.get_dac_ins2(v=write_voltage,tg=None) if change_tg else self.get_dac_ins2(v=write_voltage,tg=tg)
+
+        # 遍历每个batch
+        for i,ins in enumerate(pre_ins_data):
+            # 改变tg的电压
+            if change_tg:
+                tg_v = tg[operator_batch[i][0][0],operator_batch[i][1][0]]
+                if tg_v!=tg_last:
+                    tmp_ins_data +=self.get_dac_ins2(tg=tg_v)
+                    tg_last = tg_v
+            # 准备读指令
+            ins.append(CMD(write_ins))
+            if len(ins_data)+len(ins)+1 >= self.setting.ins_ram_length:
+                ins_data.append(CMD(PL_EXIT))
+                ps_ddr_pos = self.send_ps_ddr5(ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
+            ins_data.extend(ins)
+
+        if len(ins_data)>0:
+            ins_data.append(CMD(PL_EXIT))
+            ps_ddr_pos = self.send_ps_ddr5(ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
+        return ps_ddr_pos

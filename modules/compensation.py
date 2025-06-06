@@ -12,6 +12,12 @@ class COMPENSATION():
         self.row_r_out = np.load(root_path+"row_r_out.npy")
         self.col_r_out = np.load(root_path+"col_r_out.npy")
 
+        self.col_offset = np.load(root_path+"col_offset.npy")
+        self.row_offset = np.load(root_path+"row_offset.npy")
+
+        self.col_value = np.load(root_path+"col_value.npy")
+        self.row_value = np.load(root_path+"row_value.npy")
+
         self.r_wire = 0.12
 
         self.row_r_out_crossbar = np.repeat(np.array(self.row_r_out), 256).reshape(256, 256)
@@ -22,7 +28,7 @@ class COMPENSATION():
         self.r_w_row = np.zeros((256,256))
         for row in range(256):
             for col in range(256):
-                self.r_w_col[row,col] = (255-row)*self.r_wire if col%2==0 else row*self.r_wire
+                self.r_w_col[row,col] += (255-row)*self.r_wire if col%2==0 else row*self.r_wire
                 self.r_w_row[row,col] += (255-col)*self.r_wire if row%2==1 else col*self.r_wire
 
     def compensation_point(self,resistence,from_row=True,return_type = 0):
@@ -51,9 +57,6 @@ class COMPENSATION():
     def compensation_forward(self,index,resistence,from_row=True,return_type = 0,
                              compensation_para:dict={
                                  "value":0.875,
-                                 "real_mean":550,
-                                 "odd_offset":0,
-                                 "even_offset":0,
                                  "odd_mult":1,
                                  "even_mult":1,
                                  "all_mult":1,
@@ -69,19 +72,18 @@ class COMPENSATION():
         """
         min_index,max_index = np.min(index),np.max(index)
         nums= len(index)
-        # 奇数列，偶数列的偏移
-        offset = np.array([compensation_para["even_offset"] if i%2 == 0 else compensation_para["odd_offset"] for i in range(latchsize)])
-        # 奇数列，偶数列的mult
-        mult = np.array([compensation_para["even_mult"] if i%2 == 0 else compensation_para["odd_mult"] for i in range(latchsize)])
-        mult = mult*compensation_para["all_mult"]
         # 线阻的影响
         rw = np.array([(255-max_index)*self.r_wire if (from_row and i%2==0) or (not from_row and i%2==1) else (min_index)*self.r_wire for i in range(latchsize)])
+        # r_out的影响
+        r_out = self.col_r_out if from_row else self.row_r_out
+        # 因为读误差，计算误差r_out不准,拟合后得到对应的offset
+        offset = self.col_offset if from_row else self.row_offset
+        # value
+        value = self.col_value if from_row else self.col_value
+        # 得到实际阻值
+        resistence = resistence*1e3 - r_out - rw + offset
+        resistence -= self.r_wire*((max_index-min_index+1)/nums)*(nums**value)
 
-        resistence = resistence*1e3 - self.row_r_out - rw - offset
-        if compensation_para["add_wire"]:
-            resistence -= self.r_wire*((max_index-min_index+1)/nums)*(nums**compensation_para["value"])
-
-        resistence *= mult
         if return_type==0:
             return 1/resistence*1e6
         elif return_type==1:
@@ -199,26 +201,24 @@ class COMPENSATION():
             return R_out_mean,R_wire_mean
         
 
-    def calculate_r_out_from_r_wire(self,chip,num):
+    def calculate_r_out_from_r_wire(self,chip,num,from_row=True):
         """
             知道单位线阻的时候可以用这个函数计算r_out
         """
         point_read = np.zeros((256,256))
-        sum_read = np.zeros((1,256))
+        sum_read = np.zeros((256))
         num = 40
         for i in range(num):
-            voltage_base = chip.read_point3(0,256,0,256,read_voltage=0,tg=5,gain=1,from_row=True,out_type=0)
-            voltage = chip.read_point3(0,256,0,256,read_voltage=0.1,tg=5,gain=1,from_row=True,out_type=0)
+            voltage_base = chip.read_point3(0,256,0,256,read_voltage=0,tg=5,gain=1,from_row=from_row,out_type=0)
+            voltage = chip.read_point3(0,256,0,256,read_voltage=0.1,tg=5,gain=1,from_row=from_row,out_type=0)
             print(np.max(voltage))
             resistence = chip.voltage_to_resistance(voltage=voltage-voltage_base)
 
             point_read+=resistence
 
-            voltage_base=chip.compute(crossbar=np.ones((256,256)),read_voltage=0,tg=5,gain=3,from_row=True,out_type=0)
-            voltage=chip.compute(crossbar=np.ones((256,256)),read_voltage=0.1,tg=5,gain=3,from_row=True,out_type=0)
-            # print(voltage.shape)
-            print(np.max(voltage))
-            resistence = chip.voltage_to_resistance(voltage = voltage-voltage_base)
+            row_index = [i for i in range(256)]
+            col_index = [i for i in range(256)]
+            v,c,resistence = chip.read4(crossbar=None,row_index=row_index,col_index=col_index,read_voltage=0.1,tg=5,gain=3,sub_base=True,from_row=from_row,split_type=3,row_type=0,col_type=0)
 
             sum_read+=resistence
 
@@ -226,33 +226,54 @@ class COMPENSATION():
         sum_read=sum_read/num
         return point_read,sum_read
     
-    def get_r_out(self,point_read,sum_read,filename):
+    def get_r_out(self,point_read,sum_read,filename,from_row=True):
         """
             配合上面的函数一起的
         """
         point_read2=point_read*1000
         sum_read2=sum_read*1000
 
-        for row in range(256):
-            for col in range(256):
-                point_read2[row,col] -= (255-row)*0.12 if col%2==0 else row*0.12
-
         r_out = np.zeros((256))
-        for col in range(256):
-            left = 10
-            right = 30
-            mid = 0
-            while right-left>0.01:
-                mid = (left+right)/2
-                tmp = point_read2[0,col]-mid
-                
-                for row in range(1,256):
-                    tmp = (tmp+0.12)*(point_read2[row,col]-mid)/(tmp+0.12+point_read2[row,col]-mid)
-                if tmp>sum_read2[0,col]-mid:
-                    right=mid
-                else:
-                    left=mid
-            r_out[col]=mid
+        if from_row:
+            for row in range(256):
+                for col in range(256):
+                    point_read2[row,col] -= (255-row)*0.12 if col%2==0 else row*0.12
+
+            for col in range(256):
+                left = 10
+                right = 30
+                mid = 0
+                while right-left>0.01:
+                    mid = (left+right)/2
+                    tmp = point_read2[0,col]-mid
+                    
+                    for row in range(1,256):
+                        tmp = (tmp+0.12)*(point_read2[row,col]-mid)/(tmp+0.12+point_read2[row,col]-mid)
+                    if tmp>sum_read2[col]-mid:
+                        right=mid
+                    else:
+                        left=mid
+                r_out[col]=mid
+        else:
+            for row in range(256):
+                for col in range(256):
+                    point_read2[row,col] -= (255-col)*0.12 if row%2==1 else col*0.12
+
+            for row in range(256):
+                left = 10
+                right = 30
+                mid = 0
+                while right-left>0.01:
+                    mid = (left+right)/2
+                    tmp = point_read2[row,0]-mid
+                    
+                    for col in range(1,256):
+                        tmp = (tmp+0.12)*(point_read2[row,col]-mid)/(tmp+0.12+point_read2[row,col]-mid)
+                    if tmp>sum_read2[row]-mid:
+                        right=mid
+                    else:
+                        left=mid
+                r_out[row]=mid
         np.save(filename,r_out)
         return r_out
     
