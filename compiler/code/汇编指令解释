@@ -7,6 +7,7 @@
 consti imm,10                                   # 注册常量imm, 值为10,指令中的立即数可以使用
 free_reg reg1                                        # 释放变量reg1所占寄存器(如果后面没有用到这个寄存器的值)
 
+# 下面除了新增部分的指令，按注释来，因为有些参数的位置与excel位置不一样
 addi reg1,reg0,imm                              # reg1 = reg0 + imm
 add reg2,reg1,reg0                              # reg2 = reg1 + reg0
 sub reg2,reg1,reg0                              # reg2 = reg1 - reg0
@@ -42,3 +43,24 @@ read_coli imm                                   # 从列读16路TIA,结果存储
 write_row                                       # 从行写,产生row写pulse
 write_col                                       # 从列写,产生col写pulse
 cim_reset                                       # 清零latch
+
+
+
+# 下面除了新增部分的指令，按excel表来
+# pl新增指令
+read_row_diff imm0
+read_col_diff imm0
+
+cal_ch_mask imm1,imm0
+aup_mode mode
+
+element_wise imm1,imm0,mode
+
+actv_addr reg0
+actv_read
+actv_write mode
+
+re_buf_clear
+re_buf_addr reg0
+re_buf_write
+re_buf_read mode,reg1,reg0

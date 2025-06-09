@@ -2574,7 +2574,7 @@ class CHIP():
             ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))
             ps_ddr_pos += ins_num*2 + 1
         elif mode==11:
-            # 不管是finsh,还是start
+            # 不管是finsh,还是start,finsh占用4B,start不占用空间,这里懒的写判断了，直接都占用
             ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))
             ps_ddr_pos +=1
         else:

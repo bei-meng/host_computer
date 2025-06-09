@@ -146,21 +146,6 @@ class DAC_INFO():
     RERAM512_TG = [8]
     RERAM512_VIN = [11]
 
-class INS2_INFO():
-    """
-        新版本加速指令相关信息
-    """
-    INS_RAM = 280                                                   # 指令RAM的长度
-    DIN_RAM_LENGTH = 256                                            # DIN RAM的长度
-    DOUT_RAM_LENGTH = 128                                           # DOUT RAM的长度
-    REG_NUM = 64                                                    # 寄存器的数量
-
-
-    INS_RAM_ADDR_LENGTH = 10                                        # 指令RAM的地址长度 2^10=1024
-    BGE_INS_ADDR_START_POS = 14                                     # bge中指令地址bit位置的起始位置
-
-
-
 COMMAND_ADDR = 0                            # 命令的地址
 
 #------------------------------------------------------------------------------------------
@@ -1470,9 +1455,170 @@ PL_ROW_COL_SWI=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------PL_READ_ROW_PULSE_DIFF:0x1C
+PL_READ_ROW_PULSE_DIFF=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_read_row_pulse_diff",
+    command_data = CmdData(0),
+    command_description = "产生row读pulse,求平均,32路并行diff写入16个专用寄存器。舍弃adc最低的n bits"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_READ_COL_PULSE_DIFF:0x1D
+PL_READ_COL_PULSE_DIFF=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_read_col_pulse_diff",
+    command_data = CmdData(0),
+    command_description = "产生col读pulse,求平均,32路并行diff写入16个专用寄存器。舍弃adc最低的n bits"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_CAL_CH_MASK:0x1F
+PL_CAL_CH_MASK=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_cal_ch_mask",
+    command_data = CmdData(0),
+    command_description = "配置并行mask[15:0]到专用寄存器cal_ch_mask"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_APU_MODE:0x20
+PL_APU_MODE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_apu_mode",
+    command_data = CmdData(0),
+    command_description = "配置APU mode并启动计算"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_ELEMENT_WISE:0x21
+PL_ELEMENT_WISE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_element_wise",
+    command_data = CmdData(0),
+    command_description = """
+                        mode = 0-F
+                        配置APU输出结果到element wise乘法器port A
+                        配置activation ram输出结果到element wise乘法器port A
+                        配置acc输出结果到element wise乘法器port A
+                        配置APU输出结果到element wise乘法器port B
+                        配置activation ram输出结果到element wise乘法器port B
+                        配置imm 到element wise乘法器port B
+                        配置imm 到shifter1
+                        启动element wise 乘法器运算,同时计算shifter1
+                        配置乘法器结果到element wise加法器port A
+                        配置acc结果到element wise加法器portA
+                        配置乘法器结果到element wise加法器port B
+                        配置ram结果到element wise加法器portB
+                        启动element wise 加法器运算
+                        element wise 加法器清零
+                        adc结果快速shift_add,乘、shifter1、add在一条指令内实现
+                        配置imm 到shifter2
+                        """
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_ACTV_RAM_ADDR:0x22
+PL_ACTV_RAM_ADDR=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_actv_ram_addr",
+    command_data = CmdData(0),
+    command_description = "配置actv地址:将通用寄存器的值配置到actv_addr_reg,字节地址"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_ACTV_RAM_READ:0x23
+PL_ACTV_RAM_READ=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_actv_ram_read",
+    command_data = CmdData(0),
+    command_description = "读取actv ram的结果，结果保存在512bits寄存器"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
 
+#-------------------------------------------------------------------PL_ACTV_RAM_WRITE:0x24
+PL_ACTV_RAM_WRITE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_actv_ram_write",
+    command_data = CmdData(0),
+    command_description = "写到actv ram"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------PL_RESHAPE_BUFFER_CLEAR:0x25
+PL_RESHAPE_BUFFER_CLEAR=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_reshape_buffer_clear",
+    command_data = CmdData(0),
+    command_description = "reshape buffer清零"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+#-------------------------------------------------------------------PL_RESHAPE_BUFFER_ADDR:0x26
+PL_RESHAPE_BUFFER_ADDR=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_reshape_buffer_addr",
+    command_data = CmdData(0),
+    command_description = "配置reshape buffer地址:将通用寄存器的值配置到actv_addr_reg,字节地址"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+#-------------------------------------------------------------------PL_RESHAPE_BUFFER_WRITE:0x27
+PL_RESHAPE_BUFFER_WRITE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_reshape_buffer_write",
+    command_data = CmdData(0),
+    command_description = "写reshape_buffer:将actv读出的值(转为原码后)存入reshape buffer"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_RESHAPE_BUFFER_READ:0x28
+PL_RESHAPE_BUFFER_READ=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_reshape_buffer_read",
+    command_data = CmdData(0),
+    command_description = "读reshape_buffer:将reshape_buffer_t(转置后)的正或负数据读出到通用寄存器"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
 #------------------------------------------------------------------------------------------
 # **************************************** PS指令 ******************************************
