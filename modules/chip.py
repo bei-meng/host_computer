@@ -2561,22 +2561,23 @@ class CHIP():
 
     def send_ps_ddr5(self,ddr_data,mode,ps_ddr_pos):
         """
-            给ddr发指令
+            给ddr发指令,ps_ddr_pos按4B进行寻址,但是下面的DDR传数据需要32B为单位
         """
         ins_num = len(ddr_data)
+        ddr_one = 8
         if mode==8 or mode==9:
-            # 常规指令模式
+            # 常规指令模式,开头一个32B的，
             ddr_data.insert(0,CMD(PS_DATA_LENGTH,command_data=CmdData(ins_num)))
             ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))
-            ps_ddr_pos += ins_num+2
+            ps_ddr_pos += ddr_one + int(np.ceil(ins_num/ddr_one))*ddr_one
         elif mode==10:
             # register指令
             ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))
-            ps_ddr_pos += ins_num*2 + 1
+            ps_ddr_pos += ddr_one
         elif mode==11:
             # 不管是finsh,还是start,finsh占用4B,start不占用空间,这里懒的写判断了，直接都占用
             ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))
-            ps_ddr_pos +=1
+            ps_ddr_pos += ddr_one
         else:
             print("发送ps的DDR数据出错")
         pkts=Packet()
