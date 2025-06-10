@@ -155,6 +155,13 @@ class ADC():
         self.ps.send_packets(pkts)
         self.gain=gain
 
+    def get_gain_ins(self,gain):
+        """
+            获取设置gain的指令
+        """
+        self.gain=gain
+        return [CMD(GAIN,command_data=CmdData(gain))]
+
     def hex_to_voltage(self,message_hex,vref=1.25):
         """
             读取的16进制值换算成电压
@@ -330,3 +337,15 @@ class ADC():
         int16_array = np.frombuffer(message, dtype=np.dtype('>i2'))
         voltage = int16_array * self.base
         return voltage,False
+    
+
+    def get_out_ins5(self,data_length:int,dout_ram_start:int):
+        return [CMD(PL_RAM_ADDR,command_data=CmdData(dout_ram_start)),CMD(PL_DATA_LENGTH,command_data=CmdData(data_length))]
+    
+    def get_out_output5(self,data_length:int):
+        data_B = data_length*self.setting.dout_ram_size_B 
+        message = self.ps.receive_packet(data_B)
+        # 大端字节序解析
+        int16_array = np.frombuffer(message, dtype=np.dtype('>i2'))
+        voltage = int16_array * self.base
+        return voltage.reshape(data_length,self.setting.chip_tia_num)

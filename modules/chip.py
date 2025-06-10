@@ -2585,7 +2585,7 @@ class CHIP():
         ddr_data.clear()
         return ps_ddr_pos
 
-    def set_op_mode5(self,ps_ddr_pos,read=True,from_row=True,return_ins=False):
+    def set_op_mode5(self,ps_ddr_pos,read=True,from_row=True):
         """
             Args:
                 read: True配置为读模式, False配置为写模式
@@ -2650,7 +2650,7 @@ class CHIP():
         assert (crossbar is not None and split_type<=2) or (row_index is not None and col_index is not None and split_type>2),"write4: split_type接收数据错误!"
         self.write_voltage = write_voltage
         ps_ddr_pos = self.set_op_mode5(ps_ddr_pos=ps_ddr_pos,read=False,from_row=set_device)
-        ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.clk_manager.set_pulse_cyc_ins(pulsewidth=pulse_width),mode=10,ps_ddr_pos=ps_ddr_pos)
+        ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.clk_manager.get_pulse_cyc_ins(pulsewidth=pulse_width),mode=10,ps_ddr_pos=ps_ddr_pos)
 
         
         write_ins = PL_WRITE_ROW_PULSE if set_device else PL_WRITE_COL_PULSE
@@ -2680,3 +2680,118 @@ class CHIP():
             ins_data.append(CMD(PL_EXIT))
             ps_ddr_pos = self.send_ps_ddr5(ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
         return ps_ddr_pos
+    
+
+    def read5(self,crossbar:Union[np.ndarray,None]=None,row_index:Union[list[int],None]=None,col_index:Union[list[int],None]=None,
+              read_voltage:float=0.1,tg:float = 5,gain:int = 1,sub_base:bool = False,
+              from_row:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0,
+              ps_ddr_pos=0):
+        """
+            Args:
+                crossbar: n*n的np矩阵
+                row_index: 行号列表
+                col_index: 列号列表
+                sub_base: 表示减去0v读的电压
+
+                split_type: =0,表示逐行,逐列,这个使用crossbar\n
+                            =1,表示逐行,列划分TIA,这个使用crossbar\n
+                            =2,表示开所有行,逐列,这个使用crossbar\n
+
+                            =3,表示开所有行,逐列,这个使用row_index和col_index\n
+                            =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
+                            =5,表示开所有行,所有列,这个使用row_index和col_index\n
+
+                from_row: True从行给信号,False从列给信号
+
+                row_type/col_type: 表示index是怎么配置的\n
+                            =0,表示不使用反转,正常映射\n
+                            =1,表示index中01反转\n
+                            =2,表示只反转对应行/列所在TIA之外的所有索引\n
+            
+            Return:
+                如果是逐点,则返回一个256*256的矩阵,求和则返回一个一维的256个元素的np数组
+            返回读出来的电压(V),电导(uS),电阻(kΩ)
+        """
+        assert (crossbar is not None and split_type<=2) or (row_index is not None and col_index is not None and split_type>2),"read4: split_type接收数据错误!"
+        self.read_voltage = read_voltage
+        ps_ddr_pos = self.set_op_mode5(ps_ddr_pos=ps_ddr_pos,read=True,from_row=from_row)
+        ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.adc.get_gain_ins(gain=gain),mode=10,ps_ddr_pos=ps_ddr_pos)
+
+        din_ram_start,ins_ram_start = 0,0
+        dout_ram_start,dout_ram_pos = 0,0
+        read_ins = PL_READ_ROW_PULSE if from_row else PL_READ_COL_PULSE
+        pre_ins_data,din_ram_data,operator_batch,res_tia_map = self.prepare_latch_ins4(crossbar,row_index,col_index,din_ram_start,from_row,split_type,row_type,col_type)
+
+        ps_ddr_pos = self.send_ps_ddr5(din_ram_data,mode=8,ps_ddr_pos=ps_ddr_pos)
+
+        ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)
+        interval = 2 if sub_base else 1
+        # 遍历每个batch
+        for ins in pre_ins_data:
+            if sub_base:
+                ins.extend(self.get_dac_ins2(v=read_voltage))
+            # 因为把row_ctrl和col_ctrl和sw分离了,所以PL_READ_ROW_PULSE和PL_READ_COL_PULSE,一样的效果
+            ins.append(CMD(read_ins,command_data=CmdData(dout_ram_pos)))
+            # 如果要减去base的话，就配置电压为0，再读一次就好
+            pos = len(ins)
+            if sub_base:
+                ins.extend(self.get_dac_ins2(v=0))
+                ins.append(CMD(read_ins,command_data=CmdData(dout_ram_pos+1)))
+            # 因为后面会加一个exit指令
+            if len(ins_data)+len(ins)+1 >= self.setting.ins_ram_length or dout_ram_pos+2 > self.setting.dout_ram_length:
+                ins_data.append(CMD(PL_EXIT))
+                ps_ddr_pos = self.send_ps_ddr5(ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
+                ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.adc.get_out_ins5(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start),mode=10,ps_ddr_pos=ps_ddr_pos)
+                
+                dout_ram_pos = dout_ram_start
+                # 读两次
+                if sub_base:
+                    ins[pos-1]=CMD(read_ins,command_data=CmdData(dout_ram_pos))
+                    ins[-1]=CMD(read_ins,command_data=CmdData(dout_ram_pos+1))
+                else:
+                    ins[-1]=CMD(read_ins,command_data=CmdData(dout_ram_pos))
+
+            ins_data.extend(ins)
+            dout_ram_pos += interval
+
+        if len(ins_data)>0:
+            ins_data.append(CMD(PL_EXIT))
+            ps_ddr_pos = self.send_ps_ddr5(ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
+            ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.adc.get_out_ins5(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start),mode=10,ps_ddr_pos=ps_ddr_pos)
+                
+
+
+
+    # def get_read5(self,operator_batch,res_tia_map,sub_base,from_row,split_type):
+    #     # 返回的数据
+    #     if split_type<2:
+    #         res = np.zeros((self.setting.chip_latch_num,self.setting.chip_latch_num))
+    #     elif from_row:
+    #         res = np.zeros((self.setting.chip_latch_num))
+    #     else:
+    #         res = np.zeros((self.setting.chip_latch_num))
+
+    #     def get_read_result(rows,cols,tias,curr,read_batch_start,res,voltage,sub_base):
+    #         # 大于等于2表示，开所有行/列
+    #         if split_type>=2:
+    #             if from_row:
+    #                 for col,tia in zip(cols,tias):
+    #                     res[col] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+    #             else:
+    #                 for row,tia in zip(rows,tias):
+    #                     res[row] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+    #         else:
+    #             if from_row:
+    #                 for col,tia in zip(cols,tias):
+    #                     res[rows[0],col]=voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+    #             else:
+    #                 for row,tia in zip(rows,tias):
+    #                     res[row,cols[0]] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+
+    #     interval = 2 if sub_base else 1
+    #     batch_num = len(operator_batch)
+    #     for read_batch_start in range(0,batch_num,128):
+    #     for i in range(read_batch_start,read_batch_end):
+    #         rows,cols = operator_batch[i]
+    #         tias = res_tia_map[i]
+    #         get_read_result(rows,cols,tias,i*interval,read_batch_start*interval,res,voltage,sub_base)
