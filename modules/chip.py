@@ -2758,40 +2758,45 @@ class CHIP():
             ins_data.append(CMD(PL_EXIT))
             ps_ddr_pos = self.send_ps_ddr5(ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
             ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.adc.get_out_ins5(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start),mode=10,ps_ddr_pos=ps_ddr_pos)
-                
 
+        return ps_ddr_pos,(read_voltage,gain,operator_batch,res_tia_map,sub_base,from_row,split_type)
 
+    def get_read5(self,read_voltage,gain,operator_batch,res_tia_map,sub_base,from_row,split_type):
+        # 返回的数据
+        if split_type<2:
+            res = np.zeros((self.setting.chip_latch_num,self.setting.chip_latch_num))
+        elif from_row:
+            res = np.zeros((self.setting.chip_latch_num))
+        else:
+            res = np.zeros((self.setting.chip_latch_num))
 
-    # def get_read5(self,operator_batch,res_tia_map,sub_base,from_row,split_type):
-    #     # 返回的数据
-    #     if split_type<2:
-    #         res = np.zeros((self.setting.chip_latch_num,self.setting.chip_latch_num))
-    #     elif from_row:
-    #         res = np.zeros((self.setting.chip_latch_num))
-    #     else:
-    #         res = np.zeros((self.setting.chip_latch_num))
+        def get_read_result(rows,cols,tias,curr,read_batch_start,res,voltage,sub_base):
+            # 大于等于2表示，开所有行/列
+            if split_type>=2:
+                if from_row:
+                    for col,tia in zip(cols,tias):
+                        res[col] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+                else:
+                    for row,tia in zip(rows,tias):
+                        res[row] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+            else:
+                if from_row:
+                    for col,tia in zip(cols,tias):
+                        res[rows[0],col]=voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+                else:
+                    for row,tia in zip(rows,tias):
+                        res[row,cols[0]] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
 
-    #     def get_read_result(rows,cols,tias,curr,read_batch_start,res,voltage,sub_base):
-    #         # 大于等于2表示，开所有行/列
-    #         if split_type>=2:
-    #             if from_row:
-    #                 for col,tia in zip(cols,tias):
-    #                     res[col] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
-    #             else:
-    #                 for row,tia in zip(rows,tias):
-    #                     res[row] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
-    #         else:
-    #             if from_row:
-    #                 for col,tia in zip(cols,tias):
-    #                     res[rows[0],col]=voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
-    #             else:
-    #                 for row,tia in zip(rows,tias):
-    #                     res[row,cols[0]] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+        interval = 2 if sub_base else 1
+        batch_num = len(operator_batch)
+        batch_size = 128*interval
+        for read_batch_start in range(0,batch_num,batch_size):
+            read_batch_end = min(read_batch_start+batch_size,batch_num)
+            voltage = self.adc.get_out_output5(data_length=read_batch_end-read_batch_start)
+            for i in range(read_batch_start,read_batch_end):
+                rows,cols = operator_batch[i]
+                tias = res_tia_map[i]
+                get_read_result(rows,cols,tias,i*interval,read_batch_start*interval,res,voltage,sub_base)
 
-    #     interval = 2 if sub_base else 1
-    #     batch_num = len(operator_batch)
-    #     for read_batch_start in range(0,batch_num,128):
-    #     for i in range(read_batch_start,read_batch_end):
-    #         rows,cols = operator_batch[i]
-    #         tias = res_tia_map[i]
-    #         get_read_result(rows,cols,tias,i*interval,read_batch_start*interval,res,voltage,sub_base)
+        self.adc.get_gain_ins(gain=gain)
+        return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
