@@ -272,10 +272,9 @@ class ADC():
         """
         # return np.array([[j  for j in range(16)] for i in range(data_length)])
         message = b''
-        # 这里超过1440TCP包限制后就非常慢，几乎慢100倍
         tmp_length = data_length
         while tmp_length>0:
-            recv_size = min(int(1440/self.setting.dout_ram_size_B),tmp_length)
+            recv_size = min(int(8192/self.setting.dout_ram_size_B),tmp_length)
             tmp_length -= recv_size
             pkts=Packet()
             pkts.append_single([
@@ -283,12 +282,10 @@ class ADC():
                 CMD(PL_DATA_LENGTH,command_data=CmdData(recv_size))
             ],mode=6)
             dout_ram_start +=recv_size
-            # 接收信息, num条dout_ram值, 每条dout_ram长为256/8=32B
             self.ps.send_packets(pkts,message_check=None)
-            message += self.ps.receive_packet(recv_size*self.setting.dout_ram_size_B)
         
         data_B = data_length*self.setting.dout_ram_size_B 
-        message = self.ps.receive_packet(max(self.setting.receive_packet_B,data_B))[:data_B]
+        message = self.ps.receive_packet(data_B)
         int16_array = np.frombuffer(message, dtype=np.dtype('>i2'))
         voltage = int16_array * self.base
         return voltage.reshape(data_length,self.setting.chip_tia_num)
@@ -304,18 +301,16 @@ class ADC():
 
             从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的16路tia的值
         """
-        if dout_ram_start+96>=self.setting.dout_ram_length:
-            return self.get_out2_split(data_length,dout_ram_start)
+        return self.get_out2_split(data_length=data_length,dout_ram_start=dout_ram_start)
         pkts=Packet()
         pkts.append_single([
             CMD(PL_RAM_ADDR,command_data=CmdData(dout_ram_start)),
-            CMD(PL_DATA_LENGTH,command_data=CmdData(max(96,data_length)))
+            CMD(PL_DATA_LENGTH,command_data=CmdData(data_length))
         ],mode=6)
         self.ps.send_packets(pkts,message_check=None)
 
-        # 接收信息, num条dout_ram值, 每条dout_ram长为256/8=32B
         data_B = data_length*self.setting.dout_ram_size_B 
-        message = self.ps.receive_packet(max(self.setting.receive_packet_B,data_B))[:data_B]
+        message = self.ps.receive_packet(data_B)
         # 大端字节序解析
         int16_array = np.frombuffer(message, dtype=np.dtype('>i2'))
         voltage = int16_array * self.base
