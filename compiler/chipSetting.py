@@ -27,8 +27,6 @@ class CHIPSETTING:
     ins_ram_size = 32                                           # 每个数据长32bit
 
 
-    receive_packet_B = 3072                                     # 接收数据最小长度
-
     # 空间换时间
     num_to_bank_index = None
     num_to_tia_row = None
@@ -58,6 +56,8 @@ class CHIPSETTING:
     def set_new32(self,IsNew32:bool):
         self.IsNew32 = IsNew32
         if self.IsNew32:
+            self.dout_ram_length = 256
+            self.ins_ram_length = 280
             self.chip_tia_num = 32
             self.dout_ram_size = 512
             self.dout_ram_size_B = 64

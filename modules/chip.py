@@ -2496,7 +2496,6 @@ class CHIP():
                 rows,cols = operator_batch[i]
                 tias = res_tia_map[i]
                 get_read_result(rows,cols,tias,i*interval,read_batch_start*interval,res,voltage,sub_base)
-
         # 返回电压电导电阻
         return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
     
