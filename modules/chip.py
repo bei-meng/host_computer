@@ -2156,6 +2156,8 @@ class CHIP():
                             =3,表示开所有行,逐列,这个使用row_index和col_index\n
                             =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
                             =5,表示开所有行,所有列,这个使用row_index和col_index\n
+                            =6,表示逐行逐列,这个使用row_index和col_index\n
+                            =7,表示逐行,列划分TIA,这个使用row_index和col_index\n
 
                 from_row: True表示按上面的描述进行切分,False表示交换行列的切分方式\n
         """
@@ -2219,6 +2221,21 @@ class CHIP():
                 operator_batch.extend([[rows,cols] for cols,rows in itertools.product([col_index], rows_tia_split)])
         elif split_type == 5:               # 开所有行,所有列,这个使用row_index和col_index
             operator_batch.append([row_index,col_index])
+        elif split_type == 6:
+            row_index = [i for i in row_index if i%2==0]+[i for i in row_index if i%2==1]
+            col_index = [i for i in col_index if i%2==0]+[i for i in col_index if i%2==1]
+            operator_batch.extend([[[i], [j]] for i, j in itertools.product(row_index, col_index) if crossbar[i][j]])
+        elif split_type == 7:               # 逐行,列划分TIA
+            if from_row:
+                row_index = [i for i in row_index if i%2==0]+[i for i in row_index if i%2==1]
+                cols_tia_split = self.setting.tia_split_from_index(index=col_index,col=True)
+                # 这里优化一下，尽量先遍历配置bank少的, bank配置多的放在前面
+                operator_batch.extend([[[row],cols] for cols,row in itertools.product(cols_tia_split,row_index)])
+            else:
+                col_index = [i for i in col_index if i%2==0]+[i for i in col_index if i%2==1]
+                rows_tia_split = self.setting.tia_split_from_index(index=row_index,col=False)
+                # 这里优化一下，尽量先遍历配置bank少的, bank配置多的放在前面
+                operator_batch.extend([[rows,[col]] for rows,col in itertools.product(rows_tia_split,col_index)])
         else:
             print("没有对应的切分类型！")
 
@@ -2313,6 +2330,8 @@ class CHIP():
                             =3,表示开所有行,逐列,这个使用row_index和col_index\n
                             =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
                             =5,表示开所有行,所有列,这个使用row_index和col_index\n
+                            =6,表示逐行逐列,这个使用row_index和col_index\n
+                            =7,表示逐行,列划分TIA,这个使用row_index和col_index\n
 
                 from_row: True从行给信号,False从列给信号
 
@@ -2400,6 +2419,8 @@ class CHIP():
                             =3,表示开所有行,逐列,这个使用row_index和col_index\n
                             =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
                             =5,表示开所有行,所有列,这个使用row_index和col_index\n
+                            =6,表示逐行逐列,这个使用row_index和col_index\n
+                            =7,表示逐行,列划分TIA,这个使用row_index和col_index\n
 
                 from_row: True从行给信号,False从列给信号
 
@@ -2516,6 +2537,8 @@ class CHIP():
                             =3,表示开所有行,逐列,这个使用row_index和col_index\n
                             =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
                             =5,表示开所有行,所有列,这个使用row_index和col_index\n
+                            =6,表示逐行逐列,这个使用row_index和col_index\n
+                            =7,表示逐行,列划分TIA,这个使用row_index和col_index\n
 
                 set_device: True从行给信号,按split_type,False从列给信号,split_type中的行列互换
 
@@ -2639,6 +2662,7 @@ class CHIP():
                             =3,表示开所有行,逐列,这个使用row_index和col_index\n
                             =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
                             =5,表示开所有行,所有列,这个使用row_index和col_index\n
+                            =6,表示逐行逐列,这个使用row_index和col_index\n
 
                 set_device: True从行给信号,按split_type,False从列给信号,split_type中的行列互换
 
@@ -2700,6 +2724,7 @@ class CHIP():
                             =3,表示开所有行,逐列,这个使用row_index和col_index\n
                             =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
                             =5,表示开所有行,所有列,这个使用row_index和col_index\n
+                            =6,表示逐行逐列,这个使用row_index和col_index\n
 
                 from_row: True从行给信号,False从列给信号
 

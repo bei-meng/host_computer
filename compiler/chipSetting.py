@@ -159,7 +159,7 @@ class CHIPSETTING:
             res = res + tia_list[i]
         return res
     
-    def tia_split_from_index(self,index:list[int],col:bool=True) -> list[list[tuple[int,int,int,int,int]]]:
+    def tia_split_from_index(self,index:list[int],col:bool=True) -> list[list[int]]:
         """
             Args:
                 index: 行/列索引
