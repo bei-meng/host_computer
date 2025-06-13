@@ -80,6 +80,16 @@ def plot_cond(data,vmin = 0,vmax = 1400,title = "",label = "us",path = None):
         plt.savefig(path)  # 保存为 PNG 格式
     plt.show()
 
+
+def plot_hist(data,bin_min=0,bin_max=1000,interval=5):
+    bin_edges = np.linspace(bin_min, bin_max, int(bin_max/interval)+1)  
+    data = data.flatten()
+    counts, bin_edges, _ = plt.hist(data, bins=bin_edges, color='blue', alpha=0.7, edgecolor='None')
+    plt.xlabel("us")
+    plt.ylabel("frequency")
+    plt.title("hist")
+    plt.show()
+
 def show_crossbar(chip,vmin = 0,vmax = 1400,title = "",path = None):
     need_read = np.ones((256,256),dtype=bool)
     # 读器件

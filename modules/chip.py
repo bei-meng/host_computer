@@ -2616,6 +2616,7 @@ class CHIP():
                 ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(int(from_row)<<16)))                                                  # 1配置行到施加电压,
                 ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
                 ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
+        ins_data.append(CMD(PL_EXIT))
         ps_ddr_pos = self.send_ps_ddr5(ddr_data=ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
         return ps_ddr_pos
 

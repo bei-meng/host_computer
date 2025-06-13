@@ -21,59 +21,27 @@ class SELECT():
         pos = np.ix_(np.array(weight_pos["row"]), np.array(weight_pos["col"]))
         self.good_point[pos]=-65535
 
-    def Reset(self,chip,need_read,write_times,start_v,delta_v,tg,threshold,reset_pulse_width,read_type=2,sub_base=False,vmax=1000,plot_cond=None):
-        voltage_base = np.zeros((256,256))
-        voltage = np.zeros((256,256))
-        cond_sub_base = None
+    def Reset(self,chip,need_read,write_times,start_v,delta_v,tg,threshold,reset_pulse_width,sub_base=True,vmax=1000,plot_cond=None):
         for i in range(write_times):
             print(f"write_time = {i}")
             v = start_v+i*delta_v
-            if read_type == 2:
-                if sub_base:
-                    voltage_base[need_read] = chip.read_point2(crossbar=need_read, read_voltage=0,tg=5,gain=1,from_row=True,out_type=0)[need_read]
-                voltage[need_read] = chip.read_point2(crossbar=need_read, read_voltage=0.1,tg=5,gain=1,from_row=True,out_type=0)[need_read]
-            elif read_type == 3:
-                pos = (0,256,0,256)
-                if sub_base:
-                    voltage_base = chip.read_point3(*pos,read_voltage=0,tg=5,gain=1,from_row=True,out_type=0)
-                voltage = chip.read_point3(*pos,read_voltage=0.1,tg=5,gain=1,from_row=True,out_type=0)
-            if sub_base:
-                cond_sub_base = chip.voltage_to_cond(voltage-voltage_base)
-            else:
-                cond_sub_base = chip.voltage_to_cond(voltage)
+            _,cond,_ = chip.read4(crossbar=need_read,row_index=None,col_index=None,read_voltage=0.1,tg=5,gain=1,sub_base=sub_base,from_row=True,split_type=0,row_type=0,col_type=0)
 
-            condition_reset = (cond_sub_base>threshold)&need_read
+            condition_reset = (cond>threshold)&need_read
             need_read = condition_reset
-            if plot_cond:
-                plot_cond(cond_sub_base,title=f"v={v:.2f}-needReset={np.sum(condition_reset)}",vmax=vmax)
+            if plot_cond: plot_cond(cond,title=f"v={v:.2f}-needReset={np.sum(condition_reset)}",vmax=vmax)
 
             chip.write_point2(crossbar=condition_reset,write_voltage=v,tg=tg,pulse_width=reset_pulse_width,set_device=False)
 
-    def Forming(self,chip,need_read,write_times,write_voltage,start_tg,delta_tg,threshold,set_pulse_width,read_type=2,sub_base=False,plot_cond=None):
-        voltage_base = np.zeros((256,256))
-        voltage = np.zeros((256,256))
-        cond_sub_base = None
+    def Forming(self,chip,need_read,write_times,write_voltage,start_tg,delta_tg,threshold,set_pulse_width,sub_base=True,plot_cond=None):
         for i in range(write_times):
             print(f"write_time = {i}")
             tg = start_tg+i*delta_tg
-            if read_type == 2:
-                if sub_base:
-                    voltage_base[need_read] = chip.read_point2(crossbar=need_read, read_voltage=0,tg=5,gain=1,from_row=True,out_type=0)[need_read]
-                voltage[need_read] = chip.read_point2(crossbar=need_read, read_voltage=0.1,tg=5,gain=1,from_row=True,out_type=0)[need_read]
-            elif read_type == 3:
-                pos = (0,256,0,256)
-                if sub_base:
-                    voltage_base = chip.read_point3(*pos,read_voltage=0,tg=5,gain=1,from_row=True,out_type=0)
-                voltage = chip.read_point3(*pos,read_voltage=0.1,tg=5,gain=1,from_row=True,out_type=0)
-            if sub_base:
-                cond_sub_base = chip.voltage_to_cond(voltage-voltage_base)
-            else:
-                cond_sub_base = chip.voltage_to_cond(voltage)
+            _,cond,_ = chip.read4(crossbar=need_read,row_index=None,col_index=None,read_voltage=0.1,tg=5,gain=1,sub_base=sub_base,from_row=True,split_type=0,row_type=0,col_type=0)
 
-            condition_set = (cond_sub_base<threshold)&need_read
+            condition_set = (cond<threshold)&need_read
             need_read = condition_set
-            if plot_cond:
-                plot_cond(cond_sub_base,title=f"tg={tg:.2f}-needSet={np.sum(condition_set)}",vmax=1200)
+            if plot_cond: plot_cond(cond,title=f"tg={tg:.2f}-needSet={np.sum(condition_set)}",vmax=1200)
 
             chip.write_point2(crossbar=condition_set,write_voltage=write_voltage,tg=tg,pulse_width=set_pulse_width,set_device=True)
 
