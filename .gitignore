@@ -1,4 +1,4 @@
-chip_data/
+# chip_data/
 command/__pycache__/
 compiler/__pycache__/
 modules/__pycache__/
