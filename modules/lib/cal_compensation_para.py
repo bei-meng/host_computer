@@ -3,6 +3,8 @@ import random
 
 
 class COMPENSATION_PARA():
+    r_wire = 0.12
+
     def initop(self,root_path):
         self.root_path = root_path
         # 测处理的行r_out,列r_out
@@ -143,16 +145,18 @@ class COMPENSATION_PARA():
         sum_read = np.zeros((256))
         num = 40
         for i in range(num):
-            voltage_base = chip.read_point3(0,256,0,256,read_voltage=0,tg=5,gain=1,from_row=from_row,out_type=0)
-            voltage = chip.read_point3(0,256,0,256,read_voltage=0.1,tg=5,gain=1,from_row=from_row,out_type=0)
+            crossbar = np.ones((256,256))
+            voltage,cond,resistence = chip.read4(crossbar=crossbar,row_index=None,col_index=None,read_voltage=0.1,tg=5,gain=1,sub_base=True,from_row=from_row,split_type=0,row_type=0,col_type=0)
             print(np.max(voltage))
-            resistence = chip.voltage_to_resistance(voltage=voltage-voltage_base)
+
+            point_read+=resistence
 
             point_read+=resistence
 
             row_index = [i for i in range(256)]
             col_index = [i for i in range(256)]
             v,c,resistence = chip.read4(crossbar=None,row_index=row_index,col_index=col_index,read_voltage=0.1,tg=5,gain=3,sub_base=True,from_row=from_row,split_type=3,row_type=0,col_type=0)
+            print(np.max(v))
 
             sum_read+=resistence
 

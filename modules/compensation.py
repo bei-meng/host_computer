@@ -18,18 +18,18 @@ class COMPENSATION():
         self.col_value = np.load(root_path+"col_value.npy")
         self.row_value = np.load(root_path+"row_value.npy")
 
-        self.row_offset_parallel_16 = np.load(root_path+"row_offset_parallel_16.npy")
-        self.col_offset_parallel_16 = np.load(root_path+"col_offset_parallel_16.npy")
+        # self.row_offset_parallel_16 = np.load(root_path+"row_offset_parallel_16.npy")
+        # self.col_offset_parallel_16 = np.load(root_path+"col_offset_parallel_16.npy")
 
-        self.row_value_parallel_16 = np.load(root_path+"row_value_parallel_16.npy")
-        self.col_value_parallel_16 = np.load(root_path+"col_value_parallel_16.npy")
+        # self.row_value_parallel_16 = np.load(root_path+"row_value_parallel_16.npy")
+        # self.col_value_parallel_16 = np.load(root_path+"col_value_parallel_16.npy")
 
 
-        self.row_offset_parallel_8 = np.load(root_path+"row_offset_parallel_8.npy")
-        self.col_offset_parallel_8 = np.load(root_path+"col_offset_parallel_8.npy")
+        # self.row_offset_parallel_8 = np.load(root_path+"row_offset_parallel_8.npy")
+        # self.col_offset_parallel_8 = np.load(root_path+"col_offset_parallel_8.npy")
 
-        self.row_value_parallel_8 = np.load(root_path+"row_value_parallel_8.npy")
-        self.col_value_parallel_8 = np.load(root_path+"col_value_parallel_8.npy")
+        # self.row_value_parallel_8 = np.load(root_path+"row_value_parallel_8.npy")
+        # self.col_value_parallel_8 = np.load(root_path+"col_value_parallel_8.npy")
 
         self.r_wire = 0.12
 
@@ -86,16 +86,17 @@ class COMPENSATION():
         if parallel == 0:
             offset = self.col_offset if from_row else self.row_offset
             value = self.col_value if from_row else self.row_value
-        elif parallel == 8:
-            offset = self.col_offset_parallel_8 if from_row else self.row_offset_parallel_8
-            value = self.col_value_parallel_8 if from_row else self.row_value_parallel_8
-        elif parallel == 16:
-            offset = self.col_offset_parallel_16 if from_row else self.row_offset_parallel_16
-            value = self.col_value_parallel_16 if from_row else self.row_value_parallel_16
+        # elif parallel == 8:
+        #     offset = self.col_offset_parallel_8 if from_row else self.row_offset_parallel_8
+        #     value = self.col_value_parallel_8 if from_row else self.row_value_parallel_8
+        # elif parallel == 16:
+        #     offset = self.col_offset_parallel_16 if from_row else self.row_offset_parallel_16
+        #     value = self.col_value_parallel_16 if from_row else self.row_value_parallel_16
         # 得到实际阻值
         resistence = resistence*1e3 - r_out - rw + offset
-        resistence -= self.r_wire*((max_index-min_index+1)/nums)*(nums**value)
-        resistence[resistence<5]=5
+        if value is not None:
+            resistence -= self.r_wire*((max_index-min_index+1)/nums)*(nums**value)
+        resistence[resistence<1]=1
         if return_type==0:
             return 1/resistence*1e6
         elif return_type==1:

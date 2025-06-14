@@ -258,37 +258,6 @@ class ADC():
             voltage_hex = message.hex()[2:4] + message.hex()[0:2]
             voltage.append(self.hex_to_voltage(voltage_hex))
         return np.array(voltage)
-    
-    def get_out2_split(self,data_length:int,dout_ram_start:int) -> np.ndarray:
-        """
-            Args:
-                data_length: 要从dout_ram里面读多少条数据(每条数据256bit)
-                dout_ram_start: dout_ram_start的起始地址
-
-            Returns:
-                vres: data_length*16的一个np矩阵
-
-            从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的16路tia的值
-        """
-        # return np.array([[j  for j in range(16)] for i in range(data_length)])
-        message = b''
-        tmp_length = data_length
-        while tmp_length>0:
-            recv_size = min(int(8192/self.setting.dout_ram_size_B),tmp_length)
-            tmp_length -= recv_size
-            pkts=Packet()
-            pkts.append_single([
-                CMD(PL_RAM_ADDR,command_data=CmdData(dout_ram_start)),
-                CMD(PL_DATA_LENGTH,command_data=CmdData(recv_size))
-            ],mode=6)
-            dout_ram_start +=recv_size
-            self.ps.send_packets(pkts,message_check=None)
-        
-        data_B = data_length*self.setting.dout_ram_size_B 
-        message = self.ps.receive_packet(data_B)
-        int16_array = np.frombuffer(message, dtype=np.dtype('>i2'))
-        voltage = int16_array * self.base
-        return voltage.reshape(data_length,self.setting.chip_tia_num)
 
     def get_out2(self,data_length:int,dout_ram_start:int) -> np.ndarray:
         """
@@ -301,17 +270,21 @@ class ADC():
 
             从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的16路tia的值
         """
-        return self.get_out2_split(data_length=data_length,dout_ram_start=dout_ram_start)
+        # return np.array([[j  for j in range(16)] for i in range(data_length)])
+        # 如果不满足一个TCP包1440大小的包，下面返回数据的速度会非常慢，因此一般都需要尽可能填满一个包
+        recv_size = int(np.ceil(data_length*self.setting.dout_ram_size_B/4096)*4096/self.setting.dout_ram_size_B)
+        # 但是不能超过下面dout的大小
+        recv_size = min(recv_size,self.setting.dout_ram_length)
         pkts=Packet()
         pkts.append_single([
             CMD(PL_RAM_ADDR,command_data=CmdData(dout_ram_start)),
-            CMD(PL_DATA_LENGTH,command_data=CmdData(data_length))
+            CMD(PL_DATA_LENGTH,command_data=CmdData(recv_size))
         ],mode=6)
         self.ps.send_packets(pkts,message_check=None)
-
-        data_B = data_length*self.setting.dout_ram_size_B 
-        message = self.ps.receive_packet(data_B)
-        # 大端字节序解析
+        
+        all_data = recv_size*self.setting.dout_ram_size_B
+        data_B =  data_length*self.setting.dout_ram_size_B
+        message = self.ps.receive_packet(all_data)[:data_B]
         int16_array = np.frombuffer(message, dtype=np.dtype('>i2'))
         voltage = int16_array * self.base
         return voltage.reshape(data_length,self.setting.chip_tia_num)

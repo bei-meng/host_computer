@@ -2663,6 +2663,7 @@ class CHIP():
                             =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
                             =5,表示开所有行,所有列,这个使用row_index和col_index\n
                             =6,表示逐行逐列,这个使用row_index和col_index\n
+                            =7,表示逐行,列划分TIA,这个使用row_index和col_index\n
 
                 set_device: True从行给信号,按split_type,False从列给信号,split_type中的行列互换
 
@@ -2725,6 +2726,8 @@ class CHIP():
                             =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
                             =5,表示开所有行,所有列,这个使用row_index和col_index\n
                             =6,表示逐行逐列,这个使用row_index和col_index\n
+                            =7,表示逐行,列划分TIA,这个使用row_index和col_index\n
+                            
 
                 from_row: True从行给信号,False从列给信号
 
