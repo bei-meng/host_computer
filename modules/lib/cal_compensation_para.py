@@ -148,16 +148,14 @@ class COMPENSATION_PARA():
             crossbar = np.ones((256,256))
             voltage,cond,resistence = chip.read4(crossbar=crossbar,row_index=None,col_index=None,read_voltage=0.1,tg=5,gain=1,sub_base=True,from_row=from_row,split_type=0,row_type=0,col_type=0)
             print(np.max(voltage))
-
             point_read+=resistence
 
-            point_read+=resistence
+
 
             row_index = [i for i in range(256)]
             col_index = [i for i in range(256)]
             v,c,resistence = chip.read4(crossbar=None,row_index=row_index,col_index=col_index,read_voltage=0.1,tg=5,gain=3,sub_base=True,from_row=from_row,split_type=3,row_type=0,col_type=0)
             print(np.max(v))
-
             sum_read+=resistence
 
         point_read=point_read/num

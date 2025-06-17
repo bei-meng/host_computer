@@ -8,4 +8,10 @@
 - 2025.6.13 - ArrTest2.0_Firmware1.0_Code1.0.8
     - 加入ReRAM-ECRAM读写示例文件
     - 修复ps传指令的问题
+- 2025.6.14 - ArrTest2.0_Firmware1.0_Code1.0.9
+    - v201,v202,v203,v101adc测试
+    - 线阻补偿测试
 
+- 2025.6.17 - ArrTest2.0_Firmware1.0_Code1.1.0
+    - adc噪声测试
+    - 32路补偿测试

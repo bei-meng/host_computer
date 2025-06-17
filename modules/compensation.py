@@ -67,7 +67,7 @@ class COMPENSATION():
             return resistence
         
 
-    def compensation_forward(self,index,resistence,from_row=True,return_type = 0,parallel = 0):
+    def compensation_forward(self,index,resistence,offset = None,value = None,mult = None,from_row=True,return_type = 0):
         """
             index表示输入的行号,或者列号
             resistence为输出的电阻结果kΩ
@@ -83,19 +83,16 @@ class COMPENSATION():
         # r_out的影响
         r_out = self.col_r_out if from_row else self.row_r_out
         # 因为读误差，计算误差r_out不准,拟合后得到对应的offset
-        if parallel == 0:
+        if offset is None:
             offset = self.col_offset if from_row else self.row_offset
+        if value is None:
             value = self.col_value if from_row else self.row_value
-        # elif parallel == 8:
-        #     offset = self.col_offset_parallel_8 if from_row else self.row_offset_parallel_8
-        #     value = self.col_value_parallel_8 if from_row else self.row_value_parallel_8
-        # elif parallel == 16:
-        #     offset = self.col_offset_parallel_16 if from_row else self.row_offset_parallel_16
-        #     value = self.col_value_parallel_16 if from_row else self.row_value_parallel_16
         # 得到实际阻值
         resistence = resistence*1e3 - r_out - rw + offset
         if value is not None:
             resistence -= self.r_wire*((max_index-min_index+1)/nums)*(nums**value)
+        if mult is not None:
+            resistence *= mult
         resistence[resistence<1]=1
         if return_type==0:
             return 1/resistence*1e6

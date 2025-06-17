@@ -272,7 +272,7 @@ class ADC():
         """
         # return np.array([[j  for j in range(16)] for i in range(data_length)])
         # 如果不满足一个TCP包1440大小的包，下面返回数据的速度会非常慢，因此一般都需要尽可能填满一个包
-        recv_size = int(np.ceil(data_length*self.setting.dout_ram_size_B/4096)*4096/self.setting.dout_ram_size_B)
+        recv_size = int(np.ceil(data_length*self.setting.dout_ram_size_B/512)*512/self.setting.dout_ram_size_B)
         # 但是不能超过下面dout的大小
         recv_size = min(recv_size,self.setting.dout_ram_length)
         pkts=Packet()

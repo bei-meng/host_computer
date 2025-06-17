@@ -2449,7 +2449,7 @@ class CHIP():
         self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
 
         # 返回的数据
-        if split_type<2:
+        if split_type<2 or split_type>5:
             res = np.zeros((self.setting.chip_latch_num,self.setting.chip_latch_num))
         elif from_row:
             res = np.zeros((self.setting.chip_latch_num))
@@ -2458,7 +2458,7 @@ class CHIP():
 
         def get_read_result(rows,cols,tias,curr,read_batch_start,res,voltage,sub_base):
             # 大于等于2表示，开所有行/列
-            if split_type>=2:
+            if split_type>=2 and split_type<=5:
                 if from_row:
                     for col,tia in zip(cols,tias):
                         res[col] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
