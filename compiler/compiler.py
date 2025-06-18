@@ -225,7 +225,7 @@ class COMPILER:
             raise ValueError("Value out of range for int8")
         return value
     
-    def const_str_to_int(self,imm:Union[int|str],threshold = 255):
+    def const_str_to_int(self,imm:Union[int|str],mask = 0xFF):
         isConst = False
         if type(imm)==str:
             imm_c = self.get_const_variable(imm)
@@ -241,9 +241,9 @@ class COMPILER:
         else:
             raise Exception(f"立即数{imm}类型错误!")
         
-        if imm_c>threshold or imm_c < -127:
+        if imm_c>mask or imm_c < -mask:
             raise Exception(f"立即数{imm_c}超过256/-127限制!")
-        return imm_c&0xFF,isConst
+        return imm_c&mask,isConst
     
     #------------------------------------------------------------------------------------------
     # *********************************** 变量相关函数 ***********************************
@@ -342,7 +342,7 @@ class COMPILER:
                 imm0: 16bit的电压码值
         """
         imm1_c,isConst1 = self.const_str_to_int(imm1)
-        imm0_c,isConst0 = self.const_str_to_int(imm0,threshold=65535)
+        imm0_c,isConst0 = self.const_str_to_int(imm0,mask=0xFFFF)
         ins = CMD(PL_DAC_V,command_data=CmdData(imm1_c <<16 | imm0_c))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, imm1, imm0))
@@ -827,7 +827,7 @@ class COMPILER:
             reg0 = imm0
         """
         reg_0 = self.get_reg_variable(reg0,init=True)
-        imm0_c,isConst0 = self.const_str_to_int(imm0,threshold=65535)
+        imm0_c,isConst0 = self.const_str_to_int(imm0,mask=0xFFFF)
         ins = CMD(PL_MOVE_I,command_data=CmdData(reg_0 <<16 | imm0_c))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, reg0, imm0))
@@ -852,7 +852,7 @@ class COMPILER:
             reg0 比较 imm0
         """
         reg_0 = self.get_reg_variable(reg0,init=False)
-        imm0_c,isConst0 = self.const_str_to_int(imm0,threshold=65535)
+        imm0_c,isConst0 = self.const_str_to_int(imm0,mask=0xFFFF)
         ins = CMD(PL_CMP_I,command_data=CmdData(reg_0 <<16 | imm0_c))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name, reg0, imm0))

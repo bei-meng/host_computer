@@ -308,7 +308,8 @@ class ADC():
     
 
     def get_out_ins5(self,data_length:int,dout_ram_start:int):
-        return [CMD(PL_RAM_ADDR,command_data=CmdData(dout_ram_start)),CMD(PL_DATA_LENGTH,command_data=CmdData(data_length))]
+        return [CMD(PL_RAM_ADDR,command_data=CmdData(dout_ram_start)),
+                CMD(PL_DATA_LENGTH,command_data=CmdData(data_length))]
     
     def get_out_output5(self,data_length:int):
         data_B = data_length*self.setting.dout_ram_size_B 

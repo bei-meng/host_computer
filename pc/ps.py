@@ -29,6 +29,7 @@ class PS():
 
             self.connected = True
             self.socket.settimeout(1)
+            pass
         except Exception as e:
             print(f"Failed to connect: {e}")
 

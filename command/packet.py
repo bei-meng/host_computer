@@ -108,8 +108,8 @@ class Packet:
                     pass
                 elif cmd["mode"]==2:
                     cmdbytes = k.get_addr()
-                    res += " ".join(f'{byte:02x}' for byte in cmdbytes) + "\n"
+                    res += "".join(f'{byte:02x}' for byte in cmdbytes) + "\n"
                 else:
                     cmdbytes = k.get_command()
-                    res += " ".join(f'{byte:02x}' for byte in cmdbytes) + "\n"
+                    res += "".join(f'{byte:02x}' for byte in cmdbytes) + "\n"
         return res
