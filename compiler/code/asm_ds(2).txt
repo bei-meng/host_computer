@@ -1,0 +1,143 @@
+; 初始化静态配置寄存器
+MOV_i reg0, 4         ; reg_reshape_t_nbits = 4
+MOV_i reg1, 1         ; reg_reshape_t_nbank = 1
+MOV_i reg2, 800       ; reg_cnn1_W_num = 800
+MOV_i reg3, 10        ; reg_cnn1_H_num = 10
+MOV_i reg4, 25        ; reg_cnn1_kernel_W_num = 25
+MOV_i reg5, 0         ; reg_actv_din_start_addrb = 0
+MOV_i reg6, 400       ; reg_actv_cnn1_start_addrb = 400
+
+; CNN1 配置
+set_adc_discard_nbits 0  ; 设置ADC丢弃位数
+MOV_r reg7, reg6         ; reg_actv_ram_byte_addrb_cnn1 = reg_actv_cnn1_start_addrb
+
+; 初始化循环计数器
+MOV_i reg8, 0          ; cnn1_W_cnt = 0
+loop_cnn1_W:
+  ; 计算循环条件: cnn1_W_cnt < (reg_cnn1_W_num - reg_cnn1_kernel_W_num + 1)
+  MOV_r reg20, reg2    ; 临时寄存器 = reg_cnn1_W_num
+  SUB reg20, reg20, reg4 ; 临时寄存器 -= reg_cnn1_kernel_W_num
+  MOV_i reg21, 1       ; 加载立即数1
+  ADD reg20, reg20, reg21 ; 临时寄存器 += 1
+  CMP_r reg8, reg20    ; 比较 cnn1_W_cnt 和上界
+  JGE exit_loop_cnn1_W ; 若 >= 则退出循环
+  
+  MOV_i reg9, 0        ; cnn1_H_cnt = 0
+  loop_cnn1_H:
+    MOV_i reg21, 10    ; 加载立即数10
+    CMP_r reg9, reg21  ; 比较 cnn1_H_cnt 和 10
+    JGE exit_loop_cnn1_H
+    
+    ; 清空reshape缓冲区
+    reshape_buffer_clear
+    
+    MOV_i reg10, 0     ; cnn1_kernel_W_cnt = 0
+    loop_kernel_W:
+      MOV_i reg21, 25  ; 加载立即数25
+      CMP_r reg10, reg21 ; 比较 kernel_W_cnt 和 25
+      JGE exit_loop_kernel_W
+      
+      ; 计算地址: (cnn1_W_cnt + cnn1_kernel_W_cnt)<<5 + cnn1_H_cnt
+      MOV_r reg21, reg8 ; 临时寄存器 = cnn1_W_cnt
+      ADD reg21, reg21, reg10 ; 临时寄存器 += cnn1_kernel_W_cnt
+      MOV_i reg22, 5    ; 加载移位位数
+      SLL reg21, reg21, reg22 ; 左移5位
+      ADD reg11, reg21, reg9 ; 最终地址 = 临时寄存器 + cnn1_H_cnt
+      
+      set_actv_ram_addr reg11 ; 设置激活RAM地址
+      load_actv_ram         ; 从激活RAM加载数据
+      set_reshape_buffer_addr reg10 ; 设置reshape缓冲区地址
+      store_reshape_buffer   ; 存储到reshape缓冲区
+      
+      MOV_i reg21, 1       ; 加载立即数1
+      ADD reg10, reg10, reg21 ; kernel_W_cnt += 1
+      JMP loop_kernel_W
+    exit_loop_kernel_W:
+    
+    MOV_i reg12, 0      ; sign = 0
+    loop_sign:
+      MOV_i reg21, 2    ; 加载立即数2
+      CMP_r reg12, reg21 ; 检查 sign < 2
+      JGE exit_loop_sign
+      
+      ; 设置乘法系数
+      MOV_i reg21, 0    ; 加载比较值0
+      CMP_r reg12, reg21
+      JEQ set_positive
+      MOV_i reg13, -1    ; reg_mul_port_B = -1
+      JMP set_mul_B
+      set_positive:
+        MOV_i reg13, 1   ; reg_mul_port_B = 1
+      set_mul_B:
+        set_elewise_reg_2_mul_B reg13
+      
+      MOV_i reg14, 0    ; reg_reshape_t_addr_tmp_H = 0
+      loop_bit_plane:
+        CMP_r reg14, reg0 ; 比较 bit_plane_cnt 和 reg_reshape_t_nbits
+        JGE exit_loop_bit_plane
+        
+        MOV_r reg15, reg14 ; reg_shifter0_bits = reg_reshape_t_addr_tmp_H
+        set_elewise_reg_2_shifter0 reg15
+        
+        MOV_i reg16, 0  ; reg_reshape_t_addr_tmp_L3 = 0
+        loop_word_bank:
+          CMP_r reg16, reg1 ; 比较 word_bank_cnt 和 reg_reshape_t_nbank
+          JGE exit_loop_word_bank
+          
+          ; 计算 reg_reshape_t_addr_tmp = (reg_reshape_t_addr_tmp_H << 3) + reg_reshape_t_addr_tmp_L3
+          MOV_i reg21, 3    ; 加载移位位数
+          SLL reg17, reg14, reg21 ; 临时寄存器 = reg14 << 3
+          ADD reg18, reg17, reg16 ; reg18 = 最终地址
+          
+          ; 加载reshape数据
+          load_reshape_buffer_t reg12, reg19, reg18
+          MOV_r reg20, reg16 ; reg_bank = reg_reshape_t_addr_tmp_L3
+          set_row_bank_and_data_r reg20, reg19
+          
+          ; 检查是否为最后一个bank
+          MOV_i reg21, 1       ; 加载立即数1
+          SUB reg22, reg1, reg21 ; reg22 = reg_reshape_t_nbank - 1
+          CMP_r reg16, reg22
+          JEQ last_bank
+          JMP not_last_bank
+          last_bank:
+            row_read_rram_32ch_to_diff
+            set_elewise_fast
+          not_last_bank:
+          
+          MOV_i reg21, 1       ; 加载立即数1
+          ADD reg16, reg16, reg21 ; word_bank_cnt += 1
+          JMP loop_word_bank
+        exit_loop_word_bank:
+        
+        MOV_i reg21, 1       ; 加载立即数1
+        ADD reg14, reg14, reg21 ; bit_plane_cnt += 1
+        JMP loop_bit_plane
+      exit_loop_bit_plane:
+      
+      ; 处理负号结果存储
+      MOV_i reg21, 1       ; 加载比较值1
+      CMP_r reg12, reg21
+      JNE skip_store
+      set_actv_ram_addr reg7
+      store_actv_ram_shifter1
+      MOV_i reg21, 16      ; 加载立即数16
+      ADD reg7, reg7, reg21 ; 地址增加16
+      skip_store:
+      
+      MOV_i reg21, 1       ; 加载立即数1
+      ADD reg12, reg12, reg21 ; sign += 1
+      JMP loop_sign
+    exit_loop_sign:
+    
+    MOV_i reg21, 1       ; 加载立即数1
+    ADD reg9, reg9, reg21 ; cnn1_H_cnt += 1
+    JMP loop_cnn1_H
+  exit_loop_cnn1_H:
+  
+  MOV_i reg21, 1       ; 加载立即数1
+  ADD reg8, reg8, reg21 ; cnn1_W_cnt += 1
+  JMP loop_cnn1_W
+exit_loop_cnn1_W:
+  exit
+; CNN2 部分开始
