@@ -21,7 +21,7 @@ class SELECT():
         pos = np.ix_(np.array(weight_pos["row"]), np.array(weight_pos["col"]))
         self.good_point[pos]=-65535
 
-    def Reset(self,chip,need_read,write_times,start_v,delta_v,tg,threshold,reset_pulse_width,sub_base=True,vmax=1000,plot_cond=None):
+    def Reset(self,chip,need_read,write_times,start_v,delta_v,tg,threshold,reset_pulse_width,sub_base=True,vmax=1000,plot_cond=None,path=""):
         cond_all = np.zeros_like(need_read,dtype=float)
         for i in range(write_times):
             print(f"write_time = {i}")
@@ -32,22 +32,25 @@ class SELECT():
             cond_all[need_read] = cond[need_read]
             need_read = condition_reset
             
-            if plot_cond: plot_cond(cond_all,title=f"v={v:.2f}-needReset={np.sum(condition_reset)}",vmax=vmax)
+            if plot_cond: plot_cond(cond_all,title=f"v={v:.2f}-needReset={np.sum(condition_reset)}",vmax=vmax,path=path)
 
             chip.write4(crossbar=condition_reset,row_index=None,col_index=None,write_voltage=v,tg=tg,pulse_width=reset_pulse_width,set_device=False,split_type=0,row_type=0,col_type=0)
 
 
-    def Set(self,chip,need_read,write_times,write_voltage,start_tg,delta_tg,threshold,set_pulse_width,sub_base=True,vmax=1000,plot_cond=None):
+    def Set(self,chip,need_read,write_times,write_voltage,start_tg,delta_tg,threshold,set_pulse_width,
+            sub_base=True,vmax=1000,plot_cond=None,reverse=False,path=""):
         cond_all = np.zeros_like(need_read,dtype=float)
         for i in range(write_times):
             print(f"write_time = {i}")
             tg = start_tg+i*delta_tg
             _,cond,_ = chip.read4(crossbar=need_read,row_index=None,col_index=None,read_voltage=0.1,tg=5,gain=1,sub_base=sub_base,from_row=True,split_type=0,row_type=0,col_type=0)
-
-            condition_set = (cond<threshold)&need_read
+            if reverse:
+                condition_set = (cond>threshold)&need_read
+            else:
+                condition_set = (cond<threshold)&need_read
             cond_all[need_read] = cond[need_read]
             need_read = condition_set
-            if plot_cond: plot_cond(cond_all,title=f"tg={tg:.2f}-needSet={np.sum(condition_set)}",vmax=vmax)
+            if plot_cond: plot_cond(cond_all,title=f"tg={tg:.2f}-needSet={np.sum(condition_set)}",vmax=vmax,path=path)
 
             chip.write4(crossbar=condition_set,row_index=None,col_index=None,write_voltage=write_voltage,tg=tg,pulse_width=set_pulse_width,set_device=True,split_type=0,row_type=0,col_type=0)
 
