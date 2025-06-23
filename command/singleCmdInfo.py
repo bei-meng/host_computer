@@ -1479,6 +1479,25 @@ PL_READ_COL_PULSE_DIFF=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+COMMAND_ADDR = 0x1F
+
 #-------------------------------------------------------------------PL_CAL_CH_MASK:0x1F
 PL_CAL_CH_MASK=dict(
     command_addr = COMMAND_ADDR,
@@ -1820,7 +1839,7 @@ PS_START_FINSH=dict(
 
 for cmd, obj in list(locals().items()):
     if isinstance(obj, dict) and (obj.get("command_addr",None)!=None):
-        if "PL_" not in cmd:
+        if "PL_" not in cmd and "PS_" not in cmd:
             DEBUGA_ADDR_TO_CMD[obj["command_addr"]]=obj
         else:
             PL_ADDR_TO_CMD[obj["command_addr"]]=obj

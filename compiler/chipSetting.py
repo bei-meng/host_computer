@@ -11,7 +11,7 @@ class CHIPSETTING:
     chip_latch_num = 256                                        # 256个latch
 
     # FPGA配置
-    REG_NUM = 32                                                # 可用32个通用寄存器    
+    REG_NUM = 64                                                # 可用32个通用寄存器    
 
     INS_RAM_ADDR_LENGTH = 10                                    # 指令RAM的地址长度 2^10=1024
     BGE_INS_ADDR_START_POS = 14                                 # bge中指令地址bit位置的起始位置

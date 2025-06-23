@@ -867,7 +867,7 @@ class COMPILER:
         """
         reg_1 = self.get_reg_variable(reg1,init=False)
         reg_0 = self.get_reg_variable(reg0,init=False)
-        ins = CMD(PL_CMP_R,command_data=CmdData(reg_1<<8|reg_0))
+        ins = CMD(PL_CMP_R,command_data=CmdData(reg_1<<16|reg_0<<8))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name,reg1, reg0))
         self.ins_pos += 1
