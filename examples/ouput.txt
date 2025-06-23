@@ -1,0 +1,273 @@
+输出相关调试信息:
+
+变量名: reg0                          : 寄存器编号: 0x00
+变量名: reg1                          : 寄存器编号: 0x01
+变量名: reg2                          : 寄存器编号: 0x02
+变量名: reg3                          : 寄存器编号: 0x03
+变量名: reg4                          : 寄存器编号: 0x04
+变量名: reg5                          : 寄存器编号: 0x05
+变量名: reg6                          : 寄存器编号: 0x06
+变量名: reg7                          : 寄存器编号: 0x07
+变量名: reg8                          : 寄存器编号: 0x08
+变量名: reg20                         : 寄存器编号: 0x14
+变量名: reg21                         : 寄存器编号: 0x15
+变量名: reg9                          : 寄存器编号: 0x09
+变量名: reg10                         : 寄存器编号: 0x0a
+变量名: reg22                         : 寄存器编号: 0x16
+变量名: reg11                         : 寄存器编号: 0x0b
+变量名: reg12                         : 寄存器编号: 0x0c
+变量名: reg13                         : 寄存器编号: 0x0d
+变量名: reg14                         : 寄存器编号: 0x0e
+变量名: reg15                         : 寄存器编号: 0x0f
+变量名: reg16                         : 寄存器编号: 0x10
+变量名: reg17                         : 寄存器编号: 0x11
+变量名: reg18                         : 寄存器编号: 0x12
+变量名: reg19                         : 寄存器编号: 0x13
+
+标签: loop_cnn1_w                   : 指令地址: 0x0a
+标签: loop_cnn1_h                   : 指令地址: 0x11
+标签: loop_kernel_w                 : 指令地址: 0x16
+标签: exit_loop_kernel_w            : 指令地址: 0x25
+标签: loop_sign                     : 指令地址: 0x26
+标签: set_positive                  : 指令地址: 0x2e
+标签: set_mul_b                     : 指令地址: 0x2f
+标签: loop_bit_plane                : 指令地址: 0x31
+标签: loop_word_bank                : 指令地址: 0x36
+标签: last_bank                     : 指令地址: 0x43
+标签: not_last_bank                 : 指令地址: 0x45
+标签: exit_loop_word_bank           : 指令地址: 0x48
+标签: exit_loop_bit_plane           : 指令地址: 0x4b
+标签: skip_store                    : 指令地址: 0x52
+标签: exit_loop_sign                : 指令地址: 0x55
+标签: exit_loop_cnn1_h              : 指令地址: 0x58
+标签: exit_loop_cnn1_w              : 指令地址: 0x5b
+
+0x0		mov_i	reg0, 4
+0x1		mov_i	reg1, 1
+0x2		mov_i	reg2, 800
+0x3		mov_i	reg3, 10
+0x4		mov_i	reg4, 25
+0x5		mov_i	reg5, 0
+0x6		mov_i	reg6, 400
+0x7		set_adc_discard_nbits	0
+0x8		mov_r	reg7, reg6
+0x9		mov_i	reg8, 0
+
+0xa	loop_cnn1_w:
+0xa		mov_r	reg20, reg2
+0xb		sub	reg20, reg20, reg4
+0xc		mov_i	reg21, 1
+0xd		add	reg20, reg20, reg21
+0xe		cmp_r	reg8, reg20
+0xf		jle	exit_loop_cnn1_w
+0x10		mov_i	reg9, 0
+
+0x11	loop_cnn1_h:
+0x11		mov_i	reg21, 10
+0x12		cmp_r	reg9, reg21
+0x13		jle	exit_loop_cnn1_h
+0x14		reshape_buffer_clear	
+0x15		mov_i	reg10, 0
+
+0x16	loop_kernel_w:
+0x16		mov_i	reg21, 25
+0x17		cmp_r	reg10, reg21
+0x18		jle	exit_loop_kernel_w
+0x19		mov_r	reg21, reg8
+0x1a		add	reg21, reg21, reg10
+0x1b		mov_i	reg22, 5
+0x1c		sll	reg21, reg21, reg22
+0x1d		add	reg11, reg21, reg9
+0x1e		actv_ram_addr	reg11
+0x1f		actv_ram_read	
+0x20		reshape_buffer_addr	reg10
+0x21		reshape_buffer_write	
+0x22		mov_i	reg21, 1
+0x23		add	reg10, reg10, reg21
+0x24		jmp	loop_kernel_w
+
+0x25	exit_loop_kernel_w:
+0x25		mov_i	reg12, 0
+
+0x26	loop_sign:
+0x26		mov_i	reg21, 2
+0x27		cmp_r	reg12, reg21
+0x28		jle	exit_loop_sign
+0x29		mov_i	reg21, 0
+0x2a		cmp_r	reg12, reg21
+0x2b		jeq	set_positive
+0x2c		mov_i	reg13, -1
+0x2d		jmp	set_mul_b
+
+0x2e	set_positive:
+0x2e		mov_i	reg13, 1
+
+0x2f	set_mul_b:
+0x2f		element_wise	reg13, 0, 5
+0x30		mov_i	reg14, 0
+
+0x31	loop_bit_plane:
+0x31		cmp_r	reg14, reg0
+0x32		jle	exit_loop_bit_plane
+0x33		mov_r	reg15, reg14
+0x34		element_wise	reg15, 0, 6
+0x35		mov_i	reg16, 0
+
+0x36	loop_word_bank:
+0x36		cmp_r	reg16, reg1
+0x37		jle	exit_loop_word_bank
+0x38		mov_i	reg21, 3
+0x39		sll	reg17, reg14, reg21
+0x3a		add	reg18, reg17, reg16
+0x3b		reshape_buffer_read	reg12, reg19, reg18
+0x3c		mov_r	reg20, reg16
+0x3d		set_row_bank	reg20, reg19
+0x3e		mov_i	reg21, 1
+0x3f		sub	reg22, reg1, reg21
+0x40		cmp_r	reg16, reg22
+0x41		jeq	last_bank
+0x42		jmp	not_last_bank
+
+0x43	last_bank:
+0x43		read_row_pulse_diff	
+0x44		element_wise	, 0, 14
+
+0x45	not_last_bank:
+0x45		mov_i	reg21, 1
+0x46		add	reg16, reg16, reg21
+0x47		jmp	loop_word_bank
+
+0x48	exit_loop_word_bank:
+0x48		mov_i	reg21, 1
+0x49		add	reg14, reg14, reg21
+0x4a		jmp	loop_bit_plane
+
+0x4b	exit_loop_bit_plane:
+0x4b		mov_i	reg21, 1
+0x4c		cmp_r	reg12, reg21
+0x4d		jne	skip_store
+0x4e		actv_ram_addr	reg7
+0x4f		actv_ram_write	1
+0x50		mov_i	reg21, 16
+0x51		add	reg7, reg7, reg21
+
+0x52	skip_store:
+0x52		mov_i	reg21, 1
+0x53		add	reg12, reg12, reg21
+0x54		jmp	loop_sign
+
+0x55	exit_loop_sign:
+0x55		mov_i	reg21, 1
+0x56		add	reg9, reg9, reg21
+0x57		jmp	loop_cnn1_h
+
+0x58	exit_loop_cnn1_h:
+0x58		mov_i	reg21, 1
+0x59		add	reg8, reg8, reg21
+0x5a		jmp	loop_cnn1_w
+
+0x5b	exit_loop_cnn1_w:
+0x5b		exit	
+
+
+
+字节码:
+模式: 4
+	帧头:                         	字节码: 55 aa 04
+	指令: pl_mov_i                	字节码: 30 00 00 04
+	指令: pl_mov_i                	字节码: 30 01 00 01
+	指令: pl_mov_i                	字节码: 30 02 03 20
+	指令: pl_mov_i                	字节码: 30 03 00 0a
+	指令: pl_mov_i                	字节码: 30 04 00 19
+	指令: pl_mov_i                	字节码: 30 05 00 00
+	指令: pl_mov_i                	字节码: 30 06 01 90
+	指令: pl_set_adc_discard_nbits	字节码: 28 00 00 00
+	指令: pl_mov_r                	字节码: 31 07 06 00
+	指令: pl_mov_i                	字节码: 30 08 00 00
+	指令: pl_mov_r                	字节码: 31 14 02 00
+	指令: pl_sub                  	字节码: 0e 14 14 04
+	指令: pl_mov_i                	字节码: 30 15 00 01
+	指令: pl_add                  	字节码: 0d 14 14 15
+	指令: pl_cmp_r                	字节码: 33 00 08 14
+	指令: pl_jle                  	字节码: 39 00 00 5b
+	指令: pl_mov_i                	字节码: 30 09 00 00
+	指令: pl_mov_i                	字节码: 30 15 00 0a
+	指令: pl_cmp_r                	字节码: 33 00 09 15
+	指令: pl_jle                  	字节码: 39 00 00 58
+	指令: pl_reshape_buffer_clear 	字节码: 24 00 00 00
+	指令: pl_mov_i                	字节码: 30 0a 00 00
+	指令: pl_mov_i                	字节码: 30 15 00 19
+	指令: pl_cmp_r                	字节码: 33 00 0a 15
+	指令: pl_jle                  	字节码: 39 00 00 25
+	指令: pl_mov_r                	字节码: 31 15 08 00
+	指令: pl_add                  	字节码: 0d 15 15 0a
+	指令: pl_mov_i                	字节码: 30 16 00 05
+	指令: pl_sll                  	字节码: 10 15 15 16
+	指令: pl_add                  	字节码: 0d 0b 15 09
+	指令: pl_actv_ram_addr        	字节码: 21 00 00 0b
+	指令: pl_actv_ram_read        	字节码: 22 00 00 00
+	指令: pl_reshape_buffer_addr  	字节码: 25 00 00 0a
+	指令: pl_reshape_buffer_write 	字节码: 26 00 00 00
+	指令: pl_mov_i                	字节码: 30 15 00 01
+	指令: pl_add                  	字节码: 0d 0a 0a 15
+	指令: pl_jmp                  	字节码: 00 00 00 16
+	指令: pl_mov_i                	字节码: 30 0c 00 00
+	指令: pl_mov_i                	字节码: 30 15 00 02
+	指令: pl_cmp_r                	字节码: 33 00 0c 15
+	指令: pl_jle                  	字节码: 39 00 00 55
+	指令: pl_mov_i                	字节码: 30 15 00 00
+	指令: pl_cmp_r                	字节码: 33 00 0c 15
+	指令: pl_jeq                  	字节码: 34 00 00 2e
+	指令: pl_mov_i                	字节码: 30 0d ff ff
+	指令: pl_jmp                  	字节码: 00 00 00 2f
+	指令: pl_mov_i                	字节码: 30 0d 00 01
+	指令: pl_element_wise         	字节码: 20 0d 00 05
+	指令: pl_mov_i                	字节码: 30 0e 00 00
+	指令: pl_cmp_r                	字节码: 33 00 0e 00
+	指令: pl_jle                  	字节码: 39 00 00 4b
+	指令: pl_mov_r                	字节码: 31 0f 0e 00
+	指令: pl_element_wise         	字节码: 20 0f 00 06
+	指令: pl_mov_i                	字节码: 30 10 00 00
+	指令: pl_cmp_r                	字节码: 33 00 10 01
+	指令: pl_jle                  	字节码: 39 00 00 48
+	指令: pl_mov_i                	字节码: 30 15 00 03
+	指令: pl_sll                  	字节码: 10 11 0e 15
+	指令: pl_add                  	字节码: 0d 12 11 10
+	指令: pl_reshape_buffer_read  	字节码: 27 0c 13 12
+	指令: pl_mov_r                	字节码: 31 14 10 00
+	指令: pl_set_row_bank         	字节码: 12 00 14 13
+	指令: pl_mov_i                	字节码: 30 15 00 01
+	指令: pl_sub                  	字节码: 0e 16 01 15
+	指令: pl_cmp_r                	字节码: 33 00 10 16
+	指令: pl_jeq                  	字节码: 34 00 00 43
+	指令: pl_jmp                  	字节码: 00 00 00 45
+	指令: pl_read_row_pulse_diff  	字节码: 1c 00 00 00
+	指令: pl_element_wise         	字节码: 20 00 00 0e
+	指令: pl_mov_i                	字节码: 30 15 00 01
+	指令: pl_add                  	字节码: 0d 10 10 15
+	指令: pl_jmp                  	字节码: 00 00 00 36
+	指令: pl_mov_i                	字节码: 30 15 00 01
+	指令: pl_add                  	字节码: 0d 0e 0e 15
+	指令: pl_jmp                  	字节码: 00 00 00 31
+	指令: pl_mov_i                	字节码: 30 15 00 01
+	指令: pl_cmp_r                	字节码: 33 00 0c 15
+	指令: pl_jne                  	字节码: 35 00 00 52
+	指令: pl_actv_ram_addr        	字节码: 21 00 00 07
+	指令: pl_actv_ram_write       	字节码: 23 00 00 01
+	指令: pl_mov_i                	字节码: 30 15 00 10
+	指令: pl_add                  	字节码: 0d 07 07 15
+	指令: pl_mov_i                	字节码: 30 15 00 01
+	指令: pl_add                  	字节码: 0d 0c 0c 15
+	指令: pl_jmp                  	字节码: 00 00 00 26
+	指令: pl_mov_i                	字节码: 30 15 00 01
+	指令: pl_add                  	字节码: 0d 09 09 15
+	指令: pl_jmp                  	字节码: 00 00 00 11
+	指令: pl_mov_i                	字节码: 30 15 00 01
+	指令: pl_add                  	字节码: 0d 08 08 15
+	指令: pl_jmp                  	字节码: 00 00 00 0a
+	指令: pl_exit                 	字节码: 0b 00 00 00
+
+
+
+完整字节码:
+55aa043000000430010001300203203003000a300400193005000030060190280000003107060030080000311402000e141404301500010d141415330008143900005b300900003015000a330009153900005824000000300a00003015001933000a1539000025311508000d15150a30160005101515160d0b15092100000b220000002500000a26000000301500010d0a0a1500000016300c00003015000233000c15390000553015000033000c153400002e300dffff0000002f300d0001200d0005300e000033000e003900004b310f0e00200f00063010000033001001390000483015000310110e150d121110270c13123114100012001413301500010e1601153300101634000043000000451c0000002000000e301500010d10101500000036301500010d0e0e15000000313015000133000c15350000522100000723000001301500100d070715301500010d0c0c1500000026301500010d09091500000011301500010d0808150000000a0b000000

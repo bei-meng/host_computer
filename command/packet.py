@@ -89,3 +89,27 @@ class Packet:
         for cmd in self.get_bytes_list():
             res.append("".join(f'{byte:02x}' for byte in cmd))
         return res
+    
+    def all_bytes_line(self):
+        max_cmd_name_len = 0
+        for cmd in self.instruction_list:
+            for k in cmd["cmd"]:
+                max_cmd_name_len = max(max_cmd_name_len, len(k.command_name))
+
+        # res =  " ".join(f'{byte:02x}' for byte in self.header)
+        res = ""
+        for cmd in self.instruction_list:
+            # 获取指令的模式和名字
+            # res += "模式: "+str(cmd["mode"]) + "\n"
+            # cmdbytes = self.header + cmd["mode"].to_bytes(1, BYTE_ORDER)
+            # res += " ".join(f'{byte:02x}' for byte in cmdbytes) + "\n"
+            for k in cmd["cmd"]:
+                if cmd["mode"]==3:
+                    pass
+                elif cmd["mode"]==2:
+                    cmdbytes = k.get_addr()
+                    res += "".join(f'{byte:02x}' for byte in cmdbytes) + "\n"
+                else:
+                    cmdbytes = k.get_command()
+                    res += "".join(f'{byte:02x}' for byte in cmdbytes) + "\n"
+        return res

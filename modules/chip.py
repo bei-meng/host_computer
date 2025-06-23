@@ -2599,6 +2599,10 @@ class CHIP():
             # 不管是finsh,还是start,finsh占用4B,start不占用空间,这里懒的写判断了，直接都占用
             ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))
             ps_ddr_pos += 1
+        elif mode==12:
+            # 返回return_dout
+            ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))
+            ps_ddr_pos += 1
         else:
             print("发送ps的DDR数据出错")
         pkts=Packet()
@@ -2645,7 +2649,7 @@ class CHIP():
 
 
     def write5(self,crossbar:np.ndarray=None,row_index:list[int]=None,col_index:list[int]=None,
-              write_voltage:float=1,tg:float = 5,pulse_width:float = 1e-6,
+              write_voltage:float=1,tg:float = 5,
               set_device:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0,
               ps_ddr_pos=0):
         """
@@ -2674,8 +2678,8 @@ class CHIP():
         """
         assert (crossbar is not None and split_type<=2) or (row_index is not None and col_index is not None and split_type>2),"write4: split_type接收数据错误!"
         self.write_voltage = write_voltage
-        ps_ddr_pos = self.set_op_mode5(ps_ddr_pos=ps_ddr_pos,read=False,from_row=set_device)
-        ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.clk_manager.get_pulse_cyc_ins(pulsewidth=pulse_width),mode=10,ps_ddr_pos=ps_ddr_pos)
+        # ps_ddr_pos = self.set_op_mode5(ps_ddr_pos=ps_ddr_pos,read=False,from_row=set_device)
+        # ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.clk_manager.get_pulse_cyc_ins(pulsewidth=pulse_width),mode=10,ps_ddr_pos=ps_ddr_pos)
 
         
         write_ins = PL_WRITE_ROW_PULSE if set_device else PL_WRITE_COL_PULSE
@@ -2708,7 +2712,7 @@ class CHIP():
     
 
     def read5(self,crossbar:Union[np.ndarray,None]=None,row_index:Union[list[int],None]=None,col_index:Union[list[int],None]=None,
-              read_voltage:float=0.1,tg:float = 5,gain:int = 1,sub_base:bool = False,
+              read_voltage:float=0.1,tg:float = 5,sub_base:bool = False,
               from_row:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0,
               ps_ddr_pos=0):
         """
@@ -2742,8 +2746,8 @@ class CHIP():
         """
         assert (crossbar is not None and split_type<=2) or (row_index is not None and col_index is not None and split_type>2),"read4: split_type接收数据错误!"
         self.read_voltage = read_voltage
-        ps_ddr_pos = self.set_op_mode5(ps_ddr_pos=ps_ddr_pos,read=True,from_row=from_row)
-        ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.adc.get_gain_ins(gain=gain),mode=10,ps_ddr_pos=ps_ddr_pos)
+        # ps_ddr_pos = self.set_op_mode5(ps_ddr_pos=ps_ddr_pos,read=True,from_row=from_row)
+        # ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.adc.get_gain_ins(gain=gain),mode=10,ps_ddr_pos=ps_ddr_pos)
 
         din_ram_start,ins_ram_start = 0,0
         dout_ram_start,dout_ram_pos = 0,0
@@ -2769,7 +2773,7 @@ class CHIP():
             if len(ins_data)+len(ins)+1 >= self.setting.ins_ram_length or dout_ram_pos+2 > self.setting.dout_ram_length:
                 ins_data.append(CMD(PL_EXIT))
                 ps_ddr_pos = self.send_ps_ddr5(ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
-                ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.adc.get_out_ins5(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start),mode=10,ps_ddr_pos=ps_ddr_pos)
+                ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.adc.get_out_ins5(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start),mode=12,ps_ddr_pos=ps_ddr_pos)
                 
                 dout_ram_pos = dout_ram_start
                 # 读两次
@@ -2787,11 +2791,11 @@ class CHIP():
             ps_ddr_pos = self.send_ps_ddr5(ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
             ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.adc.get_out_ins5(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start),mode=10,ps_ddr_pos=ps_ddr_pos)
 
-        return ps_ddr_pos,(read_voltage,gain,operator_batch,res_tia_map,sub_base,from_row,split_type)
+        return ps_ddr_pos,(read_voltage,operator_batch,res_tia_map,sub_base,from_row,split_type)
 
-    def get_read5(self,read_voltage,gain,operator_batch,res_tia_map,sub_base,from_row,split_type):
+    def get_read5(self,read_voltage,operator_batch,res_tia_map,sub_base,from_row,split_type,gain):
         # 返回的数据
-        if split_type<2:
+        if split_type<2 or split_type>5:
             res = np.zeros((self.setting.chip_latch_num,self.setting.chip_latch_num))
         elif from_row:
             res = np.zeros((self.setting.chip_latch_num))
@@ -2800,7 +2804,7 @@ class CHIP():
 
         def get_read_result(rows,cols,tias,curr,read_batch_start,res,voltage,sub_base):
             # 大于等于2表示，开所有行/列
-            if split_type>=2:
+            if split_type>=2 and split_type<=5:
                 if from_row:
                     for col,tia in zip(cols,tias):
                         res[col] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
@@ -2828,3 +2832,24 @@ class CHIP():
 
         self.adc.get_gain_ins(gain=gain)
         return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
+    
+
+    def send_ps_run(self,flag,ps_ddr_pos_start,ps_ddr_pos):
+        if flag == 0:
+            # 先finsh
+            ins_data = [CMD(PS_START_FINSH,command_data=CmdData(1)),CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos_start))]
+            ps_ddr_pos=self.send_ps_ddr5(ddr_data=ins_data,mode=11,ps_ddr_pos=ps_ddr_pos)
+        elif flag == 1:
+            # 再start
+            ins_data = [CMD(PS_START_FINSH,command_data=CmdData(0)),CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos_start))]
+            ps_ddr_pos=self.send_ps_ddr5(ddr_data=ins_data,mode=11,ps_ddr_pos=ps_ddr_pos)
+            ps_ddr_pos = ps_ddr_pos-1
+        elif flag == 2:
+            # 先finsh
+            ins_data = [CMD(PS_START_FINSH,command_data=CmdData(1)),CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos_start))]
+            ps_ddr_pos=self.send_ps_ddr5(ddr_data=ins_data,mode=11,ps_ddr_pos=ps_ddr_pos)
+            # 再start
+            ins_data = [CMD(PS_START_FINSH,command_data=CmdData(0)),CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos_start))]
+            ps_ddr_pos=self.send_ps_ddr5(ddr_data=ins_data,mode=11,ps_ddr_pos=ps_ddr_pos)
+            ps_ddr_pos = ps_ddr_pos-1
+        return ps_ddr_pos

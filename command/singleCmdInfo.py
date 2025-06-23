@@ -1124,7 +1124,7 @@ PL_JUMP=dict(
     command_type = COMMAND_TYPE.PL,
     n_addr_bytes = N_ADDR_BYTES.ONE,
     n_data_bytes = N_DATA_BYTES.THREE,
-    command_name = "pl_jump",
+    command_name = "pl_jmp",
     command_data = CmdData(0),
     command_description = "跳转"
 )
@@ -1619,6 +1619,168 @@ PL_RESHAPE_BUFFER_READ=dict(
     command_description = "读reshape_buffer:将reshape_buffer_t(转置后)的正或负数据读出到通用寄存器"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_SET_ADC_DISCARD_NBITS:0x29
+PL_SET_ADC_DISCARD_NBITS=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_set_adc_discard_nbits",
+    command_data = CmdData(0),
+    command_description = "舍弃adc最低的n bits"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+
+
+
+
+
+
+
+
+COMMAND_ADDR = 0x30
+#-------------------------------------------------------------------PL_MOVE_I:0x30
+PL_MOVE_I=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_mov_i",
+    command_data = CmdData(0),
+    command_description = "reg[addr2] = imm"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_MOVE_R:0x31
+PL_MOVE_R=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_mov_r",
+    command_data = CmdData(0),
+    command_description = "reg[addr2] = reg[addr1]"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_CMP_I:0x32
+PL_CMP_I=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_cmp_i",
+    command_data = CmdData(0),
+    command_description = "cmp reg[addr2] vs imm  ,结果返回比较状态寄存器"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_CMP_R:0x33
+PL_CMP_R=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_cmp_r",
+    command_data = CmdData(0),
+    command_description = "cmp reg[addr2] vs reg[addr1]  ,结果返回比较状态寄存器"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+#-------------------------------------------------------------------PL_JEQ:0x34
+PL_JEQ=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_jeq",
+    command_data = CmdData(0),
+    command_description = " "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+#-------------------------------------------------------------------PL_JNE:0x35
+PL_JNE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_jne",
+    command_data = CmdData(0),
+    command_description = " "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+#-------------------------------------------------------------------PL_JLT:0x36
+PL_JLT=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_jlt",
+    command_data = CmdData(0),
+    command_description = " "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_JGT:0x37
+PL_JGT=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_jgt",
+    command_data = CmdData(0),
+    command_description = " "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_JLE:0x38
+PL_JLE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_jle",
+    command_data = CmdData(0),
+    command_description = " "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_JGE:0x39
+PL_JGE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_jle",
+    command_data = CmdData(0),
+    command_description = " "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #------------------------------------------------------------------------------------------
 # **************************************** PS指令 ******************************************
