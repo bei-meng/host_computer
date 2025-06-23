@@ -1764,6 +1764,8 @@ class CHIP():
         v_last = 0
         point_nums = len(res_row_bank)
         # print(f"需要写{point_nums}个点")
+        time_out = pulse_width*(point_nums+1) + 1
+        self.ps.set_time_out(time_out=time_out)
         for k in range(point_nums):
             tmp_ins_data = []
             if self.need_reset:
@@ -1806,6 +1808,7 @@ class CHIP():
 
         if len(ins_data)>0:
             self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
+        self.ps.set_time_out(time_out=1)
 
     #------------------------------------------------------------------------------------------
     # ************************************ 选多行单列(读写) ************************************
@@ -2561,6 +2564,8 @@ class CHIP():
         # din_ram_data.clear()
         self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
 
+        time_out = pulse_width*(len(operator_batch)+1) + 1
+        self.ps.set_time_out(time_out=time_out)
         change_tg,tg_last = type(tg)==np.ndarray,-1
         ins_data = self.get_dac_ins2(v=write_voltage,tg=None) if change_tg else self.get_dac_ins2(v=write_voltage,tg=tg)
         # 遍历每个batch
@@ -2579,7 +2584,11 @@ class CHIP():
 
         if len(ins_data)>0:
             self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
+        self.ps.set_time_out(time_out=1)
 
+    #------------------------------------------------------------------------------------------
+    # ********************************** 指令传到ps的ddr里面去 *********************************
+    #------------------------------------------------------------------------------------------
 
     def send_ps_ddr5(self,ddr_data,mode,ps_ddr_pos):
         """
@@ -2647,7 +2656,6 @@ class CHIP():
         ps_ddr_pos = self.send_ps_ddr5(ddr_data=ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
         return ps_ddr_pos
 
-
     def write5(self,crossbar:np.ndarray=None,row_index:list[int]=None,col_index:list[int]=None,
               write_voltage:float=1,tg:float = 5,
               set_device:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0,
@@ -2710,7 +2718,6 @@ class CHIP():
             ps_ddr_pos = self.send_ps_ddr5(ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
         return ps_ddr_pos
     
-
     def read5(self,crossbar:Union[np.ndarray,None]=None,row_index:Union[list[int],None]=None,col_index:Union[list[int],None]=None,
               read_voltage:float=0.1,tg:float = 5,sub_base:bool = False,
               from_row:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0,
@@ -2833,7 +2840,6 @@ class CHIP():
         self.adc.get_gain_ins(gain=gain)
         return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
     
-
     def send_ps_run(self,flag,ps_ddr_pos_start,ps_ddr_pos):
         if flag == 0:
             # 先finsh

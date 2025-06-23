@@ -10,3 +10,4 @@ images/
 data/
 network/__pycache__
 .idea/
+temp/
