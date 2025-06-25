@@ -3,6 +3,8 @@ from command.singleCmdInfo import (
     BYTE_ORDER
 )
 class Packet:
+    delimiter = ""
+
     def __init__(self):
         self.instruction_list = []
         self.header = bytes.fromhex('55aa')
@@ -75,10 +77,10 @@ class Packet:
                     pass
                 elif cmd["mode"]==2:
                     cmdbytes = k.get_addr()
-                    res += f"\t指令: {str(k.command_name):<{max_cmd_name_len}}\t字节码: " + " ".join(f'{byte:02x}' for byte in cmdbytes) + "\n"
+                    res += f"\t指令: {str(k.command_name):<{max_cmd_name_len}}\t字节码: " + self.delimiter.join(f'{byte:02x}' for byte in cmdbytes) + "\n"
                 else:
                     cmdbytes = k.get_command()
-                    res += f"\t指令: {str(k.command_name):<{max_cmd_name_len}}\t字节码: " + " ".join(f'{byte:02x}' for byte in cmdbytes) + "\n"
+                    res += f"\t指令: {str(k.command_name):<{max_cmd_name_len}}\t字节码: " + self.delimiter.join(f'{byte:02x}' for byte in cmdbytes) + "\n"
         return res
     
     def all_bytes(self):

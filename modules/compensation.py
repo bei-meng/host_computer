@@ -18,6 +18,9 @@ class COMPENSATION():
         self.col_value = np.load(root_path+"col_value.npy")
         self.row_value = np.load(root_path+"row_value.npy")
 
+        self.col_gain_r_mult = np.load(root_path + "row_gain_r_mult.npy")
+        self.row_gain_r_mult = np.load(root_path + "row_gain_r_mult.npy")
+
         # self.row_offset_parallel_16 = np.load(root_path+"row_offset_parallel_16.npy")
         # self.col_offset_parallel_16 = np.load(root_path+"col_offset_parallel_16.npy")
 
@@ -67,7 +70,7 @@ class COMPENSATION():
             return resistence
         
 
-    def compensation_forward(self,index,resistence,offset = None,value = None,mult = None,from_row=True,return_type = 0):
+    def compensation_forward(self,index,resistence,gain_r_mult = None,offset = None,value = None,mult = None,from_row=True,return_type = 0):
         """
             index表示输入的行号,或者列号
             resistence为输出的电阻结果kΩ
@@ -87,6 +90,11 @@ class COMPENSATION():
             offset = self.col_offset if from_row else self.row_offset
         if value is None:
             value = self.col_value if from_row else self.row_value
+        # if gain_r_mult is None:
+        #     gain_r_mult = self.col_gain_r_mult if from_row else self.row_gain_r_mult
+
+        # if gain_r_mult is not None:
+        #     resistence = resistence * gain_r_mult
         # 得到实际阻值
         resistence = resistence*1e3 - r_out - rw + offset
         if value is not None:

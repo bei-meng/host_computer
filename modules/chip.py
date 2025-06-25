@@ -596,9 +596,14 @@ class CHIP():
                 ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
                 ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
             else:
-                ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(int(from_row)<<16)))                                                  # 1配置行到施加电压,
-                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
-                ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
+                if self.setting.IsECRAM2:
+                    ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(0<<16)))                                                  # 1配置行到施加电压,
+                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))                                                  # 0配置列到TIA,
+                    ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
+                else:
+                    ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(int(from_row)<<16)))                                                  # 1配置行到施加电压,
+                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
+                    ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
         else:
             if self.setting.IsRERAM512:
                 ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))
@@ -607,7 +612,7 @@ class CHIP():
                 ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
                 ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
         self.execute_ins(ins_data=ins_data,ins_ram_start=0)
-
+ 
     def execute_ins(self,ins_data:list[CMD],ins_ram_start:int,message_check:str="cc550000"):
         """
             Args:
@@ -694,8 +699,12 @@ class CHIP():
                         else:                                   # 从列读
                             for i in DAC_INFO.RERAM_COL_VA: dac_v.append((i,v16))
                 elif self.setting.deviceType==1:                    # ECRAM
-                        for i in DAC_INFO.ECRAM_ROW_VA: dac_v.append((i,v16))
-                        for i in DAC_INFO.ECRAM_COL_VA: dac_v.append((i,v16))
+                        if self.setting.IsECRAM2:
+                            for i in DAC_INFO.ECRAM_GR: dac_v.append((i,v16))
+                            for i in DAC_INFO.ECRAM_GL: dac_v.append((i,v16))
+                        else:
+                            for i in DAC_INFO.ECRAM_ROW_VA: dac_v.append((i,v16))
+                            for i in DAC_INFO.ECRAM_COL_VA: dac_v.append((i,v16))
             elif self.op_mode == "write":
                 if self.setting.deviceType==0:                      # ReRAM
                     if self.setting.IsRERAM512:
@@ -2227,7 +2236,7 @@ class CHIP():
         elif split_type == 6:
             row_index = [i for i in row_index if i%2==0]+[i for i in row_index if i%2==1]
             col_index = [i for i in col_index if i%2==0]+[i for i in col_index if i%2==1]
-            operator_batch.extend([[[i], [j]] for i, j in itertools.product(row_index, col_index) if crossbar[i][j]])
+            operator_batch.extend([[[i], [j]] for i, j in itertools.product(row_index, col_index)])
         elif split_type == 7:               # 逐行,列划分TIA
             if from_row:
                 row_index = [i for i in row_index if i%2==0]+[i for i in row_index if i%2==1]

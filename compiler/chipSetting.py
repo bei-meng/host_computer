@@ -4,6 +4,7 @@ class CHIPSETTING:
     # 芯片配置
     deviceType = 0                                              # 0为ReRAM,1为ECRAM
     IsRERAM512 = False                                          # 是否是reream512
+    IsECRAM2 = False
     IsNew32 = False                                             # 是否是新的32路tia的板子
 
     chip_bank_num = 8                                           # 8个bank
