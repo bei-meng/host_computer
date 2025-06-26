@@ -26,9 +26,11 @@ class COMPILER:
         self.reg_flag = [0]*CHIPSETTING.REG_NUM                     # 寄存器使用标志, 使用为1,未使用为0
         self.need_replace_label = []                                # 需要进行label提供的指令(ins_pos,label_name,start,length)
         self.need_replace_const = []
+        self.need_replace_return = []                               # 替换返回的地址
         self.labels = {}                                            # 标签
         self.variable = {}                                          # 变量对应的reg号
         self.const_variable = {}
+        self.return_label = {}                                      # 返回位置的标签
         self.ins_pos = 0                                            # 最后一条指令的位置
         # self.get_reg_variable("zero")                               # 寄存器默认初始化就为0,不要改0寄存器的值
         self.offset = 0                                             # 指令整体偏移量
@@ -100,6 +102,8 @@ class COMPILER:
             elif ins[0]==0:
                 res += "0x"+format(num, 'x')
                 num += 1
+                if ins[1]=="pl_call":
+                    num+=1
                 res += "\t\t" + ins[1][3:] +"\t"
                 if len(ins)>2:
                     for i in range(2,len(ins)):
@@ -125,6 +129,9 @@ class COMPILER:
         need_offset = offset - self.offset
         for label_name,ins_pos in self.labels.items():
             self.labels[label_name] = ins_pos + need_offset
+
+        for label_name,ins_pos in self.return_label.items():
+            self.return_label[label_name] = ins_pos + need_offset
         self.offset = offset
 
     
@@ -141,6 +148,8 @@ class COMPILER:
                     res += "\n"
                 res += ins[1]+":" + "\t"
             elif ins[0] == 0 or ins[0]==2:
+                if ins[1]=="pl_call":
+                    num+=1
                 num += 1
                 res += "\t" + ins[1][3:] +"\t"
                 if len(ins)>2:
@@ -176,7 +185,14 @@ class COMPILER:
                 self.ins_data[ins_pos].command_data.replace_bit(start,length,new_data)
             else:
                 raise Exception(f"常量{label}未定义!")
-            
+        
+
+        for ins_pos,label,start,length in self.need_replace_return:
+            new_data = self.return_label.get(label,None)
+            if new_data is not None:
+                self.ins_data[ins_pos].command_data.replace_bit(start,length,new_data)
+            else:
+                raise Exception(f"返回地址{label}未定义!")
         return self.ins_data.copy()
     
     def load_assembler_ins(self,filename:str,encoding:str = 'utf-8'):
@@ -317,6 +333,29 @@ class COMPILER:
 
     def free_reg(self,variable_name):
         self.del_reg_variable(variable_name=variable_name)
+
+
+    def call(self,label:str):
+        # 翻译成一条move_i 0xff,ins_pos+2
+        reg127 = self.get_reg_variable("reg127",init=True)
+        ins = CMD(PL_MOVE_I,command_data=CmdData(reg127<<16))
+        self.ins_data.append(ins)
+        self.ins_pos += 1
+
+        return_label = "return"+str(self.ins_pos+1)
+        self.return_label[return_label] = self.ins_pos+1
+        # print("0x"+format(self.ins_pos+1, 'x'))
+
+        self.need_replace_return.append((self.ins_pos-1, return_label, 0, 16))
+
+
+        # 加上一条jump的指令
+        ins = CMD(PL_JUMP,command_data=CmdData(0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, "pl_call", label))
+        self.ins_pos += 1
+
+        self.need_replace_label.append((self.ins_pos-1, label, 0, CHIPSETTING.INS_RAM_ADDR_LENGTH))
 
     def jmp(self,label:str):
         """
@@ -938,6 +977,16 @@ class COMPILER:
         self.ins_pos += 1
 
         self.need_replace_label.append((self.ins_pos-1, label, 0, 16))
+
+    def jump_r(self,reg0:str):
+        """
+            jump to [reg0]
+        """
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_JUMP_R,command_data=CmdData(reg_0<<16))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, reg0))
+        self.ins_pos += 1
 
     def set_dac_i(self,imm0:Union[int|str],reg0:Union[int|str]):
         """

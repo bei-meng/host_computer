@@ -104,3 +104,4 @@ JLT IR_ram_addr
 JGT IR_ram_addr
 JLE IR_ram_addr
 JGE IR_ram_addr
+JMP_r reg2
