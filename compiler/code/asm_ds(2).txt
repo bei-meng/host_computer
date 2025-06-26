@@ -41,7 +41,7 @@ MOV_i reg28, 0      ; reg_calc_layer_flg=0
 ; ------------------------------
 set_elewise_reg_2_shifter1 reg7
 sll reg29, reg6, reg6  ; reg_actv_ram_byte_addrb_cnn1 = reg6<<6
-
+mul reg29, reg6, reg6  ; reg_actv_ram_byte_addrb_cnn1 = reg6<<6
 ; 外层循环: cnn1_W_cnt (reg30)
 MOV_i reg30, 0      ; cnn1_W_cnt=0
 loop_cnn1_W:

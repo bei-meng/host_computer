@@ -55,37 +55,37 @@
 变量名: reg56                         : 寄存器编号: 0x38
 变量名: reg57                         : 寄存器编号: 0x39
 
-标签: loop_cnn1_w                   : 指令地址: 0x1d
-标签: loop_cnn1_h                   : 指令地址: 0x22
-标签: loop_cnn1_kernel              : 指令地址: 0x26
-标签: exit_cnn1_kernel              : 指令地址: 0x31
-标签: exit_cnn1_h                   : 指令地址: 0x39
-标签: exit_cnn1_w                   : 指令地址: 0x3b
-标签: loop_cnn2_w                   : 指令地址: 0x3f
-标签: loop_cnn2_h                   : 指令地址: 0x43
-标签: loop_cnn2_ch                  : 指令地址: 0x46
-标签: exit_cnn2_ch                  : 指令地址: 0x55
-标签: exit_cnn2_h                   : 指令地址: 0x57
-标签: exit_cnn2_w                   : 指令地址: 0x5f
-标签: loop_lstm_t                   : 指令地址: 0x68
-标签: loop_read_xt                  : 指令地址: 0x6c
-标签: exit_read_xt                  : 指令地址: 0x77
-标签: loop_read_ht                  : 指令地址: 0x7a
-标签: exit_read_ht                  : 指令地址: 0x88
-标签: skip_read_ht                  : 指令地址: 0x88
-标签: init_ct                       : 指令地址: 0xb0
-标签: calc_it_ct                    : 指令地址: 0xb2
-标签: exit_lstm_t                   : 指令地址: 0xca
-标签: cal_block                     : 指令地址: 0xcb
-标签: loop_sign                     : 指令地址: 0xcc
-标签: set_neg_sign                  : 指令地址: 0xd3
-标签: end_sign_set                  : 指令地址: 0xd5
-标签: loop_bit_plane                : 指令地址: 0xd6
-标签: loop_word_bank                : 指令地址: 0xda
-标签: skip_rram_read                : 指令地址: 0xe8
-标签: exit_word_bank                : 指令地址: 0xea
-标签: exit_bit_plane                : 指令地址: 0xec
-标签: exit_sign                     : 指令地址: 0xee
+标签: loop_cnn1_w                   : 指令地址: 0x1e
+标签: loop_cnn1_h                   : 指令地址: 0x23
+标签: loop_cnn1_kernel              : 指令地址: 0x27
+标签: exit_cnn1_kernel              : 指令地址: 0x32
+标签: exit_cnn1_h                   : 指令地址: 0x3a
+标签: exit_cnn1_w                   : 指令地址: 0x3c
+标签: loop_cnn2_w                   : 指令地址: 0x40
+标签: loop_cnn2_h                   : 指令地址: 0x44
+标签: loop_cnn2_ch                  : 指令地址: 0x47
+标签: exit_cnn2_ch                  : 指令地址: 0x56
+标签: exit_cnn2_h                   : 指令地址: 0x58
+标签: exit_cnn2_w                   : 指令地址: 0x60
+标签: loop_lstm_t                   : 指令地址: 0x69
+标签: loop_read_xt                  : 指令地址: 0x6d
+标签: exit_read_xt                  : 指令地址: 0x78
+标签: loop_read_ht                  : 指令地址: 0x7b
+标签: exit_read_ht                  : 指令地址: 0x89
+标签: skip_read_ht                  : 指令地址: 0x89
+标签: init_ct                       : 指令地址: 0xb1
+标签: calc_it_ct                    : 指令地址: 0xb3
+标签: exit_lstm_t                   : 指令地址: 0xcb
+标签: cal_block                     : 指令地址: 0xcc
+标签: loop_sign                     : 指令地址: 0xcd
+标签: set_neg_sign                  : 指令地址: 0xd4
+标签: end_sign_set                  : 指令地址: 0xd6
+标签: loop_bit_plane                : 指令地址: 0xd7
+标签: loop_word_bank                : 指令地址: 0xdb
+标签: skip_rram_read                : 指令地址: 0xe9
+标签: exit_word_bank                : 指令地址: 0xeb
+标签: exit_bit_plane                : 指令地址: 0xed
+标签: exit_sign                     : 指令地址: 0xef
 
 0x0		mov_i	reg0, 3
 0x1		mov_i	reg1, 1
@@ -115,273 +115,274 @@
 0x19		mov_i	reg28, 0
 0x1a		element_wise	reg7, 0, 15
 0x1b		sll	reg29, reg6, reg6
-0x1c		mov_i	reg30, 0
+0x1c		mul_r	reg29, reg6, reg6
+0x1d		mov_i	reg30, 0
 
-0x1d	loop_cnn1_w:
-0x1d		sub	reg49, reg2, reg4
-0x1e		addi	reg49, reg49, 1
-0x1f		cmp_r	reg30, reg49
-0x20		jle	exit_cnn1_w
-0x21		mov_i	reg31, 0
+0x1e	loop_cnn1_w:
+0x1e		sub	reg49, reg2, reg4
+0x1f		addi	reg49, reg49, 1
+0x20		cmp_r	reg30, reg49
+0x21		jle	exit_cnn1_w
+0x22		mov_i	reg31, 0
 
-0x22	loop_cnn1_h:
-0x22		cmp_i	reg31, 10
-0x23		jle	exit_cnn1_h
-0x24		reshape_buffer_clear	
-0x25		mov_i	reg32, 0
+0x23	loop_cnn1_h:
+0x23		cmp_i	reg31, 10
+0x24		jle	exit_cnn1_h
+0x25		reshape_buffer_clear	
+0x26		mov_i	reg32, 0
 
-0x26	loop_cnn1_kernel:
-0x26		cmp_i	reg32, 25
-0x27		jle	exit_cnn1_kernel
-0x28		add	reg49, reg30, reg32
-0x29		sll	reg49, reg49, reg6
-0x2a		add	reg33, reg49, reg31
-0x2b		actv_ram_addr	reg33
-0x2c		actv_ram_read	
-0x2d		reshape_buffer_addr	reg32
-0x2e		reshape_buffer_write	
-0x2f		addi	reg32, reg32, 1
-0x30		jmp	loop_cnn1_kernel
+0x27	loop_cnn1_kernel:
+0x27		cmp_i	reg32, 25
+0x28		jle	exit_cnn1_kernel
+0x29		add	reg49, reg30, reg32
+0x2a		sll	reg49, reg49, reg6
+0x2b		add	reg33, reg49, reg31
+0x2c		actv_ram_addr	reg33
+0x2d		actv_ram_read	
+0x2e		reshape_buffer_addr	reg32
+0x2f		reshape_buffer_write	
+0x30		addi	reg32, reg32, 1
+0x31		jmp	loop_cnn1_kernel
 
-0x31	exit_cnn1_kernel:
-0x31		call	cal_block
-0x33		actv_ram_addr	reg29
-0x34		actv_ram_write	1
-0x35		element_wise	, 0, 13
-0x36		addi	reg29, reg29, 16
-0x37		addi	reg31, reg31, 1
-0x38		jmp	loop_cnn1_h
+0x32	exit_cnn1_kernel:
+0x32		call	cal_block
+0x34		actv_ram_addr	reg29
+0x35		actv_ram_write	1
+0x36		element_wise	, 0, 13
+0x37		addi	reg29, reg29, 16
+0x38		addi	reg31, reg31, 1
+0x39		jmp	loop_cnn1_h
 
-0x39	exit_cnn1_h:
-0x39		addi	reg30, reg30, 1
-0x3a		jmp	loop_cnn1_w
+0x3a	exit_cnn1_h:
+0x3a		addi	reg30, reg30, 1
+0x3b		jmp	loop_cnn1_w
 
-0x3b	exit_cnn1_w:
-0x3b		addi	reg28, reg28, 1
-0x3c		element_wise	reg13, 0, 15
-0x3d		sll	reg34, reg12, reg12
-0x3e		mov_i	reg35, 0
+0x3c	exit_cnn1_w:
+0x3c		addi	reg28, reg28, 1
+0x3d		element_wise	reg13, 0, 15
+0x3e		sll	reg34, reg12, reg12
+0x3f		mov_i	reg35, 0
 
-0x3f	loop_cnn2_w:
-0x3f		cmp_r	reg35, reg8
-0x40		jle	exit_cnn2_w
-0x41		reshape_buffer_clear	
-0x42		mov_i	reg36, 0
+0x40	loop_cnn2_w:
+0x40		cmp_r	reg35, reg8
+0x41		jle	exit_cnn2_w
+0x42		reshape_buffer_clear	
+0x43		mov_i	reg36, 0
 
-0x43	loop_cnn2_h:
-0x43		cmp_r	reg36, reg10
-0x44		jle	exit_cnn2_h
-0x45		mov_i	reg37, 0
+0x44	loop_cnn2_h:
+0x44		cmp_r	reg36, reg10
+0x45		jle	exit_cnn2_h
+0x46		mov_i	reg37, 0
 
-0x46	loop_cnn2_ch:
-0x46		cmp_r	reg37, reg11
-0x47		jle	exit_cnn2_ch
-0x48		add	reg49, reg35, reg10
-0x49		add	reg49, reg49, reg36
-0x4a		sll	reg49, reg49, reg12
-0x4b		add	reg49, reg49, reg37
-0x4c		add	reg33, reg49, reg29
-0x4d		actv_ram_addr	reg33
-0x4e		actv_ram_read	
-0x4f		sll	reg49, reg36, reg12
-0x50		add	reg38, reg49, reg37
-0x51		reshape_buffer_addr	reg38
-0x52		reshape_buffer_write	
-0x53		addi	reg37, reg37, 1
-0x54		jmp	loop_cnn2_ch
+0x47	loop_cnn2_ch:
+0x47		cmp_r	reg37, reg11
+0x48		jle	exit_cnn2_ch
+0x49		add	reg49, reg35, reg10
+0x4a		add	reg49, reg49, reg36
+0x4b		sll	reg49, reg49, reg12
+0x4c		add	reg49, reg49, reg37
+0x4d		add	reg33, reg49, reg29
+0x4e		actv_ram_addr	reg33
+0x4f		actv_ram_read	
+0x50		sll	reg49, reg36, reg12
+0x51		add	reg38, reg49, reg37
+0x52		reshape_buffer_addr	reg38
+0x53		reshape_buffer_write	
+0x54		addi	reg37, reg37, 1
+0x55		jmp	loop_cnn2_ch
 
-0x55	exit_cnn2_ch:
-0x55		addi	reg36, reg36, 1
-0x56		jmp	loop_cnn2_h
+0x56	exit_cnn2_ch:
+0x56		addi	reg36, reg36, 1
+0x57		jmp	loop_cnn2_h
 
-0x57	exit_cnn2_h:
-0x57		call	cal_block
-0x59		actv_ram_addr	reg34
-0x5a		actv_ram_write	1
-0x5b		element_wise	, 0, 13
-0x5c		addi	reg34, reg34, 16
-0x5d		addi	reg35, reg35, 1
-0x5e		jmp	loop_cnn2_w
+0x58	exit_cnn2_h:
+0x58		call	cal_block
+0x5a		actv_ram_addr	reg34
+0x5b		actv_ram_write	1
+0x5c		element_wise	, 0, 13
+0x5d		addi	reg34, reg34, 16
+0x5e		addi	reg35, reg35, 1
+0x5f		jmp	loop_cnn2_w
 
-0x5f	exit_cnn2_w:
-0x5f		addi	reg28, reg28, 1
-0x60		element_wise	reg16, 0, 15
-0x61		sll	reg39, reg21, reg12
-0x62		addi	reg40, reg39, 16
-0x63		addi	reg41, reg39, 32
-0x64		addi	reg42, reg39, 48
-0x65		sll	reg43, reg22, reg12
-0x66		cal_ch_mask	0, 255
-0x67		mov_i	reg44, 0
+0x60	exit_cnn2_w:
+0x60		addi	reg28, reg28, 1
+0x61		element_wise	reg16, 0, 15
+0x62		sll	reg39, reg21, reg12
+0x63		addi	reg40, reg39, 16
+0x64		addi	reg41, reg39, 32
+0x65		addi	reg42, reg39, 48
+0x66		sll	reg43, reg22, reg12
+0x67		cal_ch_mask	0, 255
+0x68		mov_i	reg44, 0
 
-0x68	loop_lstm_t:
-0x68		cmp_i	reg44, 2
-0x69		jle	exit_lstm_t
-0x6a		reshape_buffer_clear	
-0x6b		mov_i	reg45, 0
+0x69	loop_lstm_t:
+0x69		cmp_i	reg44, 2
+0x6a		jle	exit_lstm_t
+0x6b		reshape_buffer_clear	
+0x6c		mov_i	reg45, 0
 
-0x6c	loop_read_xt:
-0x6c		cmp_i	reg45, 16
-0x6d		jle	exit_read_xt
-0x6e		sll	reg49, reg44, reg12
-0x6f		add	reg33, reg49, reg45
-0x70		sll	reg49, reg33, reg12
-0x71		actv_ram_addr	reg49
-0x72		actv_ram_read	
-0x73		reshape_buffer_addr	reg45
-0x74		reshape_buffer_write	
-0x75		addi	reg45, reg45, 1
-0x76		jmp	loop_read_xt
+0x6d	loop_read_xt:
+0x6d		cmp_i	reg45, 16
+0x6e		jle	exit_read_xt
+0x6f		sll	reg49, reg44, reg12
+0x70		add	reg33, reg49, reg45
+0x71		sll	reg49, reg33, reg12
+0x72		actv_ram_addr	reg49
+0x73		actv_ram_read	
+0x74		reshape_buffer_addr	reg45
+0x75		reshape_buffer_write	
+0x76		addi	reg45, reg45, 1
+0x77		jmp	loop_read_xt
 
-0x77	exit_read_xt:
-0x77		cmp_i	reg44, 0
-0x78		jeq	skip_read_ht
-0x79		mov_i	reg47, 0
+0x78	exit_read_xt:
+0x78		cmp_i	reg44, 0
+0x79		jeq	skip_read_ht
+0x7a		mov_i	reg47, 0
 
-0x7a	loop_read_ht:
-0x7a		cmp_i	reg47, 8
-0x7b		jle	exit_read_ht
-0x7c		sub	reg49, reg44, reg44
-0x7d		sll	reg49, reg49, reg12
-0x7e		add	reg49, reg49, reg47
-0x7f		sll	reg49, reg49, reg12
-0x80		add	reg49, reg49, reg19
-0x81		actv_ram_addr	reg49
-0x82		actv_ram_read	
-0x83		addi	reg38, reg17, 17
-0x84		reshape_buffer_addr	reg38
-0x85		reshape_buffer_write	
-0x86		addi	reg47, reg47, 1
-0x87		jmp	loop_read_ht
+0x7b	loop_read_ht:
+0x7b		cmp_i	reg47, 8
+0x7c		jle	exit_read_ht
+0x7d		sub	reg49, reg44, reg44
+0x7e		sll	reg49, reg49, reg12
+0x7f		add	reg49, reg49, reg47
+0x80		sll	reg49, reg49, reg12
+0x81		add	reg49, reg49, reg19
+0x82		actv_ram_addr	reg49
+0x83		actv_ram_read	
+0x84		addi	reg38, reg17, 17
+0x85		reshape_buffer_addr	reg38
+0x86		reshape_buffer_write	
+0x87		addi	reg47, reg47, 1
+0x88		jmp	loop_read_ht
 
-0x88	exit_read_ht:
+0x89	exit_read_ht:
 
-0x88	skip_read_ht:
-0x88		mov_i	reg48, 0
-0x89		call	cal_block
-0x8b		apu_mode	1
-0x8c		actv_ram_addr	reg39
-0x8d		actv_ram_write	2
-0x8e		element_wise	, 0, 13
-0x8f		mov_i	reg48, 1
-0x90		call	cal_block
-0x92		apu_mode	1
-0x93		actv_ram_addr	reg40
-0x94		actv_ram_write	2
-0x95		element_wise	, 0, 13
-0x96		mov_i	reg48, 2
-0x97		call	cal_block
-0x99		apu_mode	2
-0x9a		actv_ram_addr	reg41
-0x9b		actv_ram_write	2
-0x9c		element_wise	, 0, 13
-0x9d		mov_i	reg48, 3
-0x9e		call	cal_block
-0xa0		apu_mode	1
-0xa1		actv_ram_addr	reg42
-0xa2		actv_ram_write	2
-0xa3		element_wise	, 0, 13
-0xa4		mov_i	reg48, 0
-0xa5		cmp_i	reg44, 0
-0xa6		jeq	init_ct
-0xa7		actv_ram_addr	reg39
-0xa8		actv_ram_read	
-0xa9		element_wise	, 0, 1
-0xaa		actv_ram_addr	reg43
-0xab		actv_ram_read	
-0xac		element_wise	, 0, 4
-0xad		element_wise	, 0, 7
-0xae		element_wise	, 0, 8
-0xaf		jmp	calc_it_ct
+0x89	skip_read_ht:
+0x89		mov_i	reg48, 0
+0x8a		call	cal_block
+0x8c		apu_mode	1
+0x8d		actv_ram_addr	reg39
+0x8e		actv_ram_write	2
+0x8f		element_wise	, 0, 13
+0x90		mov_i	reg48, 1
+0x91		call	cal_block
+0x93		apu_mode	1
+0x94		actv_ram_addr	reg40
+0x95		actv_ram_write	2
+0x96		element_wise	, 0, 13
+0x97		mov_i	reg48, 2
+0x98		call	cal_block
+0x9a		apu_mode	2
+0x9b		actv_ram_addr	reg41
+0x9c		actv_ram_write	2
+0x9d		element_wise	, 0, 13
+0x9e		mov_i	reg48, 3
+0x9f		call	cal_block
+0xa1		apu_mode	1
+0xa2		actv_ram_addr	reg42
+0xa3		actv_ram_write	2
+0xa4		element_wise	, 0, 13
+0xa5		mov_i	reg48, 0
+0xa6		cmp_i	reg44, 0
+0xa7		jeq	init_ct
+0xa8		actv_ram_addr	reg39
+0xa9		actv_ram_read	
+0xaa		element_wise	, 0, 1
+0xab		actv_ram_addr	reg43
+0xac		actv_ram_read	
+0xad		element_wise	, 0, 4
+0xae		element_wise	, 0, 7
+0xaf		element_wise	, 0, 8
+0xb0		jmp	calc_it_ct
 
-0xb0	init_ct:
-0xb0		element_wise	, 0, 13
-0xb1		element_wise	, 0, 9
+0xb1	init_ct:
+0xb1		element_wise	, 0, 13
+0xb2		element_wise	, 0, 9
 
-0xb2	calc_it_ct:
-0xb2		actv_ram_addr	reg40
-0xb3		actv_ram_read	
-0xb4		element_wise	, 0, 1
-0xb5		actv_ram_addr	reg41
-0xb6		actv_ram_read	
-0xb7		element_wise	, 0, 4
-0xb8		element_wise	, 0, 7
-0xb9		element_wise	, 0, 10
-0xba		element_wise	, 0, 12
-0xbb		actv_ram_addr	reg43
-0xbc		actv_ram_write	1
-0xbd		apu_mode	2
-0xbe		element_wise	, 0, 0
-0xbf		actv_ram_addr	reg42
-0xc0		actv_ram_read	
-0xc1		element_wise	, 0, 4
-0xc2		element_wise	, 0, 7
-0xc3		sll	reg49, reg44, reg12
-0xc4		sll	reg49, reg49, reg12
-0xc5		add	reg46, reg49, reg19
-0xc6		actv_ram_addr	reg46
-0xc7		actv_ram_write	0
-0xc8		addi	reg44, reg44, 1
-0xc9		jmp	loop_lstm_t
+0xb3	calc_it_ct:
+0xb3		actv_ram_addr	reg40
+0xb4		actv_ram_read	
+0xb5		element_wise	, 0, 1
+0xb6		actv_ram_addr	reg41
+0xb7		actv_ram_read	
+0xb8		element_wise	, 0, 4
+0xb9		element_wise	, 0, 7
+0xba		element_wise	, 0, 10
+0xbb		element_wise	, 0, 12
+0xbc		actv_ram_addr	reg43
+0xbd		actv_ram_write	1
+0xbe		apu_mode	2
+0xbf		element_wise	, 0, 0
+0xc0		actv_ram_addr	reg42
+0xc1		actv_ram_read	
+0xc2		element_wise	, 0, 4
+0xc3		element_wise	, 0, 7
+0xc4		sll	reg49, reg44, reg12
+0xc5		sll	reg49, reg49, reg12
+0xc6		add	reg46, reg49, reg19
+0xc7		actv_ram_addr	reg46
+0xc8		actv_ram_write	0
+0xc9		addi	reg44, reg44, 1
+0xca		jmp	loop_lstm_t
 
-0xca	exit_lstm_t:
-0xca		exit	
+0xcb	exit_lstm_t:
+0xcb		exit	
 
-0xcb	cal_block:
-0xcb		mov_i	reg50, 0
+0xcc	cal_block:
+0xcc		mov_i	reg50, 0
 
-0xcc	loop_sign:
-0xcc		cmp_i	reg50, 2
-0xcd		jle	exit_sign
-0xce		cmp_i	reg50, 0
-0xcf		jne	set_neg_sign
-0xd0		mov_i	reg51, 1
-0xd1		element_wise	reg51, 0, 5
-0xd2		jmp	end_sign_set
+0xcd	loop_sign:
+0xcd		cmp_i	reg50, 2
+0xce		jle	exit_sign
+0xcf		cmp_i	reg50, 0
+0xd0		jne	set_neg_sign
+0xd1		mov_i	reg51, 1
+0xd2		element_wise	reg51, 0, 5
+0xd3		jmp	end_sign_set
 
-0xd3	set_neg_sign:
-0xd3		mov_i	reg51, -1
-0xd4		element_wise	reg51, 0, 5
+0xd4	set_neg_sign:
+0xd4		mov_i	reg51, -1
+0xd5		element_wise	reg51, 0, 5
 
-0xd5	end_sign_set:
-0xd5		mov_i	reg52, 0
+0xd6	end_sign_set:
+0xd6		mov_i	reg52, 0
 
-0xd6	loop_bit_plane:
-0xd6		cmp_r	reg52, reg0
-0xd7		jle	exit_bit_plane
-0xd8		element_wise	reg52, 0, 6
-0xd9		mov_i	reg53, 0
+0xd7	loop_bit_plane:
+0xd7		cmp_r	reg52, reg0
+0xd8		jle	exit_bit_plane
+0xd9		element_wise	reg52, 0, 6
+0xda		mov_i	reg53, 0
 
-0xda	loop_word_bank:
-0xda		cmp_r	reg53, reg1
-0xdb		jle	exit_word_bank
-0xdc		sll	reg54, reg52, reg12
-0xdd		add	reg54, reg54, reg53
-0xde		reshape_buffer_read	reg50, reg55, reg54
-0xdf		mov_i	reg56, 1
-0xe0		sll	reg56, reg56, reg53
-0xe1		cim_rstn	
-0xe2		set_row_bank	reg56, reg55
-0xe3		sub	reg57, reg1, reg44
-0xe4		cmp_r	reg53, reg57
-0xe5		jne	skip_rram_read
-0xe6		read_row_pulse_diff	
-0xe7		element_wise	, 0, 14
+0xdb	loop_word_bank:
+0xdb		cmp_r	reg53, reg1
+0xdc		jle	exit_word_bank
+0xdd		sll	reg54, reg52, reg12
+0xde		add	reg54, reg54, reg53
+0xdf		reshape_buffer_read	reg50, reg55, reg54
+0xe0		mov_i	reg56, 1
+0xe1		sll	reg56, reg56, reg53
+0xe2		cim_rstn	
+0xe3		set_row_bank	reg56, reg55
+0xe4		sub	reg57, reg1, reg44
+0xe5		cmp_r	reg53, reg57
+0xe6		jne	skip_rram_read
+0xe7		read_row_pulse_diff	
+0xe8		element_wise	, 0, 14
 
-0xe8	skip_rram_read:
-0xe8		addi	reg53, reg53, 1
-0xe9		jmp	loop_word_bank
+0xe9	skip_rram_read:
+0xe9		addi	reg53, reg53, 1
+0xea		jmp	loop_word_bank
 
-0xea	exit_word_bank:
-0xea		addi	reg52, reg52, 1
-0xeb		jmp	loop_bit_plane
+0xeb	exit_word_bank:
+0xeb		addi	reg52, reg52, 1
+0xec		jmp	loop_bit_plane
 
-0xec	exit_bit_plane:
-0xec		addi	reg50, reg50, 1
-0xed		jmp	loop_sign
+0xed	exit_bit_plane:
+0xed		addi	reg50, reg50, 1
+0xee		jmp	loop_sign
 
-0xee	exit_sign:
-0xee		jump_r	reg127
+0xef	exit_sign:
+0xef		jump_r	reg127
 
 
 
@@ -416,18 +417,19 @@
 	指令: pl_mov_i                	字节码: 301c0000
 	指令: pl_element_wise         	字节码: 2107000f
 	指令: pl_sll                  	字节码: 101d0606
+	指令: pl_mul_r                	字节码: 3b1d0606
 	指令: pl_mov_i                	字节码: 301e0000
 	指令: pl_sub                  	字节码: 0e310204
 	指令: pl_addi                 	字节码: 0a013131
 	指令: pl_cmp_r                	字节码: 331e3100
-	指令: pl_jle                  	字节码: 3900003b
+	指令: pl_jle                  	字节码: 3900003c
 	指令: pl_mov_i                	字节码: 301f0000
 	指令: pl_cmp_i                	字节码: 321f000a
-	指令: pl_jle                  	字节码: 39000039
+	指令: pl_jle                  	字节码: 3900003a
 	指令: pl_reshape_buffer_clear 	字节码: 25000000
 	指令: pl_mov_i                	字节码: 30200000
 	指令: pl_cmp_i                	字节码: 32200019
-	指令: pl_jle                  	字节码: 39000031
+	指令: pl_jle                  	字节码: 39000032
 	指令: pl_add                  	字节码: 0d311e20
 	指令: pl_sll                  	字节码: 10313106
 	指令: pl_add                  	字节码: 0d21311f
@@ -436,30 +438,30 @@
 	指令: pl_reshape_buffer_addr  	字节码: 26000020
 	指令: pl_reshape_buffer_write 	字节码: 27000000
 	指令: pl_addi                 	字节码: 0a012020
-	指令: pl_jmp                  	字节码: 00000026
-	指令: pl_mov_i                	字节码: 307f0033
-	指令: pl_jmp                  	字节码: 000000cb
+	指令: pl_jmp                  	字节码: 00000027
+	指令: pl_mov_i                	字节码: 307f0034
+	指令: pl_jmp                  	字节码: 000000cc
 	指令: pl_actv_ram_addr        	字节码: 2200001d
 	指令: pl_actv_ram_write       	字节码: 24000001
 	指令: pl_element_wise         	字节码: 2100000d
 	指令: pl_addi                 	字节码: 0a101d1d
 	指令: pl_addi                 	字节码: 0a011f1f
-	指令: pl_jmp                  	字节码: 00000022
+	指令: pl_jmp                  	字节码: 00000023
 	指令: pl_addi                 	字节码: 0a011e1e
-	指令: pl_jmp                  	字节码: 0000001d
+	指令: pl_jmp                  	字节码: 0000001e
 	指令: pl_addi                 	字节码: 0a011c1c
 	指令: pl_element_wise         	字节码: 210d000f
 	指令: pl_sll                  	字节码: 10220c0c
 	指令: pl_mov_i                	字节码: 30230000
 	指令: pl_cmp_r                	字节码: 33230800
-	指令: pl_jle                  	字节码: 3900005f
+	指令: pl_jle                  	字节码: 39000060
 	指令: pl_reshape_buffer_clear 	字节码: 25000000
 	指令: pl_mov_i                	字节码: 30240000
 	指令: pl_cmp_r                	字节码: 33240a00
-	指令: pl_jle                  	字节码: 39000057
+	指令: pl_jle                  	字节码: 39000058
 	指令: pl_mov_i                	字节码: 30250000
 	指令: pl_cmp_r                	字节码: 33250b00
-	指令: pl_jle                  	字节码: 39000055
+	指令: pl_jle                  	字节码: 39000056
 	指令: pl_add                  	字节码: 0d31230a
 	指令: pl_add                  	字节码: 0d313124
 	指令: pl_sll                  	字节码: 1031310c
@@ -472,17 +474,17 @@
 	指令: pl_reshape_buffer_addr  	字节码: 26000026
 	指令: pl_reshape_buffer_write 	字节码: 27000000
 	指令: pl_addi                 	字节码: 0a012525
-	指令: pl_jmp                  	字节码: 00000046
+	指令: pl_jmp                  	字节码: 00000047
 	指令: pl_addi                 	字节码: 0a012424
-	指令: pl_jmp                  	字节码: 00000043
-	指令: pl_mov_i                	字节码: 307f0059
-	指令: pl_jmp                  	字节码: 000000cb
+	指令: pl_jmp                  	字节码: 00000044
+	指令: pl_mov_i                	字节码: 307f005a
+	指令: pl_jmp                  	字节码: 000000cc
 	指令: pl_actv_ram_addr        	字节码: 22000022
 	指令: pl_actv_ram_write       	字节码: 24000001
 	指令: pl_element_wise         	字节码: 2100000d
 	指令: pl_addi                 	字节码: 0a102222
 	指令: pl_addi                 	字节码: 0a012323
-	指令: pl_jmp                  	字节码: 0000003f
+	指令: pl_jmp                  	字节码: 00000040
 	指令: pl_addi                 	字节码: 0a011c1c
 	指令: pl_element_wise         	字节码: 2110000f
 	指令: pl_sll                  	字节码: 1027150c
@@ -493,11 +495,11 @@
 	指令: pl_cal_ch_mask          	字节码: 1f0000ff
 	指令: pl_mov_i                	字节码: 302c0000
 	指令: pl_cmp_i                	字节码: 322c0002
-	指令: pl_jle                  	字节码: 390000ca
+	指令: pl_jle                  	字节码: 390000cb
 	指令: pl_reshape_buffer_clear 	字节码: 25000000
 	指令: pl_mov_i                	字节码: 302d0000
 	指令: pl_cmp_i                	字节码: 322d0010
-	指令: pl_jle                  	字节码: 39000077
+	指令: pl_jle                  	字节码: 39000078
 	指令: pl_sll                  	字节码: 10312c0c
 	指令: pl_add                  	字节码: 0d21312d
 	指令: pl_sll                  	字节码: 1031210c
@@ -506,12 +508,12 @@
 	指令: pl_reshape_buffer_addr  	字节码: 2600002d
 	指令: pl_reshape_buffer_write 	字节码: 27000000
 	指令: pl_addi                 	字节码: 0a012d2d
-	指令: pl_jmp                  	字节码: 0000006c
+	指令: pl_jmp                  	字节码: 0000006d
 	指令: pl_cmp_i                	字节码: 322c0000
-	指令: pl_jeq                  	字节码: 34000088
+	指令: pl_jeq                  	字节码: 34000089
 	指令: pl_mov_i                	字节码: 302f0000
 	指令: pl_cmp_i                	字节码: 322f0008
-	指令: pl_jle                  	字节码: 39000088
+	指令: pl_jle                  	字节码: 39000089
 	指令: pl_sub                  	字节码: 0e312c2c
 	指令: pl_sll                  	字节码: 1031310c
 	指令: pl_add                  	字节码: 0d31312f
@@ -523,38 +525,38 @@
 	指令: pl_reshape_buffer_addr  	字节码: 26000026
 	指令: pl_reshape_buffer_write 	字节码: 27000000
 	指令: pl_addi                 	字节码: 0a012f2f
-	指令: pl_jmp                  	字节码: 0000007a
+	指令: pl_jmp                  	字节码: 0000007b
 	指令: pl_mov_i                	字节码: 30300000
-	指令: pl_mov_i                	字节码: 307f008b
-	指令: pl_jmp                  	字节码: 000000cb
+	指令: pl_mov_i                	字节码: 307f008c
+	指令: pl_jmp                  	字节码: 000000cc
 	指令: pl_apu_mode             	字节码: 20000001
 	指令: pl_actv_ram_addr        	字节码: 22000027
 	指令: pl_actv_ram_write       	字节码: 24000002
 	指令: pl_element_wise         	字节码: 2100000d
 	指令: pl_mov_i                	字节码: 30300001
-	指令: pl_mov_i                	字节码: 307f0092
-	指令: pl_jmp                  	字节码: 000000cb
+	指令: pl_mov_i                	字节码: 307f0093
+	指令: pl_jmp                  	字节码: 000000cc
 	指令: pl_apu_mode             	字节码: 20000001
 	指令: pl_actv_ram_addr        	字节码: 22000028
 	指令: pl_actv_ram_write       	字节码: 24000002
 	指令: pl_element_wise         	字节码: 2100000d
 	指令: pl_mov_i                	字节码: 30300002
-	指令: pl_mov_i                	字节码: 307f0099
-	指令: pl_jmp                  	字节码: 000000cb
+	指令: pl_mov_i                	字节码: 307f009a
+	指令: pl_jmp                  	字节码: 000000cc
 	指令: pl_apu_mode             	字节码: 20000002
 	指令: pl_actv_ram_addr        	字节码: 22000029
 	指令: pl_actv_ram_write       	字节码: 24000002
 	指令: pl_element_wise         	字节码: 2100000d
 	指令: pl_mov_i                	字节码: 30300003
-	指令: pl_mov_i                	字节码: 307f00a0
-	指令: pl_jmp                  	字节码: 000000cb
+	指令: pl_mov_i                	字节码: 307f00a1
+	指令: pl_jmp                  	字节码: 000000cc
 	指令: pl_apu_mode             	字节码: 20000001
 	指令: pl_actv_ram_addr        	字节码: 2200002a
 	指令: pl_actv_ram_write       	字节码: 24000002
 	指令: pl_element_wise         	字节码: 2100000d
 	指令: pl_mov_i                	字节码: 30300000
 	指令: pl_cmp_i                	字节码: 322c0000
-	指令: pl_jeq                  	字节码: 340000b0
+	指令: pl_jeq                  	字节码: 340000b1
 	指令: pl_actv_ram_addr        	字节码: 22000027
 	指令: pl_actv_ram_read        	字节码: 23000000
 	指令: pl_element_wise         	字节码: 21000001
@@ -563,7 +565,7 @@
 	指令: pl_element_wise         	字节码: 21000004
 	指令: pl_element_wise         	字节码: 21000007
 	指令: pl_element_wise         	字节码: 21000008
-	指令: pl_jmp                  	字节码: 000000b2
+	指令: pl_jmp                  	字节码: 000000b3
 	指令: pl_element_wise         	字节码: 2100000d
 	指令: pl_element_wise         	字节码: 21000009
 	指令: pl_actv_ram_addr        	字节码: 22000028
@@ -589,25 +591,25 @@
 	指令: pl_actv_ram_addr        	字节码: 2200002e
 	指令: pl_actv_ram_write       	字节码: 24000000
 	指令: pl_addi                 	字节码: 0a012c2c
-	指令: pl_jmp                  	字节码: 00000068
+	指令: pl_jmp                  	字节码: 00000069
 	指令: pl_exit                 	字节码: 0b000000
 	指令: pl_mov_i                	字节码: 30320000
 	指令: pl_cmp_i                	字节码: 32320002
-	指令: pl_jle                  	字节码: 390000ee
+	指令: pl_jle                  	字节码: 390000ef
 	指令: pl_cmp_i                	字节码: 32320000
-	指令: pl_jne                  	字节码: 350000d3
+	指令: pl_jne                  	字节码: 350000d4
 	指令: pl_mov_i                	字节码: 30330001
 	指令: pl_element_wise         	字节码: 21330005
-	指令: pl_jmp                  	字节码: 000000d5
+	指令: pl_jmp                  	字节码: 000000d6
 	指令: pl_mov_i                	字节码: 3033ffff
 	指令: pl_element_wise         	字节码: 21330005
 	指令: pl_mov_i                	字节码: 30340000
 	指令: pl_cmp_r                	字节码: 33340000
-	指令: pl_jle                  	字节码: 390000ec
+	指令: pl_jle                  	字节码: 390000ed
 	指令: pl_element_wise         	字节码: 21340006
 	指令: pl_mov_i                	字节码: 30350000
 	指令: pl_cmp_r                	字节码: 33350100
-	指令: pl_jle                  	字节码: 390000ea
+	指令: pl_jle                  	字节码: 390000eb
 	指令: pl_sll                  	字节码: 1036340c
 	指令: pl_add                  	字节码: 0d363635
 	指令: pl_reshape_buffer_read  	字节码: 28323736
@@ -617,18 +619,18 @@
 	指令: pl_set_row_bank         	字节码: 12003837
 	指令: pl_sub                  	字节码: 0e39012c
 	指令: pl_cmp_r                	字节码: 33353900
-	指令: pl_jne                  	字节码: 350000e8
+	指令: pl_jne                  	字节码: 350000e9
 	指令: pl_read_row_pulse_diff  	字节码: 1c000000
 	指令: pl_element_wise         	字节码: 2100000e
 	指令: pl_addi                 	字节码: 0a013535
-	指令: pl_jmp                  	字节码: 000000da
+	指令: pl_jmp                  	字节码: 000000db
 	指令: pl_addi                 	字节码: 0a013434
-	指令: pl_jmp                  	字节码: 000000d6
+	指令: pl_jmp                  	字节码: 000000d7
 	指令: pl_addi                 	字节码: 0a013232
-	指令: pl_jmp                  	字节码: 000000cc
+	指令: pl_jmp                  	字节码: 000000cd
 	指令: pl_jump_r               	字节码: 3a7f0000
 
 
 
 完整字节码:
-55aa0430000003300100013002001a3003000a300400193005000030060190300700060e0802040a01080830090010310a0300310b0900300c12c0300d0000300e0002300f0000301000003011001030120008301301900a0c14130a0c15140a01161529000000301c00002107000f101d0606301e00000e3102040a013131331e31003900003b301f0000321f000a39000039250000003020000032200019390000310d311e20103131060d21311f220000212300000026000020270000000a01202000000026307f0033000000cb2200001d240000012100000d0a101d1d0a011f1f000000220a011e1e0000001d0a011c1c210d000f10220c0c30230000332308003900005f250000003024000033240a00390000573025000033250b00390000550d31230a0d3131241031310c0d3131250d21311d22000021230000001031240c0d26312526000026270000000a012525000000460a01242400000043307f0059000000cb22000022240000012100000d0a1022220a0123230000003f0a011c1c2110000f1027150c0a1028270a2029270a302a27102b160c1f0000ff302c0000322c0002390000ca25000000302d0000322d00103900007710312c0c0d21312d1031210c22000031230000002600002d270000000a012d2d0000006c322c000034000088302f0000322f0008390000880e312c2c1031310c0d31312f1031310c0d31311322000031230000000a11261126000026270000000a012f2f0000007a30300000307f008b000000cb2000000122000027240000022100000d30300001307f0092000000cb2000000122000028240000022100000d30300002307f0099000000cb2000000222000029240000022100000d30300003307f00a0000000cb200000012200002a240000022100000d30300000322c0000340000b02200002723000000210000012200002b23000000210000042100000721000008000000b22100000d21000009220000282300000021000001220000292300000021000004210000072100000a2100000c2200002b2400000120000002210000002200002a23000000210000042100000710312c0c1031310c0d2e31132200002e240000000a012c2c000000680b0000003032000032320002390000ee32320000350000d33033000121330005000000d53033ffff213300053034000033340000390000ec213400063035000033350100390000ea1036340c0d36363528323736303800011038383508000000120038370e39012c33353900350000e81c0000002100000e0a013535000000da0a013434000000d60a013232000000cc3a7f0000
+55aa0430000003300100013002001a3003000a300400193005000030060190300700060e0802040a01080830090010310a0300310b0900300c12c0300d0000300e0002300f0000301000003011001030120008301301900a0c14130a0c15140a01161529000000301c00002107000f101d06063b1d0606301e00000e3102040a013131331e31003900003c301f0000321f000a3900003a250000003020000032200019390000320d311e20103131060d21311f220000212300000026000020270000000a01202000000027307f0034000000cc2200001d240000012100000d0a101d1d0a011f1f000000230a011e1e0000001e0a011c1c210d000f10220c0c302300003323080039000060250000003024000033240a00390000583025000033250b00390000560d31230a0d3131241031310c0d3131250d21311d22000021230000001031240c0d26312526000026270000000a012525000000470a01242400000044307f005a000000cc22000022240000012100000d0a1022220a012323000000400a011c1c2110000f1027150c0a1028270a2029270a302a27102b160c1f0000ff302c0000322c0002390000cb25000000302d0000322d00103900007810312c0c0d21312d1031210c22000031230000002600002d270000000a012d2d0000006d322c000034000089302f0000322f0008390000890e312c2c1031310c0d31312f1031310c0d31311322000031230000000a11261126000026270000000a012f2f0000007b30300000307f008c000000cc2000000122000027240000022100000d30300001307f0093000000cc2000000122000028240000022100000d30300002307f009a000000cc2000000222000029240000022100000d30300003307f00a1000000cc200000012200002a240000022100000d30300000322c0000340000b12200002723000000210000012200002b23000000210000042100000721000008000000b32100000d21000009220000282300000021000001220000292300000021000004210000072100000a2100000c2200002b2400000120000002210000002200002a23000000210000042100000710312c0c1031310c0d2e31132200002e240000000a012c2c000000690b0000003032000032320002390000ef32320000350000d43033000121330005000000d63033ffff213300053034000033340000390000ed213400063035000033350100390000eb1036340c0d36363528323736303800011038383508000000120038370e39012c33353900350000e91c0000002100000e0a013535000000db0a013434000000d70a013232000000cd3a7f0000
