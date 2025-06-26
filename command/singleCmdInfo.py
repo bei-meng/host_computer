@@ -1797,6 +1797,20 @@ PL_JUMP_R=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------PL_MUL_R:0x41
+PL_MUL_R=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_mul_r",
+    command_data = CmdData(0),
+    command_description = " "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+
 
 
 

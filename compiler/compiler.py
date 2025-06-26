@@ -988,6 +988,17 @@ class COMPILER:
         self.ass_ins.append((0, ins.command_name, reg0))
         self.ins_pos += 1
 
+    def mul(self,reg2:str,reg1:str,reg0:str):
+        """
+        """
+        reg_2 = self.get_reg_variable(reg2,init=False)
+        reg_1 = self.get_reg_variable(reg1,init=False)
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_MUL_R,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, reg2,reg1, reg0))
+        self.ins_pos += 1
+
     def set_dac_i(self,imm0:Union[int|str],reg0:Union[int|str]):
         """
             !!!!未实现

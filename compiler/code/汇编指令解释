@@ -9,6 +9,7 @@
 const_i imm,10                                          # 注册常量imm, 值为10,指令中的立即数可以使用
 free_reg reg1                                           # 释放变量reg1所占寄存器(如果后面没有用到这个寄存器的值)
 
+# 上面写了注释的，按注释来,因为有些参数的顺序改过
 # 指令模式使用的指令,不涉及寄存器操作
 jmp label                                              # 跳转到对应标签对应的IR_ram_addr
 set_row_bank_and_data_i imm1,imm0                       # 从din_ram配置行bank,imm1为row_bank_mask(8bit),din_ram[imm0]里面是row_index_mask(32bit)
@@ -105,3 +106,4 @@ JGT IR_ram_addr
 JLE IR_ram_addr
 JGE IR_ram_addr
 JMP_r reg2
+MUL reg2,reg1,reg0
