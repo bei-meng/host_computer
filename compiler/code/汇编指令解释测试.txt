@@ -120,3 +120,4 @@ JGE IR_ram_addr
 
 JMP_r reg2
 MUL reg2,reg1,reg0
+#ret = JMP_R reg127

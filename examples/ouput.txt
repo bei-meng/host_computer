@@ -1,636 +1,266 @@
-Êä³öÏà¹Øµ÷ÊÔĞÅÏ¢:
+è¾“å‡ºç›¸å…³è°ƒè¯•ä¿¡æ¯:
 
-±äÁ¿Ãû: reg0                          : ¼Ä´æÆ÷±àºÅ: 0x00
-±äÁ¿Ãû: reg1                          : ¼Ä´æÆ÷±àºÅ: 0x01
-±äÁ¿Ãû: reg2                          : ¼Ä´æÆ÷±àºÅ: 0x02
-±äÁ¿Ãû: reg3                          : ¼Ä´æÆ÷±àºÅ: 0x03
-±äÁ¿Ãû: reg4                          : ¼Ä´æÆ÷±àºÅ: 0x04
-±äÁ¿Ãû: reg5                          : ¼Ä´æÆ÷±àºÅ: 0x05
-±äÁ¿Ãû: reg6                          : ¼Ä´æÆ÷±àºÅ: 0x06
-±äÁ¿Ãû: reg7                          : ¼Ä´æÆ÷±àºÅ: 0x07
-±äÁ¿Ãû: reg8                          : ¼Ä´æÆ÷±àºÅ: 0x08
-±äÁ¿Ãû: reg9                          : ¼Ä´æÆ÷±àºÅ: 0x09
-±äÁ¿Ãû: reg10                         : ¼Ä´æÆ÷±àºÅ: 0x0a
-±äÁ¿Ãû: reg11                         : ¼Ä´æÆ÷±àºÅ: 0x0b
-±äÁ¿Ãû: reg12                         : ¼Ä´æÆ÷±àºÅ: 0x0c
-±äÁ¿Ãû: reg13                         : ¼Ä´æÆ÷±àºÅ: 0x0d
-±äÁ¿Ãû: reg14                         : ¼Ä´æÆ÷±àºÅ: 0x0e
-±äÁ¿Ãû: reg15                         : ¼Ä´æÆ÷±àºÅ: 0x0f
-±äÁ¿Ãû: reg16                         : ¼Ä´æÆ÷±àºÅ: 0x10
-±äÁ¿Ãû: reg17                         : ¼Ä´æÆ÷±àºÅ: 0x11
-±äÁ¿Ãû: reg18                         : ¼Ä´æÆ÷±àºÅ: 0x12
-±äÁ¿Ãû: reg19                         : ¼Ä´æÆ÷±àºÅ: 0x13
-±äÁ¿Ãû: reg20                         : ¼Ä´æÆ÷±àºÅ: 0x14
-±äÁ¿Ãû: reg21                         : ¼Ä´æÆ÷±àºÅ: 0x15
-±äÁ¿Ãû: reg22                         : ¼Ä´æÆ÷±àºÅ: 0x16
-±äÁ¿Ãû: reg28                         : ¼Ä´æÆ÷±àºÅ: 0x1c
-±äÁ¿Ãû: reg29                         : ¼Ä´æÆ÷±àºÅ: 0x1d
-±äÁ¿Ãû: reg30                         : ¼Ä´æÆ÷±àºÅ: 0x1e
-±äÁ¿Ãû: reg49                         : ¼Ä´æÆ÷±àºÅ: 0x31
-±äÁ¿Ãû: reg31                         : ¼Ä´æÆ÷±àºÅ: 0x1f
-±äÁ¿Ãû: reg32                         : ¼Ä´æÆ÷±àºÅ: 0x20
-±äÁ¿Ãû: reg33                         : ¼Ä´æÆ÷±àºÅ: 0x21
-±äÁ¿Ãû: reg127                        : ¼Ä´æÆ÷±àºÅ: 0x7f
-±äÁ¿Ãû: reg34                         : ¼Ä´æÆ÷±àºÅ: 0x22
-±äÁ¿Ãû: reg35                         : ¼Ä´æÆ÷±àºÅ: 0x23
-±äÁ¿Ãû: reg36                         : ¼Ä´æÆ÷±àºÅ: 0x24
-±äÁ¿Ãû: reg37                         : ¼Ä´æÆ÷±àºÅ: 0x25
-±äÁ¿Ãû: reg38                         : ¼Ä´æÆ÷±àºÅ: 0x26
-±äÁ¿Ãû: reg39                         : ¼Ä´æÆ÷±àºÅ: 0x27
-±äÁ¿Ãû: reg40                         : ¼Ä´æÆ÷±àºÅ: 0x28
-±äÁ¿Ãû: reg41                         : ¼Ä´æÆ÷±àºÅ: 0x29
-±äÁ¿Ãû: reg42                         : ¼Ä´æÆ÷±àºÅ: 0x2a
-±äÁ¿Ãû: reg43                         : ¼Ä´æÆ÷±àºÅ: 0x2b
-±äÁ¿Ãû: reg44                         : ¼Ä´æÆ÷±àºÅ: 0x2c
-±äÁ¿Ãû: reg45                         : ¼Ä´æÆ÷±àºÅ: 0x2d
-±äÁ¿Ãû: reg47                         : ¼Ä´æÆ÷±àºÅ: 0x2f
-±äÁ¿Ãû: reg48                         : ¼Ä´æÆ÷±àºÅ: 0x30
-±äÁ¿Ãû: reg46                         : ¼Ä´æÆ÷±àºÅ: 0x2e
-±äÁ¿Ãû: reg50                         : ¼Ä´æÆ÷±àºÅ: 0x32
-±äÁ¿Ãû: reg51                         : ¼Ä´æÆ÷±àºÅ: 0x33
-±äÁ¿Ãû: reg52                         : ¼Ä´æÆ÷±àºÅ: 0x34
-±äÁ¿Ãû: reg53                         : ¼Ä´æÆ÷±àºÅ: 0x35
-±äÁ¿Ãû: reg54                         : ¼Ä´æÆ÷±àºÅ: 0x36
-±äÁ¿Ãû: reg55                         : ¼Ä´æÆ÷±àºÅ: 0x37
-±äÁ¿Ãû: reg56                         : ¼Ä´æÆ÷±àºÅ: 0x38
-±äÁ¿Ãû: reg57                         : ¼Ä´æÆ÷±àºÅ: 0x39
+å˜é‡å: reg0                          : å¯„å­˜å™¨ç¼–å·: 0x00
+å˜é‡å: reg1                          : å¯„å­˜å™¨ç¼–å·: 0x01
+å˜é‡å: reg2                          : å¯„å­˜å™¨ç¼–å·: 0x02
+å˜é‡å: reg3                          : å¯„å­˜å™¨ç¼–å·: 0x03
+å˜é‡å: reg4                          : å¯„å­˜å™¨ç¼–å·: 0x04
+å˜é‡å: reg5                          : å¯„å­˜å™¨ç¼–å·: 0x05
+å˜é‡å: reg6                          : å¯„å­˜å™¨ç¼–å·: 0x06
+å˜é‡å: reg7                          : å¯„å­˜å™¨ç¼–å·: 0x07
+å˜é‡å: reg8                          : å¯„å­˜å™¨ç¼–å·: 0x08
+å˜é‡å: reg9                          : å¯„å­˜å™¨ç¼–å·: 0x09
+å˜é‡å: reg10                         : å¯„å­˜å™¨ç¼–å·: 0x0a
+å˜é‡å: reg11                         : å¯„å­˜å™¨ç¼–å·: 0x0b
+å˜é‡å: reg12                         : å¯„å­˜å™¨ç¼–å·: 0x0c
+å˜é‡å: reg13                         : å¯„å­˜å™¨ç¼–å·: 0x0d
+å˜é‡å: reg14                         : å¯„å­˜å™¨ç¼–å·: 0x0e
+å˜é‡å: reg15                         : å¯„å­˜å™¨ç¼–å·: 0x0f
+å˜é‡å: reg16                         : å¯„å­˜å™¨ç¼–å·: 0x10
+å˜é‡å: reg17                         : å¯„å­˜å™¨ç¼–å·: 0x11
+å˜é‡å: reg18                         : å¯„å­˜å™¨ç¼–å·: 0x12
+å˜é‡å: reg19                         : å¯„å­˜å™¨ç¼–å·: 0x13
+å˜é‡å: reg20                         : å¯„å­˜å™¨ç¼–å·: 0x14
+å˜é‡å: reg21                         : å¯„å­˜å™¨ç¼–å·: 0x15
+å˜é‡å: reg55                         : å¯„å­˜å™¨ç¼–å·: 0x37
+å˜é‡å: reg127                        : å¯„å­˜å™¨ç¼–å·: 0x7f
+å˜é‡å: reg56                         : å¯„å­˜å™¨ç¼–å·: 0x38
+å˜é‡å: reg62                         : å¯„å­˜å™¨ç¼–å·: 0x3e
+å˜é‡å: reg57                         : å¯„å­˜å™¨ç¼–å·: 0x39
+å˜é‡å: reg58                         : å¯„å­˜å™¨ç¼–å·: 0x3a
+å˜é‡å: reg59                         : å¯„å­˜å™¨ç¼–å·: 0x3b
+å˜é‡å: reg60                         : å¯„å­˜å™¨ç¼–å·: 0x3c
+å˜é‡å: reg61                         : å¯„å­˜å™¨ç¼–å·: 0x3d
+å˜é‡å: reg63                         : å¯„å­˜å™¨ç¼–å·: 0x3f
 
-±êÇ©: loop_cnn1_w                   : Ö¸ÁîµØÖ·: 0x1e
-±êÇ©: loop_cnn1_h                   : Ö¸ÁîµØÖ·: 0x23
-±êÇ©: loop_cnn1_kernel              : Ö¸ÁîµØÖ·: 0x27
-±êÇ©: exit_cnn1_kernel              : Ö¸ÁîµØÖ·: 0x32
-±êÇ©: exit_cnn1_h                   : Ö¸ÁîµØÖ·: 0x3a
-±êÇ©: exit_cnn1_w                   : Ö¸ÁîµØÖ·: 0x3c
-±êÇ©: loop_cnn2_w                   : Ö¸ÁîµØÖ·: 0x40
-±êÇ©: loop_cnn2_h                   : Ö¸ÁîµØÖ·: 0x44
-±êÇ©: loop_cnn2_ch                  : Ö¸ÁîµØÖ·: 0x47
-±êÇ©: exit_cnn2_ch                  : Ö¸ÁîµØÖ·: 0x56
-±êÇ©: exit_cnn2_h                   : Ö¸ÁîµØÖ·: 0x58
-±êÇ©: exit_cnn2_w                   : Ö¸ÁîµØÖ·: 0x60
-±êÇ©: loop_lstm_t                   : Ö¸ÁîµØÖ·: 0x69
-±êÇ©: loop_read_xt                  : Ö¸ÁîµØÖ·: 0x6d
-±êÇ©: exit_read_xt                  : Ö¸ÁîµØÖ·: 0x78
-±êÇ©: loop_read_ht                  : Ö¸ÁîµØÖ·: 0x7b
-±êÇ©: exit_read_ht                  : Ö¸ÁîµØÖ·: 0x89
-±êÇ©: skip_read_ht                  : Ö¸ÁîµØÖ·: 0x89
-±êÇ©: init_ct                       : Ö¸ÁîµØÖ·: 0xb1
-±êÇ©: calc_it_ct                    : Ö¸ÁîµØÖ·: 0xb3
-±êÇ©: exit_lstm_t                   : Ö¸ÁîµØÖ·: 0xcb
-±êÇ©: cal_block                     : Ö¸ÁîµØÖ·: 0xcc
-±êÇ©: loop_sign                     : Ö¸ÁîµØÖ·: 0xcd
-±êÇ©: set_neg_sign                  : Ö¸ÁîµØÖ·: 0xd4
-±êÇ©: end_sign_set                  : Ö¸ÁîµØÖ·: 0xd6
-±êÇ©: loop_bit_plane                : Ö¸ÁîµØÖ·: 0xd7
-±êÇ©: loop_word_bank                : Ö¸ÁîµØÖ·: 0xdb
-±êÇ©: skip_rram_read                : Ö¸ÁîµØÖ·: 0xe9
-±êÇ©: exit_word_bank                : Ö¸ÁîµØÖ·: 0xeb
-±êÇ©: exit_bit_plane                : Ö¸ÁîµØÖ·: 0xed
-±êÇ©: exit_sign                     : Ö¸ÁîµØÖ·: 0xef
+æ ‡ç­¾: outer_loop_w                  : æŒ‡ä»¤åœ°å€: 0x11
+æ ‡ç­¾: inner_loop_h                  : æŒ‡ä»¤åœ°å€: 0x16
+æ ‡ç­¾: kernel_loop                   : æŒ‡ä»¤åœ°å€: 0x1a
+æ ‡ç­¾: exit_kernel_loop              : æŒ‡ä»¤åœ°å€: 0x26
+æ ‡ç­¾: exit_inner_loop_h             : æŒ‡ä»¤åœ°å€: 0x2f
+æ ‡ç­¾: exit_outer_loop_w             : æŒ‡ä»¤åœ°å€: 0x31
+æ ‡ç­¾: cal_block                     : æŒ‡ä»¤åœ°å€: 0x32
+æ ‡ç­¾: sign_loop                     : æŒ‡ä»¤åœ°å€: 0x33
+æ ‡ç­¾: negative                      : æŒ‡ä»¤åœ°å€: 0x39
+æ ‡ç­¾: set_mul                       : æŒ‡ä»¤åœ°å€: 0x3a
+æ ‡ç­¾: bit_loop                      : æŒ‡ä»¤åœ°å€: 0x3c
+æ ‡ç­¾: bank_loop                     : æŒ‡ä»¤åœ°å€: 0x41
+æ ‡ç­¾: skip_read                     : æŒ‡ä»¤åœ°å€: 0x4f
+æ ‡ç­¾: exit_bank_loop                : æŒ‡ä»¤åœ°å€: 0x51
+æ ‡ç­¾: exit_bit_loop                 : æŒ‡ä»¤åœ°å€: 0x53
+æ ‡ç­¾: exit_sign_loop                : æŒ‡ä»¤åœ°å€: 0x55
 
-0x0		mov_i	reg0, 3
-0x1		mov_i	reg1, 1
-0x2		mov_i	reg2, 26
-0x3		mov_i	reg3, 10
-0x4		mov_i	reg4, 25
-0x5		mov_i	reg5, 0
-0x6		mov_i	reg6, 400
-0x7		mov_i	reg7, 6
-0x8		sub	reg8, reg2, reg4
-0x9		addi	reg8, reg8, 1
-0xa		mov_i	reg9, 16
-0xb		mov_r	reg10, reg3
-0xc		mov_r	reg11, reg9
-0xd		mov_i	reg12, 4800
-0xe		mov_i	reg13, 0
-0xf		mov_i	reg14, 2
-0x10		mov_i	reg15, 0
-0x11		mov_i	reg16, 0
-0x12		mov_i	reg17, 16
-0x13		mov_i	reg18, 8
-0x14		mov_i	reg19, 400
-0x15		addi	reg20, reg19, 12
-0x16		addi	reg21, reg20, 12
-0x17		addi	reg22, reg21, 1
-0x18		set_adc_discard_nbits	0
-0x19		mov_i	reg28, 0
-0x1a		element_wise	reg7, 0, 15
-0x1b		sll	reg29, reg6, reg6
-0x1c		mul_r	reg29, reg6, reg6
-0x1d		mov_i	reg30, 0
+0x0		mov_i	reg0, 26
+0x1		mov_i	reg1, 10
+0x2		mov_i	reg2, 25
+0x3		mov_i	reg3, 0
+0x4		mov_i	reg4, 400
+0x5		mov_i	reg5, 6
+0x6		mov_i	reg6, 1
+0x7		mov_i	reg7, 16
+0x8		mov_i	reg8, 3
+0x9		mov_i	reg9, 5
+0xa		mov_i	reg10, 1
+0xb		set_adc_discard_nbits	0
+0xc		mov_i	reg11, 0
+0xd		element_wise	reg5, 0, 15
+0xe		mov_i	reg12, 6
+0xf		sll	reg13, reg4, reg12
+0x10		mov_i	reg14, 0
 
-0x1e	loop_cnn1_w:
-0x1e		sub	reg49, reg2, reg4
-0x1f		addi	reg49, reg49, 1
-0x20		cmp_r	reg30, reg49
-0x21		jle	exit_cnn1_w
-0x22		mov_i	reg31, 0
+0x11	outer_loop_w:
+0x11		sub	reg15, reg0, reg2
+0x12		add	reg15, reg15, reg10
+0x13		cmp_r	reg14, reg15
+0x14		jle	exit_outer_loop_w
+0x15		mov_i	reg16, 0
 
-0x23	loop_cnn1_h:
-0x23		cmp_i	reg31, 10
-0x24		jle	exit_cnn1_h
-0x25		reshape_buffer_clear	
-0x26		mov_i	reg32, 0
+0x16	inner_loop_h:
+0x16		cmp_r	reg16, reg1
+0x17		jle	exit_inner_loop_h
+0x18		reshape_buffer_clear	
+0x19		mov_i	reg17, 0
 
-0x27	loop_cnn1_kernel:
-0x27		cmp_i	reg32, 25
-0x28		jle	exit_cnn1_kernel
-0x29		add	reg49, reg30, reg32
-0x2a		sll	reg49, reg49, reg6
-0x2b		add	reg33, reg49, reg31
-0x2c		actv_ram_addr	reg33
-0x2d		actv_ram_read	
-0x2e		reshape_buffer_addr	reg32
-0x2f		reshape_buffer_write	
-0x30		addi	reg32, reg32, 1
-0x31		jmp	loop_cnn1_kernel
+0x1a	kernel_loop:
+0x1a		cmp_r	reg17, reg2
+0x1b		jle	exit_kernel_loop
+0x1c		add	reg18, reg14, reg17
+0x1d		sll	reg19, reg18, reg9
+0x1e		add	reg20, reg19, reg16
+0x1f		add	reg21, reg20, reg3
+0x20		actv_ram_addr	reg21
+0x21		actv_ram_read	
+0x22		reshape_buffer_addr	reg17
+0x23		reshape_buffer_write	
+0x24		add	reg17, reg17, reg10
+0x25		jmp	kernel_loop
 
-0x32	exit_cnn1_kernel:
-0x32		call	cal_block
-0x34		actv_ram_addr	reg29
-0x35		actv_ram_write	1
-0x36		element_wise	, 0, 13
-0x37		addi	reg29, reg29, 16
-0x38		addi	reg31, reg31, 1
-0x39		jmp	loop_cnn1_h
+0x26	exit_kernel_loop:
+0x26		mov_i	reg55, 1
+0x27		call	cal_block
+0x29		actv_ram_addr	reg13
+0x2a		actv_ram_write	1
+0x2b		element_wise	, 0, 13
+0x2c		add	reg13, reg13, reg7
+0x2d		add	reg16, reg16, reg10
+0x2e		jmp	inner_loop_h
 
-0x3a	exit_cnn1_h:
-0x3a		addi	reg30, reg30, 1
-0x3b		jmp	loop_cnn1_w
+0x2f	exit_inner_loop_h:
+0x2f		add	reg14, reg14, reg10
+0x30		jmp	outer_loop_w
 
-0x3c	exit_cnn1_w:
-0x3c		addi	reg28, reg28, 1
-0x3d		element_wise	reg13, 0, 15
-0x3e		sll	reg34, reg12, reg12
-0x3f		mov_i	reg35, 0
+0x31	exit_outer_loop_w:
+0x31		exit	
 
-0x40	loop_cnn2_w:
-0x40		cmp_r	reg35, reg8
-0x41		jle	exit_cnn2_w
-0x42		reshape_buffer_clear	
-0x43		mov_i	reg36, 0
+0x32	cal_block:
+0x32		mov_i	reg56, 0
 
-0x44	loop_cnn2_h:
-0x44		cmp_r	reg36, reg10
-0x45		jle	exit_cnn2_h
-0x46		mov_i	reg37, 0
+0x33	sign_loop:
+0x33		cmp_i	reg56, 2
+0x34		jle	exit_sign_loop
+0x35		cmp_i	reg56, 0
+0x36		jne	negative
+0x37		mov_i	reg62, 1
+0x38		jmp	set_mul
 
-0x47	loop_cnn2_ch:
-0x47		cmp_r	reg37, reg11
-0x48		jle	exit_cnn2_ch
-0x49		add	reg49, reg35, reg10
-0x4a		add	reg49, reg49, reg36
-0x4b		sll	reg49, reg49, reg12
-0x4c		add	reg49, reg49, reg37
-0x4d		add	reg33, reg49, reg29
-0x4e		actv_ram_addr	reg33
-0x4f		actv_ram_read	
-0x50		sll	reg49, reg36, reg12
-0x51		add	reg38, reg49, reg37
-0x52		reshape_buffer_addr	reg38
-0x53		reshape_buffer_write	
-0x54		addi	reg37, reg37, 1
-0x55		jmp	loop_cnn2_ch
+0x39	negative:
+0x39		mov_i	reg62, -1
 
-0x56	exit_cnn2_ch:
-0x56		addi	reg36, reg36, 1
-0x57		jmp	loop_cnn2_h
+0x3a	set_mul:
+0x3a		element_wise	reg62, 0, 5
+0x3b		mov_i	reg57, 0
 
-0x58	exit_cnn2_h:
-0x58		call	cal_block
-0x5a		actv_ram_addr	reg34
-0x5b		actv_ram_write	1
-0x5c		element_wise	, 0, 13
-0x5d		addi	reg34, reg34, 16
-0x5e		addi	reg35, reg35, 1
-0x5f		jmp	loop_cnn2_w
+0x3c	bit_loop:
+0x3c		cmp_r	reg57, reg8
+0x3d		jle	exit_bit_loop
+0x3e		element_wise	reg57, 0, 6
+0x3f		cim_rstn	
+0x40		mov_i	reg58, 0
 
-0x60	exit_cnn2_w:
-0x60		addi	reg28, reg28, 1
-0x61		element_wise	reg16, 0, 15
-0x62		sll	reg39, reg21, reg12
-0x63		addi	reg40, reg39, 16
-0x64		addi	reg41, reg39, 32
-0x65		addi	reg42, reg39, 48
-0x66		sll	reg43, reg22, reg12
-0x67		cal_ch_mask	0, 255
-0x68		mov_i	reg44, 0
+0x41	bank_loop:
+0x41		cmp_r	reg58, reg55
+0x42		jle	exit_bank_loop
+0x43		mov_i	reg59, 3
+0x44		sll	reg60, reg57, reg59
+0x45		add	reg61, reg60, reg58
+0x46		reshape_buffer_read	reg56, reg62, reg61
+0x47		mov_i	reg63, 1
+0x48		sll	reg59, reg63, reg58
+0x49		set_row_bank	reg59, reg62
+0x4a		sub	reg60, reg55, reg63
+0x4b		cmp_r	reg58, reg60
+0x4c		jne	skip_read
+0x4d		read_row_pulse_diff	
+0x4e		element_wise	, 0, 14
 
-0x69	loop_lstm_t:
-0x69		cmp_i	reg44, 2
-0x6a		jle	exit_lstm_t
-0x6b		reshape_buffer_clear	
-0x6c		mov_i	reg45, 0
+0x4f	skip_read:
+0x4f		add	reg58, reg58, reg63
+0x50		jmp	bank_loop
 
-0x6d	loop_read_xt:
-0x6d		cmp_i	reg45, 16
-0x6e		jle	exit_read_xt
-0x6f		sll	reg49, reg44, reg12
-0x70		add	reg33, reg49, reg45
-0x71		sll	reg49, reg33, reg12
-0x72		actv_ram_addr	reg49
-0x73		actv_ram_read	
-0x74		reshape_buffer_addr	reg45
-0x75		reshape_buffer_write	
-0x76		addi	reg45, reg45, 1
-0x77		jmp	loop_read_xt
+0x51	exit_bank_loop:
+0x51		add	reg57, reg57, reg63
+0x52		jmp	bit_loop
 
-0x78	exit_read_xt:
-0x78		cmp_i	reg44, 0
-0x79		jeq	skip_read_ht
-0x7a		mov_i	reg47, 0
+0x53	exit_bit_loop:
+0x53		add	reg56, reg56, reg63
+0x54		jmp	sign_loop
 
-0x7b	loop_read_ht:
-0x7b		cmp_i	reg47, 8
-0x7c		jle	exit_read_ht
-0x7d		sub	reg49, reg44, reg44
-0x7e		sll	reg49, reg49, reg12
-0x7f		add	reg49, reg49, reg47
-0x80		sll	reg49, reg49, reg12
-0x81		add	reg49, reg49, reg19
-0x82		actv_ram_addr	reg49
-0x83		actv_ram_read	
-0x84		addi	reg38, reg17, 17
-0x85		reshape_buffer_addr	reg38
-0x86		reshape_buffer_write	
-0x87		addi	reg47, reg47, 1
-0x88		jmp	loop_read_ht
-
-0x89	exit_read_ht:
-
-0x89	skip_read_ht:
-0x89		mov_i	reg48, 0
-0x8a		call	cal_block
-0x8c		apu_mode	1
-0x8d		actv_ram_addr	reg39
-0x8e		actv_ram_write	2
-0x8f		element_wise	, 0, 13
-0x90		mov_i	reg48, 1
-0x91		call	cal_block
-0x93		apu_mode	1
-0x94		actv_ram_addr	reg40
-0x95		actv_ram_write	2
-0x96		element_wise	, 0, 13
-0x97		mov_i	reg48, 2
-0x98		call	cal_block
-0x9a		apu_mode	2
-0x9b		actv_ram_addr	reg41
-0x9c		actv_ram_write	2
-0x9d		element_wise	, 0, 13
-0x9e		mov_i	reg48, 3
-0x9f		call	cal_block
-0xa1		apu_mode	1
-0xa2		actv_ram_addr	reg42
-0xa3		actv_ram_write	2
-0xa4		element_wise	, 0, 13
-0xa5		mov_i	reg48, 0
-0xa6		cmp_i	reg44, 0
-0xa7		jeq	init_ct
-0xa8		actv_ram_addr	reg39
-0xa9		actv_ram_read	
-0xaa		element_wise	, 0, 1
-0xab		actv_ram_addr	reg43
-0xac		actv_ram_read	
-0xad		element_wise	, 0, 4
-0xae		element_wise	, 0, 7
-0xaf		element_wise	, 0, 8
-0xb0		jmp	calc_it_ct
-
-0xb1	init_ct:
-0xb1		element_wise	, 0, 13
-0xb2		element_wise	, 0, 9
-
-0xb3	calc_it_ct:
-0xb3		actv_ram_addr	reg40
-0xb4		actv_ram_read	
-0xb5		element_wise	, 0, 1
-0xb6		actv_ram_addr	reg41
-0xb7		actv_ram_read	
-0xb8		element_wise	, 0, 4
-0xb9		element_wise	, 0, 7
-0xba		element_wise	, 0, 10
-0xbb		element_wise	, 0, 12
-0xbc		actv_ram_addr	reg43
-0xbd		actv_ram_write	1
-0xbe		apu_mode	2
-0xbf		element_wise	, 0, 0
-0xc0		actv_ram_addr	reg42
-0xc1		actv_ram_read	
-0xc2		element_wise	, 0, 4
-0xc3		element_wise	, 0, 7
-0xc4		sll	reg49, reg44, reg12
-0xc5		sll	reg49, reg49, reg12
-0xc6		add	reg46, reg49, reg19
-0xc7		actv_ram_addr	reg46
-0xc8		actv_ram_write	0
-0xc9		addi	reg44, reg44, 1
-0xca		jmp	loop_lstm_t
-
-0xcb	exit_lstm_t:
-0xcb		exit	
-
-0xcc	cal_block:
-0xcc		mov_i	reg50, 0
-
-0xcd	loop_sign:
-0xcd		cmp_i	reg50, 2
-0xce		jle	exit_sign
-0xcf		cmp_i	reg50, 0
-0xd0		jne	set_neg_sign
-0xd1		mov_i	reg51, 1
-0xd2		element_wise	reg51, 0, 5
-0xd3		jmp	end_sign_set
-
-0xd4	set_neg_sign:
-0xd4		mov_i	reg51, -1
-0xd5		element_wise	reg51, 0, 5
-
-0xd6	end_sign_set:
-0xd6		mov_i	reg52, 0
-
-0xd7	loop_bit_plane:
-0xd7		cmp_r	reg52, reg0
-0xd8		jle	exit_bit_plane
-0xd9		element_wise	reg52, 0, 6
-0xda		mov_i	reg53, 0
-
-0xdb	loop_word_bank:
-0xdb		cmp_r	reg53, reg1
-0xdc		jle	exit_word_bank
-0xdd		sll	reg54, reg52, reg12
-0xde		add	reg54, reg54, reg53
-0xdf		reshape_buffer_read	reg50, reg55, reg54
-0xe0		mov_i	reg56, 1
-0xe1		sll	reg56, reg56, reg53
-0xe2		cim_rstn	
-0xe3		set_row_bank	reg56, reg55
-0xe4		sub	reg57, reg1, reg44
-0xe5		cmp_r	reg53, reg57
-0xe6		jne	skip_rram_read
-0xe7		read_row_pulse_diff	
-0xe8		element_wise	, 0, 14
-
-0xe9	skip_rram_read:
-0xe9		addi	reg53, reg53, 1
-0xea		jmp	loop_word_bank
-
-0xeb	exit_word_bank:
-0xeb		addi	reg52, reg52, 1
-0xec		jmp	loop_bit_plane
-
-0xed	exit_bit_plane:
-0xed		addi	reg50, reg50, 1
-0xee		jmp	loop_sign
-
-0xef	exit_sign:
-0xef		jump_r	reg127
+0x55	exit_sign_loop:
+0x55		jump_r	
 
 
 
-×Ö½ÚÂë:
-Ä£Ê½: 4
-	Ö¡Í·:                         	×Ö½ÚÂë: 55 aa 04
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30000003
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30010001
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 3002001a
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 3003000a
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30040019
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30050000
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30060190
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30070006
-	Ö¸Áî: pl_sub                  	×Ö½ÚÂë: 0e080204
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a010808
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30090010
-	Ö¸Áî: pl_mov_r                	×Ö½ÚÂë: 310a0300
-	Ö¸Áî: pl_mov_r                	×Ö½ÚÂë: 310b0900
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 300c12c0
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 300d0000
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 300e0002
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 300f0000
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30100000
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30110010
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30120008
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30130190
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a0c1413
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a0c1514
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a011615
-	Ö¸Áî: pl_set_adc_discard_nbits	×Ö½ÚÂë: 29000000
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 301c0000
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 2107000f
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 101d0606
-	Ö¸Áî: pl_mul_r                	×Ö½ÚÂë: 3b1d0606
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 301e0000
-	Ö¸Áî: pl_sub                  	×Ö½ÚÂë: 0e310204
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a013131
-	Ö¸Áî: pl_cmp_r                	×Ö½ÚÂë: 331e3100
-	Ö¸Áî: pl_jle                  	×Ö½ÚÂë: 3900003c
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 301f0000
-	Ö¸Áî: pl_cmp_i                	×Ö½ÚÂë: 321f000a
-	Ö¸Áî: pl_jle                  	×Ö½ÚÂë: 3900003a
-	Ö¸Áî: pl_reshape_buffer_clear 	×Ö½ÚÂë: 25000000
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30200000
-	Ö¸Áî: pl_cmp_i                	×Ö½ÚÂë: 32200019
-	Ö¸Áî: pl_jle                  	×Ö½ÚÂë: 39000032
-	Ö¸Áî: pl_add                  	×Ö½ÚÂë: 0d311e20
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 10313106
-	Ö¸Áî: pl_add                  	×Ö½ÚÂë: 0d21311f
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 22000021
-	Ö¸Áî: pl_actv_ram_read        	×Ö½ÚÂë: 23000000
-	Ö¸Áî: pl_reshape_buffer_addr  	×Ö½ÚÂë: 26000020
-	Ö¸Áî: pl_reshape_buffer_write 	×Ö½ÚÂë: 27000000
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a012020
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 00000027
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 307f0034
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 000000cc
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 2200001d
-	Ö¸Áî: pl_actv_ram_write       	×Ö½ÚÂë: 24000001
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 2100000d
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a101d1d
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a011f1f
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 00000023
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a011e1e
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 0000001e
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a011c1c
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 210d000f
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 10220c0c
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30230000
-	Ö¸Áî: pl_cmp_r                	×Ö½ÚÂë: 33230800
-	Ö¸Áî: pl_jle                  	×Ö½ÚÂë: 39000060
-	Ö¸Áî: pl_reshape_buffer_clear 	×Ö½ÚÂë: 25000000
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30240000
-	Ö¸Áî: pl_cmp_r                	×Ö½ÚÂë: 33240a00
-	Ö¸Áî: pl_jle                  	×Ö½ÚÂë: 39000058
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30250000
-	Ö¸Áî: pl_cmp_r                	×Ö½ÚÂë: 33250b00
-	Ö¸Áî: pl_jle                  	×Ö½ÚÂë: 39000056
-	Ö¸Áî: pl_add                  	×Ö½ÚÂë: 0d31230a
-	Ö¸Áî: pl_add                  	×Ö½ÚÂë: 0d313124
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 1031310c
-	Ö¸Áî: pl_add                  	×Ö½ÚÂë: 0d313125
-	Ö¸Áî: pl_add                  	×Ö½ÚÂë: 0d21311d
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 22000021
-	Ö¸Áî: pl_actv_ram_read        	×Ö½ÚÂë: 23000000
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 1031240c
-	Ö¸Áî: pl_add                  	×Ö½ÚÂë: 0d263125
-	Ö¸Áî: pl_reshape_buffer_addr  	×Ö½ÚÂë: 26000026
-	Ö¸Áî: pl_reshape_buffer_write 	×Ö½ÚÂë: 27000000
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a012525
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 00000047
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a012424
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 00000044
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 307f005a
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 000000cc
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 22000022
-	Ö¸Áî: pl_actv_ram_write       	×Ö½ÚÂë: 24000001
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 2100000d
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a102222
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a012323
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 00000040
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a011c1c
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 2110000f
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 1027150c
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a102827
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a202927
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a302a27
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 102b160c
-	Ö¸Áî: pl_cal_ch_mask          	×Ö½ÚÂë: 1f0000ff
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 302c0000
-	Ö¸Áî: pl_cmp_i                	×Ö½ÚÂë: 322c0002
-	Ö¸Áî: pl_jle                  	×Ö½ÚÂë: 390000cb
-	Ö¸Áî: pl_reshape_buffer_clear 	×Ö½ÚÂë: 25000000
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 302d0000
-	Ö¸Áî: pl_cmp_i                	×Ö½ÚÂë: 322d0010
-	Ö¸Áî: pl_jle                  	×Ö½ÚÂë: 39000078
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 10312c0c
-	Ö¸Áî: pl_add                  	×Ö½ÚÂë: 0d21312d
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 1031210c
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 22000031
-	Ö¸Áî: pl_actv_ram_read        	×Ö½ÚÂë: 23000000
-	Ö¸Áî: pl_reshape_buffer_addr  	×Ö½ÚÂë: 2600002d
-	Ö¸Áî: pl_reshape_buffer_write 	×Ö½ÚÂë: 27000000
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a012d2d
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 0000006d
-	Ö¸Áî: pl_cmp_i                	×Ö½ÚÂë: 322c0000
-	Ö¸Áî: pl_jeq                  	×Ö½ÚÂë: 34000089
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 302f0000
-	Ö¸Áî: pl_cmp_i                	×Ö½ÚÂë: 322f0008
-	Ö¸Áî: pl_jle                  	×Ö½ÚÂë: 39000089
-	Ö¸Áî: pl_sub                  	×Ö½ÚÂë: 0e312c2c
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 1031310c
-	Ö¸Áî: pl_add                  	×Ö½ÚÂë: 0d31312f
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 1031310c
-	Ö¸Áî: pl_add                  	×Ö½ÚÂë: 0d313113
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 22000031
-	Ö¸Áî: pl_actv_ram_read        	×Ö½ÚÂë: 23000000
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a112611
-	Ö¸Áî: pl_reshape_buffer_addr  	×Ö½ÚÂë: 26000026
-	Ö¸Áî: pl_reshape_buffer_write 	×Ö½ÚÂë: 27000000
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a012f2f
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 0000007b
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30300000
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 307f008c
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 000000cc
-	Ö¸Áî: pl_apu_mode             	×Ö½ÚÂë: 20000001
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 22000027
-	Ö¸Áî: pl_actv_ram_write       	×Ö½ÚÂë: 24000002
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 2100000d
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30300001
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 307f0093
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 000000cc
-	Ö¸Áî: pl_apu_mode             	×Ö½ÚÂë: 20000001
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 22000028
-	Ö¸Áî: pl_actv_ram_write       	×Ö½ÚÂë: 24000002
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 2100000d
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30300002
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 307f009a
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 000000cc
-	Ö¸Áî: pl_apu_mode             	×Ö½ÚÂë: 20000002
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 22000029
-	Ö¸Áî: pl_actv_ram_write       	×Ö½ÚÂë: 24000002
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 2100000d
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30300003
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 307f00a1
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 000000cc
-	Ö¸Áî: pl_apu_mode             	×Ö½ÚÂë: 20000001
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 2200002a
-	Ö¸Áî: pl_actv_ram_write       	×Ö½ÚÂë: 24000002
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 2100000d
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30300000
-	Ö¸Áî: pl_cmp_i                	×Ö½ÚÂë: 322c0000
-	Ö¸Áî: pl_jeq                  	×Ö½ÚÂë: 340000b1
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 22000027
-	Ö¸Áî: pl_actv_ram_read        	×Ö½ÚÂë: 23000000
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 21000001
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 2200002b
-	Ö¸Áî: pl_actv_ram_read        	×Ö½ÚÂë: 23000000
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 21000004
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 21000007
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 21000008
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 000000b3
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 2100000d
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 21000009
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 22000028
-	Ö¸Áî: pl_actv_ram_read        	×Ö½ÚÂë: 23000000
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 21000001
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 22000029
-	Ö¸Áî: pl_actv_ram_read        	×Ö½ÚÂë: 23000000
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 21000004
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 21000007
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 2100000a
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 2100000c
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 2200002b
-	Ö¸Áî: pl_actv_ram_write       	×Ö½ÚÂë: 24000001
-	Ö¸Áî: pl_apu_mode             	×Ö½ÚÂë: 20000002
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 21000000
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 2200002a
-	Ö¸Áî: pl_actv_ram_read        	×Ö½ÚÂë: 23000000
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 21000004
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 21000007
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 10312c0c
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 1031310c
-	Ö¸Áî: pl_add                  	×Ö½ÚÂë: 0d2e3113
-	Ö¸Áî: pl_actv_ram_addr        	×Ö½ÚÂë: 2200002e
-	Ö¸Áî: pl_actv_ram_write       	×Ö½ÚÂë: 24000000
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a012c2c
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 00000069
-	Ö¸Áî: pl_exit                 	×Ö½ÚÂë: 0b000000
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30320000
-	Ö¸Áî: pl_cmp_i                	×Ö½ÚÂë: 32320002
-	Ö¸Áî: pl_jle                  	×Ö½ÚÂë: 390000ef
-	Ö¸Áî: pl_cmp_i                	×Ö½ÚÂë: 32320000
-	Ö¸Áî: pl_jne                  	×Ö½ÚÂë: 350000d4
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30330001
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 21330005
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 000000d6
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 3033ffff
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 21330005
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30340000
-	Ö¸Áî: pl_cmp_r                	×Ö½ÚÂë: 33340000
-	Ö¸Áî: pl_jle                  	×Ö½ÚÂë: 390000ed
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 21340006
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30350000
-	Ö¸Áî: pl_cmp_r                	×Ö½ÚÂë: 33350100
-	Ö¸Áî: pl_jle                  	×Ö½ÚÂë: 390000eb
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 1036340c
-	Ö¸Áî: pl_add                  	×Ö½ÚÂë: 0d363635
-	Ö¸Áî: pl_reshape_buffer_read  	×Ö½ÚÂë: 28323736
-	Ö¸Áî: pl_mov_i                	×Ö½ÚÂë: 30380001
-	Ö¸Áî: pl_sll                  	×Ö½ÚÂë: 10383835
-	Ö¸Áî: pl_cim_rstn             	×Ö½ÚÂë: 08000000
-	Ö¸Áî: pl_set_row_bank         	×Ö½ÚÂë: 12003837
-	Ö¸Áî: pl_sub                  	×Ö½ÚÂë: 0e39012c
-	Ö¸Áî: pl_cmp_r                	×Ö½ÚÂë: 33353900
-	Ö¸Áî: pl_jne                  	×Ö½ÚÂë: 350000e9
-	Ö¸Áî: pl_read_row_pulse_diff  	×Ö½ÚÂë: 1c000000
-	Ö¸Áî: pl_element_wise         	×Ö½ÚÂë: 2100000e
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a013535
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 000000db
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a013434
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 000000d7
-	Ö¸Áî: pl_addi                 	×Ö½ÚÂë: 0a013232
-	Ö¸Áî: pl_jmp                  	×Ö½ÚÂë: 000000cd
-	Ö¸Áî: pl_jump_r               	×Ö½ÚÂë: 3a7f0000
+å­—èŠ‚ç :
+æ¨¡å¼: 4
+	å¸§å¤´:                         	å­—èŠ‚ç : 55 aa 04
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 3000001a
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 3001000a
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 30020019
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 30030000
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 30040190
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 30050006
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 30060001
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 30070010
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 30080003
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 30090005
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 300a0001
+	æŒ‡ä»¤: pl_set_adc_discard_nbits	å­—èŠ‚ç : 29000000
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 300b0000
+	æŒ‡ä»¤: pl_element_wise         	å­—èŠ‚ç : 2105000f
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 300c0006
+	æŒ‡ä»¤: pl_sll                  	å­—èŠ‚ç : 100d040c
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 300e0000
+	æŒ‡ä»¤: pl_sub                  	å­—èŠ‚ç : 0e0f0002
+	æŒ‡ä»¤: pl_add                  	å­—èŠ‚ç : 0d0f0f0a
+	æŒ‡ä»¤: pl_cmp_r                	å­—èŠ‚ç : 330e0f00
+	æŒ‡ä»¤: pl_jle                  	å­—èŠ‚ç : 39000031
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 30100000
+	æŒ‡ä»¤: pl_cmp_r                	å­—èŠ‚ç : 33100100
+	æŒ‡ä»¤: pl_jle                  	å­—èŠ‚ç : 3900002f
+	æŒ‡ä»¤: pl_reshape_buffer_clear 	å­—èŠ‚ç : 25000000
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 30110000
+	æŒ‡ä»¤: pl_cmp_r                	å­—èŠ‚ç : 33110200
+	æŒ‡ä»¤: pl_jle                  	å­—èŠ‚ç : 39000026
+	æŒ‡ä»¤: pl_add                  	å­—èŠ‚ç : 0d120e11
+	æŒ‡ä»¤: pl_sll                  	å­—èŠ‚ç : 10131209
+	æŒ‡ä»¤: pl_add                  	å­—èŠ‚ç : 0d141310
+	æŒ‡ä»¤: pl_add                  	å­—èŠ‚ç : 0d151403
+	æŒ‡ä»¤: pl_actv_ram_addr        	å­—èŠ‚ç : 22000015
+	æŒ‡ä»¤: pl_actv_ram_read        	å­—èŠ‚ç : 23000000
+	æŒ‡ä»¤: pl_reshape_buffer_addr  	å­—èŠ‚ç : 26000011
+	æŒ‡ä»¤: pl_reshape_buffer_write 	å­—èŠ‚ç : 27000000
+	æŒ‡ä»¤: pl_add                  	å­—èŠ‚ç : 0d11110a
+	æŒ‡ä»¤: pl_jmp                  	å­—èŠ‚ç : 0000001a
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 30370001
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 307f0029
+	æŒ‡ä»¤: pl_jmp                  	å­—èŠ‚ç : 00000032
+	æŒ‡ä»¤: pl_actv_ram_addr        	å­—èŠ‚ç : 2200000d
+	æŒ‡ä»¤: pl_actv_ram_write       	å­—èŠ‚ç : 24000001
+	æŒ‡ä»¤: pl_element_wise         	å­—èŠ‚ç : 2100000d
+	æŒ‡ä»¤: pl_add                  	å­—èŠ‚ç : 0d0d0d07
+	æŒ‡ä»¤: pl_add                  	å­—èŠ‚ç : 0d10100a
+	æŒ‡ä»¤: pl_jmp                  	å­—èŠ‚ç : 00000016
+	æŒ‡ä»¤: pl_add                  	å­—èŠ‚ç : 0d0e0e0a
+	æŒ‡ä»¤: pl_jmp                  	å­—èŠ‚ç : 00000011
+	æŒ‡ä»¤: pl_exit                 	å­—èŠ‚ç : 0b000000
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 30380000
+	æŒ‡ä»¤: pl_cmp_i                	å­—èŠ‚ç : 32380002
+	æŒ‡ä»¤: pl_jle                  	å­—èŠ‚ç : 39000055
+	æŒ‡ä»¤: pl_cmp_i                	å­—èŠ‚ç : 32380000
+	æŒ‡ä»¤: pl_jne                  	å­—èŠ‚ç : 35000039
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 303e0001
+	æŒ‡ä»¤: pl_jmp                  	å­—èŠ‚ç : 0000003a
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 303effff
+	æŒ‡ä»¤: pl_element_wise         	å­—èŠ‚ç : 213e0005
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 30390000
+	æŒ‡ä»¤: pl_cmp_r                	å­—èŠ‚ç : 33390800
+	æŒ‡ä»¤: pl_jle                  	å­—èŠ‚ç : 39000053
+	æŒ‡ä»¤: pl_element_wise         	å­—èŠ‚ç : 21390006
+	æŒ‡ä»¤: pl_cim_rstn             	å­—èŠ‚ç : 08000000
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 303a0000
+	æŒ‡ä»¤: pl_cmp_r                	å­—èŠ‚ç : 333a3700
+	æŒ‡ä»¤: pl_jle                  	å­—èŠ‚ç : 39000051
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 303b0003
+	æŒ‡ä»¤: pl_sll                  	å­—èŠ‚ç : 103c393b
+	æŒ‡ä»¤: pl_add                  	å­—èŠ‚ç : 0d3d3c3a
+	æŒ‡ä»¤: pl_reshape_buffer_read  	å­—èŠ‚ç : 28383e3d
+	æŒ‡ä»¤: pl_mov_i                	å­—èŠ‚ç : 303f0001
+	æŒ‡ä»¤: pl_sll                  	å­—èŠ‚ç : 103b3f3a
+	æŒ‡ä»¤: pl_set_row_bank         	å­—èŠ‚ç : 12003b3e
+	æŒ‡ä»¤: pl_sub                  	å­—èŠ‚ç : 0e3c373f
+	æŒ‡ä»¤: pl_cmp_r                	å­—èŠ‚ç : 333a3c00
+	æŒ‡ä»¤: pl_jne                  	å­—èŠ‚ç : 3500004f
+	æŒ‡ä»¤: pl_read_row_pulse_diff  	å­—èŠ‚ç : 1c000000
+	æŒ‡ä»¤: pl_element_wise         	å­—èŠ‚ç : 2100000e
+	æŒ‡ä»¤: pl_add                  	å­—èŠ‚ç : 0d3a3a3f
+	æŒ‡ä»¤: pl_jmp                  	å­—èŠ‚ç : 00000041
+	æŒ‡ä»¤: pl_add                  	å­—èŠ‚ç : 0d39393f
+	æŒ‡ä»¤: pl_jmp                  	å­—èŠ‚ç : 0000003c
+	æŒ‡ä»¤: pl_add                  	å­—èŠ‚ç : 0d38383f
+	æŒ‡ä»¤: pl_jmp                  	å­—èŠ‚ç : 00000033
+	æŒ‡ä»¤: pl_jump_r               	å­—èŠ‚ç : 3a7f0000
 
 
 
-ÍêÕû×Ö½ÚÂë:
-55aa0430000003300100013002001a3003000a300400193005000030060190300700060e0802040a01080830090010310a0300310b0900300c12c0300d0000300e0002300f0000301000003011001030120008301301900a0c14130a0c15140a01161529000000301c00002107000f101d06063b1d0606301e00000e3102040a013131331e31003900003c301f0000321f000a3900003a250000003020000032200019390000320d311e20103131060d21311f220000212300000026000020270000000a01202000000027307f0034000000cc2200001d240000012100000d0a101d1d0a011f1f000000230a011e1e0000001e0a011c1c210d000f10220c0c302300003323080039000060250000003024000033240a00390000583025000033250b00390000560d31230a0d3131241031310c0d3131250d21311d22000021230000001031240c0d26312526000026270000000a012525000000470a01242400000044307f005a000000cc22000022240000012100000d0a1022220a012323000000400a011c1c2110000f1027150c0a1028270a2029270a302a27102b160c1f0000ff302c0000322c0002390000cb25000000302d0000322d00103900007810312c0c0d21312d1031210c22000031230000002600002d270000000a012d2d0000006d322c000034000089302f0000322f0008390000890e312c2c1031310c0d31312f1031310c0d31311322000031230000000a11261126000026270000000a012f2f0000007b30300000307f008c000000cc2000000122000027240000022100000d30300001307f0093000000cc2000000122000028240000022100000d30300002307f009a000000cc2000000222000029240000022100000d30300003307f00a1000000cc200000012200002a240000022100000d30300000322c0000340000b12200002723000000210000012200002b23000000210000042100000721000008000000b32100000d21000009220000282300000021000001220000292300000021000004210000072100000a2100000c2200002b2400000120000002210000002200002a23000000210000042100000710312c0c1031310c0d2e31132200002e240000000a012c2c000000690b0000003032000032320002390000ef32320000350000d43033000121330005000000d63033ffff213300053034000033340000390000ed213400063035000033350100390000eb1036340c0d36363528323736303800011038383508000000120038370e39012c33353900350000e91c0000002100000e0a013535000000db0a013434000000d70a013232000000cd3a7f0000
+å®Œæ•´å­—èŠ‚ç :
+55aa043000001a3001000a3002001930030000300401903005000630060001300700103008000330090005300a000129000000300b00002105000f300c0006100d040c300e00000e0f00020d0f0f0a330e0f003900003130100000331001003900002f250000003011000033110200390000260d120e11101312090d1413100d151403220000152300000026000011270000000d11110a0000001a30370001307f0029000000322200000d240000012100000d0d0d0d070d10100a000000160d0e0e0a000000110b0000003038000032380002390000553238000035000039303e00010000003a303effff213e00053039000033390800390000532139000608000000303a0000333a370039000051303b0003103c393b0d3d3c3a28383e3d303f0001103b3f3a12003b3e0e3c373f333a3c003500004f1c0000002100000e0d3a3a3f000000410d39393f0000003c0d38383f000000333a7f0000

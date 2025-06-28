@@ -39,31 +39,22 @@ class ADC():
             将ADC配置为4通道
         """
         if self.init:
+            self.set_op_adc(0xA200)                                                             # 配置ADC为四通道
+            self.channel_num = 4
+
+            self.set_gap(adc_cs_gap=100,adc_first_gap=10,adc_last_gap=10)
+
+    def set_op_adc(self,data):
             pkts=Packet()
             pkts.append_cmdlist([
-                CMD(ADC0_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc0)),              # cfg_adc0
-
-                CMD(ADC1_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc1)),              # cfg_adc1
-
-                CMD(ADC2_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc2)),              # cfg_adc2
-
-                CMD(ADC3_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc3)),              # cfg_adc3
-
-                CMD(ADC4_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc4)),              # cfg_adc4
-
-                CMD(ADC5_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc5)),              # cfg_adc5
-
-                CMD(ADC6_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc6)),              # cfg_adc6
-
-                CMD(ADC7_IN,command_data=CmdData(0xA200)),                                          # 配置ADC为四通道
-                # CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_adc7)),              # cfg_adc7
+                CMD(ADC0_IN,command_data=CmdData(data)),                                          # 配置ADC为四通道
+                CMD(ADC1_IN,command_data=CmdData(data)),                                          # 配置ADC为四通道
+                CMD(ADC2_IN,command_data=CmdData(data)),                                          # 配置ADC为四通道
+                CMD(ADC3_IN,command_data=CmdData(data)),                                          # 配置ADC为四通道
+                CMD(ADC4_IN,command_data=CmdData(data)),                                          # 配置ADC为四通道
+                CMD(ADC5_IN,command_data=CmdData(data)),                                          # 配置ADC为四通道
+                CMD(ADC6_IN,command_data=CmdData(data)),                                          # 配置ADC为四通道
+                CMD(ADC7_IN,command_data=CmdData(data)),                                          # 配置ADC为四通道
                 CMD(FAST_COMMAND_1,command_data=CmdData(
                     FAST_COMMAND1_CONF.cfg_adc0|
                     FAST_COMMAND1_CONF.cfg_adc1|
@@ -73,14 +64,11 @@ class ADC():
                     FAST_COMMAND1_CONF.cfg_adc5|
                     FAST_COMMAND1_CONF.cfg_adc6|
                     FAST_COMMAND1_CONF.cfg_adc7
-                    )),              # cfg_adc7
+                    )),
             ],mode=1)
 
             # 发送指令
             self.ps.send_packets(pkts)
-            self.channel_num = 4
-
-            self.set_gap(adc_cs_gap=100,adc_first_gap=10,adc_last_gap=10)
 
     # def set_row_col_sw(self,row_col_sw = 0):
     #     """
@@ -270,6 +258,12 @@ class ADC():
 
             从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的16路tia的值
         """
+        # ans = np.zeros((data_length,32))
+        # for i in range(0,data_length,2):
+        #     ans[i] = np.array([j for j in range(i*32,i*32+32)])
+        #     if i+1<data_length:
+        #         ans[i+1] = np.array([j for j in range(i*32,i*32+32)])
+        # return ans
         # return np.array([[j  for j in range(16)] for i in range(data_length)])
         # 如果不满足一个TCP包1440大小的包，下面返回数据的速度会非常慢，因此一般都需要尽可能填满一个包
         

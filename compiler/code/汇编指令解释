@@ -106,4 +106,5 @@ JGT IR_ram_addr
 JLE IR_ram_addr
 JGE IR_ram_addr
 JMP_r reg2
+#ret = JMP_R reg127
 MUL reg2,reg1,reg0

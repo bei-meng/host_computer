@@ -1,390 +1,155 @@
-; ==============================
-; 配置寄存器初始化
-; ==============================
-MOV_i reg0, 3       ; reg_reshape_t_nbits=3
-MOV_i reg1, 1       ; reg_reshape_t_nbank=1
-MOV_i reg2, 26      ; reg_cnn1_W_num=26
-MOV_i reg3, 10      ; reg_cnn1_H_num=10
-MOV_i reg4, 25      ; reg_cnn1_kernel_W_num=25
-MOV_i reg5, 0       ; reg_actv_din_start_addrb=0
-MOV_i reg6, 400     ; reg_actv_cnn1_start_addrb=400
-MOV_i reg7, 6       ; reg_cnn1_result_shifter1=6
+; 常量初始化
+MOV_i reg0, 26              ; reg0 = reg_cnn1_W_num
+MOV_i reg1, 10               ; reg1 = reg_cnn1_H_num
+MOV_i reg2, 25               ; reg2 = reg_cnn1_kernel_W_num
+MOV_i reg3, 0                ; reg3 = reg_actv_din_start_addrb
+MOV_i reg4, 400              ; reg4 = reg_actv_cnn1_start_addrb
+MOV_i reg5, 6                ; reg5 = reg_cnn1_result_shifter1
+MOV_i reg6, 1                ; reg6 = 常量1 (用于地址计算)
+MOV_i reg7, 16               ; reg7 = 常量16 (地址步长)
+MOV_i reg8, 3                ; reg8 = 常量3 (位平面循环次数)
+MOV_i reg9, 5                ; reg9 = 常量5 (移位位数)
+MOV_i reg10, 1               ; reg10 = 常量1 (循环增量)
 
-; 计算 reg_cnn2_W_num = reg_cnn1_W_num - reg_cnn1_kernel_W_num + 1
-sub reg8, reg2, reg4
-add_i reg8, reg8, 1 ; reg_cnn2_W_num
-MOV_i reg9, 16      ; reg_cnn2_CH_num=16
-MOV_r reg10, reg3   ; reg_cnn2_kernel_H_num = reg_cnn1_H_num
-MOV_r reg11, reg9   ; reg_cnn2_kernel_CH_num = reg_cnn2_CH_num
-MOV_i reg12, 4800   ; reg_actv_cnn2_start_addrb=4800
-MOV_i reg13, 0      ; reg_cnn2_result_shifter1=0
-
-; LSTM 配置
-MOV_i reg14, 2      ; reg_lstm_time_num=2
-MOV_i reg15, 0      ; reg_actv_lstm_din_start_addrb=0
-MOV_i reg16, 0      ; reg_lstm_result_shifter1=0
-MOV_i reg17, 16     ; reg_lstm_data_num=16
-MOV_i reg18, 8      ; reg_lstm_hidd_num=8
-MOV_i reg19, 400    ; reg_actv_lstm_ht_fwd_start_addrb=400
-add_i reg20, reg19, 12  ; reg_actv_lstm_ht_bwd_start_addrb
-add_i reg21, reg20, 12  ; reg_actv_lstm_tmp_start_addrb
-add_i reg22, reg21, 1   ; reg_actv_ct_addrb
-
-; ==============================
 ; 主程序开始
-; ==============================
-set_adc_discard_nbits 0
-MOV_i reg28, 0      ; reg_calc_layer_flg=0
+set_adc_discard_nbits 0      ; 配置ADC
+MOV_i reg11, 0               ; reg11 = reg_calc_layer_flg = 0
+set_elewise_reg_2_shifter1 reg5 ; 设置移位器1
 
-; ------------------------------
-; CNN1 层计算
-; ------------------------------
-set_elewise_reg_2_shifter1 reg7
-sll reg29, reg6, reg6  ; reg_actv_ram_byte_addrb_cnn1 = reg6<<6
-mul reg29, reg6, reg6  ; reg_actv_ram_byte_addrb_cnn1 = reg6<<6
-; 外层循环: cnn1_W_cnt (reg30)
-MOV_i reg30, 0      ; cnn1_W_cnt=0
-loop_cnn1_W:
-    ; 比较 cnn1_W_cnt < (reg2 - reg4 + 1)
-    sub reg49, reg2, reg4
-    add_i reg49, reg49, 1
-    CMP_r reg30, reg49
-    JGE exit_cnn1_W
+; 计算初始地址: reg_actv_ram_byte_addrb_cnn1 = reg4 << 6
+MOV_i reg12, 6               ; 加载移位位数6
+sll reg13, reg4, reg12       ; reg13 = reg4 << 6 (初始地址)
 
-    ; 中层循环: cnn1_H_cnt (reg31)
-    MOV_i reg31, 0  ; cnn1_H_cnt=0
-    loop_cnn1_H:
-        CMP_i reg31, 10  ; reg_cnn1_H_num=10
-        JGE exit_cnn1_H
-        reshape_buffer_clear
+; 外层循环: cnn1_W_cnt (reg14)
+MOV_i reg14, 0               ; reg14 = cnn1_W_cnt = 0
+outer_loop_W:
+    ; 计算循环边界: reg15 = reg0 - reg2 + 1
+    sub reg15, reg0, reg2    ; reg15 = reg_cnn1_W_num - reg_cnn1_kernel_W_num
+    add reg15, reg15, reg10  ; reg15 += 1
+    CMP_r reg14, reg15       ; 比较 cnn1_W_cnt 和边界
+    JGE exit_outer_loop_W    ; 若 >= 则跳出循环
 
-        ; 内层循环: cnn1_kernel_W_cnt (reg32)
-        MOV_i reg32, 0  ; cnn1_kernel_W_cnt=0
-        loop_cnn1_kernel:
-            CMP_i reg32, 25  ; reg_cnn1_kernel_W_num=25
-            JGE exit_cnn1_kernel
+    ; 内层循环: cnn1_H_cnt (reg16)
+    MOV_i reg16, 0           ; reg16 = cnn1_H_cnt = 0
+    inner_loop_H:
+        CMP_r reg16, reg1    ; 比较 cnn1_H_cnt 和 reg_cnn1_H_num
+        JGE exit_inner_loop_H ; 若 >= 则跳出循环
 
-            ; 计算 reg_actv_ram_byte_addrb_din
-            add reg49, reg30, reg32  ; cnn1_W_cnt + cnn1_kernel_W_cnt
-            sll reg49, reg49, reg6     ; <<5 (相当于*32)
-            add reg33, reg49, reg31  ; + cnn1_H_cnt
-            set_actv_ram_addr reg33
-            load_actv_ram
+        reshape_buffer_clear ; 清空reshape buffer
 
-            set_reshape_buffer_addr reg32
-            store_reshape_buffer
+        ; 输入数据循环: cnn1_kernel_W_cnt (reg17)
+        MOV_i reg17, 0       ; reg17 = cnn1_kernel_W_cnt = 0
+        kernel_loop:
+            CMP_r reg17, reg2 ; 比较 kernel_cnt 和 reg_cnn1_kernel_W_num
+            JGE exit_kernel_loop
 
-            add_i reg32, reg32, 1  ; cnn1_kernel_W_cnt++
-            JMP loop_cnn1_kernel
-        exit_cnn1_kernel:
+            ; 计算地址: (cnn1_W_cnt + kernel_cnt)*32 + H_cnt + start_addr
+            add reg18, reg14, reg17 ; reg18 = cnn1_W_cnt + kernel_cnt
+            sll reg19, reg18, reg9  ; reg19 = (cnn1_W_cnt + kernel_cnt) << 5
+            add reg20, reg19, reg16 ; reg20 += cnn1_H_cnt
+            add reg21, reg20, reg3  ; reg21 += reg_actv_din_start_addrb
 
+            set_actv_ram_addr reg21 ; 设置激活RAM地址
+            load_actv_ram         ; 读取1字节数据到临时reg
+            set_reshape_buffer_addr reg17 ; 设置reshape buffer地址
+            store_reshape_buffer  ; 存储数据
+
+            ; 循环递增: kernel_cnt++
+            add reg17, reg17, reg10
+            JMP kernel_loop
+        exit_kernel_loop:
+
+        ; 调用cal_block子函数 (参数在reg55)
+        MOV_i reg55, 1       ; reg55 = reg_reshape_t_nbank = 1
         CALL cal_block
-        set_actv_ram_addr reg29
-        store_actv_ram_shifter1
-        set_elewise_adder_clear
 
-        add_i reg29, reg29, 16  ; 更新地址指针
-        add_i reg31, reg31, 1   ; cnn1_H_cnt++
-        JMP loop_cnn1_H
-    exit_cnn1_H:
+        ; 存储结果并更新地址
+        set_actv_ram_addr reg13 ; 设置结果地址
+        store_actv_ram_shifter1 ; 存储带移位的激活RAM
+        set_elewise_adder_clear ; 清空加法器
+        add reg13, reg13, reg7  ; 结果地址 += 16
 
-    add_i reg30, reg30, 1  ; cnn1_W_cnt++
-    JMP loop_cnn1_W
-exit_cnn1_W:
+        ; 内层循环递增: H_cnt++
+        add reg16, reg16, reg10
+        JMP inner_loop_H
+    exit_inner_loop_H:
 
-; ------------------------------
-; CNN2 层计算
-; ------------------------------
-add_i reg28, reg28, 1  ; reg_calc_layer_flg++
-set_elewise_reg_2_shifter1 reg13
-sll reg34, reg12, reg12  ; reg_actv_ram_byte_addrb_cnn2 = reg12<<6
+    ; 外层循环递增: W_cnt++
+    add reg14, reg14, reg10
+    JMP outer_loop_W
+exit_outer_loop_W:
 
-; CNN2 外层循环 (reg35)
-MOV_i reg35, 0  ; cnn2_W_cnt=0
-loop_cnn2_W:
-    CMP_r reg35, reg8  ; 比较 cnn2_W_cnt < reg_cnn2_W_num
-    JGE exit_cnn2_W
-    reshape_buffer_clear
+EXIT ; 程序结束
 
-    ; CNN2 中层循环 (reg36)
-    MOV_i reg36, 0  ; cnn2_kernel_H_cnt=0
-    loop_cnn2_H:
-        CMP_r reg36, reg10  ; reg_cnn2_kernel_H_num
-        JGE exit_cnn2_H
-
-        ; CNN2 内层循环 (reg37)
-        MOV_i reg37, 0  ; cnn2_kernel_CH_cnt=0
-        loop_cnn2_CH:
-            CMP_r reg37, reg11  ; reg_cnn2_kernel_CH_num
-            JGE exit_cnn2_CH
-
-            ; 计算地址: (cnn2_W_cnt * reg_cnn2_kernel_H_num + cnn2_kernel_H_cnt)<<4 + cnn2_kernel_CH_cnt
-            add reg49, reg35, reg10  ; cnn2_W_cnt * reg_cnn2_kernel_H_num
-            add reg49, reg49, reg36  ; + cnn2_kernel_H_cnt
-            sll reg49, reg49, reg12     ; <<4 (相当于*16)
-            add reg49, reg49, reg37  ; + cnn2_kernel_CH_cnt
-            add reg33, reg49, reg29  ; + reg_actv_ram_byte_addrb_cnn1
-            set_actv_ram_addr reg33
-            load_actv_ram
-
-            ; 计算 reshape buffer 地址
-            sll reg49, reg36, reg12     ; cnn2_kernel_H_cnt<<4
-            add reg38, reg49, reg37  ; + cnn2_kernel_CH_cnt
-            set_reshape_buffer_addr reg38
-            store_reshape_buffer
-
-            add_i reg37, reg37, 1  ; cnn2_kernel_CH_cnt++
-            JMP loop_cnn2_CH
-        exit_cnn2_CH:
-
-        add_i reg36, reg36, 1  ; cnn2_kernel_H_cnt++
-        JMP loop_cnn2_H
-    exit_cnn2_H:
-
-    CALL cal_block
-    set_actv_ram_addr reg34
-    store_actv_ram_shifter1
-    set_elewise_adder_clear
-
-    add_i reg34, reg34, 16  ; 更新地址指针
-    add_i reg35, reg35, 1   ; cnn2_W_cnt++
-    JMP loop_cnn2_W
-exit_cnn2_W:
-
-; ------------------------------
-; LSTM 前向计算
-; ------------------------------
-add_i reg28, reg28, 1  ; reg_calc_layer_flg++
-set_elewise_reg_2_shifter1 reg16
-
-; 初始化 LSTM 地址指针
-sll reg39, reg21, reg12   ; reg_actv_ram_byte_addrb_f_tmp = reg21<<6
-add_i reg40, reg39, 16  ; reg_actv_ram_byte_addrb_i_tmp
-add_i reg41, reg39, 32  ; reg_actv_ram_byte_addrb_c_tmp
-add_i reg42, reg39, 48  ; reg_actv_ram_byte_addrb_o_tmp
-sll reg43, reg22, reg12   ; reg_actv_ram_byte_addrb_ct = reg22<<6
-
-cal_ch_mask 0, 255  ; 激活低8通道
-
-; LSTM 时间步循环 (reg44)
-MOV_i reg44, 0  ; lstm_t_cnt=0
-loop_lstm_t:
-    CMP_i reg44, 2  ; reg_lstm_time_num=2
-    JGE exit_lstm_t
-    reshape_buffer_clear
-
-    ; 读取 x(t) (reg45)
-    MOV_i reg45, 0  ; lstm_data_cnt=0
-    loop_read_xt:
-        CMP_i reg45, 16  ; reg_lstm_data_num=16
-        JGE exit_read_xt
-
-        ; 计算地址: lstm_t_cnt*reg_lstm_data_num + lstm_data_cnt
-        sll reg49, reg44, reg12  ; *16 (因为reg_lstm_data_num=16)
-        add reg33, reg49, reg45
-        sll reg49, reg33, reg12  ; <<6 (字节地址)
-        set_actv_ram_addr reg49
-        load_actv_ram
-
-        set_reshape_buffer_addr reg45
-        store_reshape_buffer
-
-        add_i reg45, reg45, 1
-        JMP loop_read_xt
-    exit_read_xt:
-
-    ; 读取 h(t-1) (仅当 t>0)
-    CMP_i reg44, 0
-    JEQ skip_read_ht
-    MOV_i reg47, 0  ; lstm_hidd_cnt=0
-    loop_read_ht:
-        CMP_i reg47, 8  ; reg_lstm_hidd_num=8
-        JGE exit_read_ht
-
-        ; 计算地址: (lstm_t_cnt-1)*reg_lstm_hidd_num + lstm_hidd_cnt
-        sub reg49, reg44, reg44
-        sll reg49, reg49, reg12  ; *8 (reg_lstm_hidd_num)
-        add reg49, reg49, reg47
-        sll reg49, reg49, reg12  ; 字节地址
-        add reg49, reg49, reg19  ; + base
-        set_actv_ram_addr reg49
-        load_actv_ram
-
-        ; 存储到 reshape buffer (offset = reg_lstm_data_num + lstm_hidd_cnt)
-        add_i reg38, reg17, 17  ; 16 + lstm_hidd_cnt
-        set_reshape_buffer_addr reg38
-        store_reshape_buffer
-
-        add_i reg47, reg47, 1
-        JMP loop_read_ht
-    exit_read_ht:
-    skip_read_ht:
-
-    ; -- 计算 f_gate --
-    MOV_i reg48, 0  ; reg_lstm_calc_flg=0
-    CALL cal_block
-    apu_calc_sigmoid
-    set_actv_ram_addr reg39
-    store_actv_ram_apu
-    set_elewise_adder_clear
-
-    ; -- 计算 i_gate --
-    MOV_i reg48, 1
-    CALL cal_block
-    apu_calc_sigmoid
-    set_actv_ram_addr reg40
-    store_actv_ram_apu
-    set_elewise_adder_clear
-
-    ; -- 计算 c_gate --
-    MOV_i reg48, 2
-    CALL cal_block
-    apu_calc_tanh    ; 注意: c_gate 使用 tanh
-    set_actv_ram_addr reg41
-    store_actv_ram_apu
-    set_elewise_adder_clear
-
-    ; -- 计算 o_gate --
-    MOV_i reg48, 3
-    CALL cal_block
-    apu_calc_sigmoid
-    set_actv_ram_addr reg42
-    store_actv_ram_apu
-    set_elewise_adder_clear
-    MOV_i reg48, 0   ; 重置标志
-
-    ; 计算 c_t = f_t * c_{t-1} + i_t * c_tilde
-    CMP_i reg44, 0
-    JEQ init_ct
-    
-    ; f_t * c_{t-1}
-    set_actv_ram_addr reg39
-    load_actv_ram
-    set_elewise_actv_2_mul_A
-    
-    set_actv_ram_addr reg43  ; c_{t-1}
-    load_actv_ram
-    set_elewise_actv_2_mul_B
-    
-    set_elewise_mul_shifter0_calc
-    set_elewise_mul_2_adder_A
-    JMP calc_it_ct
-
-init_ct:
-    set_elewise_adder_clear
-    set_elewise_acc_2_adder_A
-
-calc_it_ct:
-    ; i_t * c_tilde
-    set_actv_ram_addr reg40
-    load_actv_ram
-    set_elewise_actv_2_mul_A
-    
-    set_actv_ram_addr reg41
-    load_actv_ram
-    set_elewise_actv_2_mul_B
-    
-    set_elewise_mul_shifter0_calc
-    set_elewise_mul_2_adder_B
-    
-    ; 最终相加得到 c_t
-    set_elewise_adder_shifter1_calc
-    set_actv_ram_addr reg43
-    store_actv_ram_shifter1
-
-    ; 计算 h_t = o_t * tanh(c_t)
-    apu_calc_tanh
-    set_elewise_apu_2_mul_A
-    
-    set_actv_ram_addr reg42
-    load_actv_ram
-    set_elewise_actv_2_mul_B
-    
-    set_elewise_mul_shifter0_calc
-    
-    ; 存储 h_t
-    sll reg49, reg44, reg12  ; lstm_t_cnt * 16
-    sll reg49, reg49, reg12  ; 字节地址
-    add reg46, reg49, reg19  ; + base
-    set_actv_ram_addr reg46
-    store_actv_ram_shifter0
-
-    add_i reg44, reg44, 1  ; lstm_t_cnt++
-    JMP loop_lstm_t
-exit_lstm_t:
-
-; ------------------------------
-; 程序退出
-; ------------------------------
-EXIT
-
-; ==============================
-; CAL_BLOCK 子程序（无堆栈操作）
-; ==============================
+; =============== cal_block 子函数 (使用 reg55-reg63) ===============
 cal_block:
-    ; 使用专用寄存器避免冲突 (reg50-reg60)
-    MOV_i reg50, 0      ; sign=0
-    
-    loop_sign:
-        CMP_i reg50, 2
-        JGE exit_sign
-        
-        ; 设置乘法系数
-        CMP_i reg50, 0
-        JNE set_neg_sign
-        MOV_i reg51, 1
-        set_elewise_reg_2_mul_B reg51
-        JMP end_sign_set
-    set_neg_sign:
-        MOV_i reg51, -1
-        set_elewise_reg_2_mul_B reg51
-    end_sign_set:
-    
-        ; 位平面循环 (reg52)
-        MOV_i reg52, 0  ; reg_reshape_t_addr_tmp_H
-        loop_bit_plane:
-            CMP_r reg52, reg0  ; 比较位平面索引
-            JGE exit_bit_plane
-            
-            set_elewise_reg_2_shifter0 reg52
-            
-            ; 字库循环 (reg53)
-            MOV_i reg53, 0  ; reg_reshape_t_addr_tmp_L3
-            loop_word_bank:
-                CMP_r reg53, reg1  ; 比较字库索引
-                JGE exit_word_bank
-                
-                ; 计算地址 (reg54)
-                sll reg54, reg52, reg12
-                add reg54, reg54, reg53
-                
-                ; 加载数据 (reg55 = reg_cim_data)
-                load_reshape_buffer_t reg50, reg55, reg54
-                
-                ; 设置bank (reg56)
-                MOV_i reg56, 1
-                sll reg56, reg56, reg53
-                cim_reset
-                set_row_bank_and_data_r reg56, reg55
-                
-                ; 检查是否最后一个字库
-                sub reg57, reg1, reg44
-                CMP_r reg53, reg57
-                JNE skip_rram_read
-                row_read_rram_32ch_to_diff
-                set_elewise_fast
-            skip_rram_read:
-            
-                add_i reg53, reg53, 1
-                JMP loop_word_bank
-            exit_word_bank:
-            
-            add_i reg52, reg52, 1
-            JMP loop_bit_plane
-        exit_bit_plane:
-    
-        add_i reg50, reg50, 1
-        JMP loop_sign
-    exit_sign:
-    
-    jump_r reg127
+    ; sign循环 (reg56)
+    MOV_i reg56, 0           ; reg56 = sign = 0
+    sign_loop:
+        CMP_i reg56, 2       ; 比较 sign < 2
+        JGE exit_sign_loop
+
+        ; 设置乘法系数 (+1/-1)
+        CMP_i reg56, 0
+        JNE negative
+        MOV_i reg62, 1       ; reg62 = +1
+        JMP set_mul
+    negative:
+        MOV_i reg62, -1      ; reg62 = -1
+    set_mul:
+        set_elewise_reg_2_mul_B reg62 ; 设置乘法器
+
+        ; 位平面循环 (reg57)
+        MOV_i reg57, 0       ; reg57 = bit_plane_cnt = 0
+        bit_loop:
+            CMP_r reg57, reg8 ; 比较 bit_plane_cnt < 3
+            JGE exit_bit_loop
+
+            ; 设置移位器0
+            set_elewise_reg_2_shifter0 reg57
+
+            cim_reset        ; 重置CIM
+            ; Word bank循环 (reg58)
+            MOV_i reg58, 0   ; reg58 = bank_cnt = 0
+            bank_loop:
+                CMP_r reg58, reg55 ; 比较 bank_cnt < nbank
+                JGE exit_bank_loop
+
+                ; 计算地址: (bit_plane << 3) + bank_cnt
+                MOV_i reg59, 3
+                sll reg60, reg57, reg59 ; reg60 = bit_plane << 3
+                add reg61, reg60, reg58 ; reg61 = 最终地址
+
+                ; 加载reshape buffer数据
+                load_reshape_buffer_t reg56, reg62, reg61 ; sign, data, addr
+                ; 计算bank掩码: 1 << bank_cnt
+                MOV_i reg63, 1
+                sll reg59, reg63, reg58 ; reg59 = bank掩码
+
+                ; 设置bank和数据
+                set_row_bank_and_data_r reg59, reg62
+
+                ; 检查是否为最后一次迭代
+                sub reg60, reg55, reg63 ; nbank - 1
+                CMP_r reg58, reg60
+                JNE skip_read
+                row_read_rram_32ch_to_diff ; 读取RRAM
+                set_elewise_fast          ; 执行移位加法
+            skip_read:
+
+                ; bank循环递增
+                add reg58, reg58, reg63
+                JMP bank_loop
+            exit_bank_loop:
+
+            ; 位平面循环递增
+            add reg57, reg57, reg63
+            JMP bit_loop
+        exit_bit_loop:
+
+        ; sign循环递增
+        add reg56, reg56, reg63
+        JMP sign_loop
+    exit_sign_loop:
+
+    RET ; 子函数返回
