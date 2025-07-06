@@ -2414,10 +2414,65 @@ class CHIP():
 
         return ins_data,din_ram_data,operator_batch,res_tia_map
 
+    def get_read_result(self,rows,cols,tias,curr,read_batch_start,res,base,voltage,sub_base,split_type,from_row,return_base):
+        # curr当前是第几个batch,
+        if sub_base and return_base:
+            # 减去base且需要返回base信息
+            if split_type>=2 and split_type<=5:
+                if from_row:
+                    for col,tia in zip(cols,tias):
+                        res[col] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia]
+                        base[col] = voltage[curr+1-read_batch_start,tia]
+                else:
+                    for row,tia in zip(rows,tias):
+                        res[row] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia]
+                        base[row] = voltage[curr+1-read_batch_start,tia]
+            else:
+                if from_row:
+                    for col,tia in zip(cols,tias):
+                        res[rows[0],col] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia]
+                        base[rows[0],col] = voltage[curr+1-read_batch_start,tia]
+                else:
+                    for row,tia in zip(rows,tias):
+                        res[row,cols[0]] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia]
+                        base[row,cols[0]] = voltage[curr+1-read_batch_start,tia]
+        elif sub_base:
+            # 减去base不需要返回base信息
+            if split_type>=2 and split_type<=5:
+                if from_row:
+                    for col,tia in zip(cols,tias):
+                        res[col] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia]
+                else:
+                    for row,tia in zip(rows,tias):
+                        res[row] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia]
+            else:
+                if from_row:
+                    for col,tia in zip(cols,tias):
+                        res[rows[0],col] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia]
+                else:
+                    for row,tia in zip(rows,tias):
+                        res[row,cols[0]] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia]
+        else:
+            # 大于等于2表示，开所有行/列
+            if split_type>=2 and split_type<=5:
+                if from_row:
+                    for col,tia in zip(cols,tias):
+                        res[col] = voltage[curr-read_batch_start,tia]
+                else:
+                    for row,tia in zip(rows,tias):
+                        res[row] = voltage[curr-read_batch_start,tia]
+            else:
+                if from_row:
+                    for col,tia in zip(cols,tias):
+                        res[rows[0],col] = voltage[curr-read_batch_start,tia]
+                else:
+                    for row,tia in zip(rows,tias):
+                        res[row,cols[0]] = voltage[curr-read_batch_start,tia]
+
     def read4(self,crossbar:Union[np.ndarray,None]=None,row_index:Union[list[int],None]=None,col_index:Union[list[int],None]=None,
               read_voltage:float=0.1,tg:float = 5,gain:int = 1,sub_base:bool = False,
               from_row:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0,
-              return_data:bool = False):
+              return_data:bool = False,return_base:bool = False):
         """
             Args:
                 crossbar: n*n的np矩阵
@@ -2469,23 +2524,28 @@ class CHIP():
         else:
             res = np.zeros((self.setting.chip_latch_num))
 
-        def get_read_result(rows,cols,tias,curr,read_batch_start,res,voltage,sub_base):
-            # 大于等于2表示，开所有行/列
-            if split_type>=2 and split_type<=5:
-                if from_row:
-                    for col,tia in zip(cols,tias):
-                        res[col] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
-                else:
-                    for row,tia in zip(rows,tias):
-                        res[row] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
-            else:
-                if from_row:
-                    for col,tia in zip(cols,tias):
-                        # print(col,tia,voltage[curr-read_batch_start,tia],voltage[curr+1-read_batch_start,tia])
-                        res[rows[0],col]=voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
-                else:
-                    for row,tia in zip(rows,tias):
-                        res[row,cols[0]] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+        base = None
+        if return_base and sub_base:
+            base = np.zeros_like(res)
+
+        # def get_read_result(rows,cols,tias,curr,read_batch_start,res,voltage,sub_base):
+        #     # 大于等于2表示，开所有行/列
+        #     if split_type>=2 and split_type<=5:
+        #         if from_row:
+        #             for col,tia in zip(cols,tias):
+        #                 res[col] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+        #         else:
+        #             for row,tia in zip(rows,tias):
+        #                 res[row] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+        #     else:
+        #         if from_row:
+        #             for col,tia in zip(cols,tias):
+        #                 # print(col,tia,voltage[curr-read_batch_start,tia],voltage[curr+1-read_batch_start,tia])
+        #                 res[rows[0],col]=voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+        #         else:
+        #             for row,tia in zip(rows,tias):
+        #                 res[row,cols[0]] = voltage[curr-read_batch_start,tia]-voltage[curr+1-read_batch_start,tia] if sub_base else voltage[curr-read_batch_start,tia]
+
 
         ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)
         read_batch_start,read_batch_end = 0,0
@@ -2508,7 +2568,8 @@ class CHIP():
                 for i in range(read_batch_start,read_batch_end):
                     rows,cols = operator_batch[i]
                     tias = res_tia_map[i]
-                    get_read_result(rows,cols,tias,i*interval,read_batch_start*interval,res,voltage,sub_base)
+                    # get_read_result(rows,cols,tias,i*interval,read_batch_start*interval,res,voltage,sub_base)
+                    self.get_read_result(rows,cols,tias,i*interval,read_batch_start*interval,res,base,voltage,sub_base,split_type,from_row,return_base)
                 
                 read_batch_start = read_batch_end
                 dout_ram_pos = dout_ram_start
@@ -2529,11 +2590,13 @@ class CHIP():
             for i in range(read_batch_start,read_batch_end):
                 rows,cols = operator_batch[i]
                 tias = res_tia_map[i]
-                get_read_result(rows,cols,tias,i*interval,read_batch_start*interval,res,voltage,sub_base)
+                # get_read_result(rows,cols,tias,i*interval,read_batch_start*interval,res,voltage,sub_base)
+                self.get_read_result(rows,cols,tias,i*interval,read_batch_start*interval,res,base,voltage,sub_base,split_type,from_row,return_base)
         # 返回电压电导电阻
         if return_data:
-            return res,return_data
+            return res,operator_batch,base
         else:
+            # 返回电压电导电阻
             return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
     
     def write4(self,crossbar:np.ndarray=None,row_index:list[int]=None,col_index:list[int]=None,
