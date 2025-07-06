@@ -2289,7 +2289,7 @@ class CHIP():
             # ------------------------------------------------------------------------------------------# ECRAM特定修改
             if inversion_type == 0:
                 pass
-            if inversion_type == 1:                                                                     # ECRAM的配置取反
+            elif inversion_type == 1:                                                                     # ECRAM的配置取反
                 index32 = 0xFFFF_FFFF ^ index32
             elif inversion_type == 2:
                 if index32&0xFFFF >0:
@@ -2416,7 +2416,8 @@ class CHIP():
 
     def read4(self,crossbar:Union[np.ndarray,None]=None,row_index:Union[list[int],None]=None,col_index:Union[list[int],None]=None,
               read_voltage:float=0.1,tg:float = 5,gain:int = 1,sub_base:bool = False,
-              from_row:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0):
+              from_row:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0,
+              return_data:bool = False):
         """
             Args:
                 crossbar: n*n的np矩阵
@@ -2530,7 +2531,10 @@ class CHIP():
                 tias = res_tia_map[i]
                 get_read_result(rows,cols,tias,i*interval,read_batch_start*interval,res,voltage,sub_base)
         # 返回电压电导电阻
-        return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
+        if return_data:
+            return res,return_data
+        else:
+            return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
     
     def write4(self,crossbar:np.ndarray=None,row_index:list[int]=None,col_index:list[int]=None,
               write_voltage:float=1,tg:Union[float|np.ndarray]= 5,pulse_width:float = 1e-6,

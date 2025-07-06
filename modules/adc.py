@@ -173,6 +173,19 @@ class ADC():
         self.big_resistance = big_resistance
         self.small_resistance = small_resistance
 
+    def voltage_to_current(self,voltage):
+        """
+            将读出的电压转成对应的电流
+        """
+        if self.gain == 0:
+            return voltage/(6.0241*(self.big_resistance+self.small_resistance))
+        elif self.gain == 2:
+            return voltage/(1*(self.big_resistance+self.small_resistance))
+        elif self.gain == 1:
+            return voltage/(6.0241*self.small_resistance)
+        elif self.gain == 3:
+            return voltage/(1*self.small_resistance)
+
     def voltage_to_cond(self,voltage,read_voltage):
         """
             读取的电压值换算成电导(单位:us)

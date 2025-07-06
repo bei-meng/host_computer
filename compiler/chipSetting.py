@@ -168,8 +168,9 @@ class CHIPSETTING:
             Returns:
                 [[int,int,...],[int,int,...],...]
         """
-        if len(index)==1:
-            return [index]
+        # 对单点的进行优化
+        # if len(index)==1:
+        #     return [index]
         batch = []
         tia = [[] for _ in range(self.chip_tia_num)]
         # ----------------------------------------------分成几路TIA
