@@ -5,7 +5,7 @@ from command import CMD,CmdData,Packet
 
 class PS():
     def __init__(self, host, port, delay=0, debug = 0):
-        self.host = "192.168.1.10"
+        self.host = host
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
