@@ -33,7 +33,8 @@ class CLK_MANAGER():
     def __init__(self,ps:PS,init = True):
         self.ps = ps
         self.init = init
-        self.set_cyc()
+        if init:
+            self.set_cyc()
 
     def get_pulse_cyc_ins(self,pulsewidth:float):
         pulse_cyc=int(pulsewidth/PULSE_CYC_LENGTH)

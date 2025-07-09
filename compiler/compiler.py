@@ -5,6 +5,7 @@ from command.singleCmdInfo import *
 from typing import List, Union
 from compiler.chipSetting import CHIPSETTING
 
+
 class COMPILER:
     ins_data = None                                                 # 存放CMD
     ass_ins = None                                                  # 汇编指令(name,参数2, 参数1, 参数0)
@@ -16,7 +17,7 @@ class COMPILER:
     const_variable = None                                           # 常量,用于立即数
     ins_pos = None                                                  # 最后一条指令的位置
     offset = 0                                                      # 当前指令的偏移
-
+    return_reg = "reg63"
 
     check_reg = False
 
@@ -337,8 +338,8 @@ class COMPILER:
 
     def call(self,label:str):
         # 翻译成一条move_i 0xff,ins_pos+2
-        reg127 = self.get_reg_variable("reg127",init=True)
-        ins = CMD(PL_MOVE_I,command_data=CmdData(reg127<<16))
+        reg = self.get_reg_variable(self.return_reg,init=True)
+        ins = CMD(PL_MOVE_I,command_data=CmdData(reg<<16))
         self.ins_data.append(ins)
         self.ins_pos += 1
 
@@ -992,7 +993,7 @@ class COMPILER:
         """
             jump to [reg0]
         """
-        reg_0 = self.get_reg_variable("reg127",init=False)
+        reg_0 = self.get_reg_variable(self.return_reg,init=False)
         ins = CMD(PL_JUMP_R,command_data=CmdData(reg_0<<16))
         self.ins_data.append(ins)
         self.ass_ins.append((0, ins.command_name))
