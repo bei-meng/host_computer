@@ -42,6 +42,9 @@ class CHIP():
 
     need_reset = False               # 两个芯片同用需要reset另一个芯片
 
+
+    reset_flag = (0,0b0000_0000,"")
+
     def __init__(self, ps:PS,deviceType:int = 0,IsNew32:bool=False,IsRERAM512:bool=False,init = True):
         self.ps = ps
         self.init = init
@@ -101,16 +104,18 @@ class CHIP():
                 CMD(FLT,command_data=CmdData(0x0FFF)),                  # 配置flt
                 CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le1)),         # cfg_flt_le1
                 CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le2)),         # cfg_flt_le2
-                CMD(CIM_RESET,command_data=CmdData(1)),                 # reset指令
+                # CMD(CIM_RESET,command_data=CmdData(1)),                 # reset指令
                 CMD(CIM_SS,command_data=CmdData(1)),                    # reg写入数据打开
                 CMD(SER_PARA_SEL,command_data=CmdData(1)),              # 切换到并行模式
             ],mode=1)
             self.ps.send_packets(pkts)
+            self.set_cim_reset(*self.reset_flag,reset_ans=1)
             # 不为空就执行初始化
             if self.adc is not None:
                 self.adc.initOp()
             if self.dac is not None:
                 self.dac.initOp()
+            
 
     def set_device_cfg(self,deviceType:int = 0,IsNew32:bool=False,IsRERAM512:bool=False):
         """
@@ -173,19 +178,26 @@ class CHIP():
 
         self.ps.send_packets(pkts)
 
-    def set_cim_reset(self):
+    def set_cim_reset(self,flag1=0,flag2=0b0000_0000,flag3="",reset_ans=0):
         """
-            发送reset的指令
+            发送reset的指令,
+            如果flag1为真,将reset信号设置为flag2
+            否则:
+                如果为ECRAM或不为v1.4版本,将reset信号状态设置为reset_ans
+                否则使用REG_OUT设置为reset_ans
         """
         pkts=Packet()
-        if self.setting.IsRERAM512:
-            pkts.append_cmdlist([CMD(COL_CTRL,command_data=CmdData(0)),CMD(COL_CTRL,command_data=CmdData(1)),],mode=1)
-            pkts.append_cmdlist([CMD(CIM_RESET,command_data=CmdData(0)),
-                                 CMD(CIM_RESET,command_data=CmdData(1)),
-                                 CMD(CIM_RESET,command_data=CmdData(0))],mode=1)
+        if flag1:
+            # 是多版
+            pkts.append_cmdlist([CMD(MULTI_BOARD_GPIO,command_data=CmdData(flag2))],mode=1)
         else:
-            pkts.append_cmdlist([CMD(CIM_RESET,command_data=CmdData(0)),CMD(CIM_RESET,command_data=CmdData(1)),],mode=1)
-        self.ps.send_packets(pkts)   
+            # 为ECRAM或者不是v1.4版本
+            if self.setting.deviceType==1 or flag3!="v1.4":
+                pkts.append_cmdlist([CMD(CIM_RESET,command_data=CmdData(reset_ans))],mode=1)
+            else:
+                pkts.append_cmdlist([CMD(REG_OUT,command_data=CmdData(reset_ans))],mode=1)
+        self.ps.send_packets(pkts)
+        self.reset_flag = (flag1,flag2,flag3)
 
     def send_cmd(self,cmd:list,mode:int):
         """
@@ -1153,6 +1165,7 @@ class CHIP():
         """
             读器件, row_index为行索引, col_index为列索引
         """
+        assert False,"此函数已经废弃!"
         self.read_voltage = read_voltage
         self.set_tia_gain(gain)
         self.set_op_mode2(read=True,from_row=from_row)
@@ -1326,6 +1339,7 @@ class CHIP():
             如果是进行推理,
             从行给信号读的话,row_index形式为[[所有行的行号]],col_index形式为[[所有列号(会自动切分tia的batch)]]
         """
+        assert False,"此函数已经废弃!"
         self.read_voltage = read_voltage
         self.set_tia_gain(gain)
         self.set_op_mode2(read=True,from_row=from_row)
@@ -1542,11 +1556,12 @@ class CHIP():
             tmp_ins_data = []
             # 是否需要清空原来的bank
             if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last[0] != res_col_bank[k][0]):
-                tmp_ins_data.append(CMD(PL_CIM_RESET))
                 # 从行读，就把列全配1，从列读，就把行全配1
                 if from_row:
                     tmp_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(0xFF<<8|1)))
+                    tmp_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(0xFF<<8|0)))
                 else:
+                    tmp_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(0xFF<<8|0)))
                     tmp_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(0xFF<<8|1)))
             elif row_bank_data_last[0] != res_row_bank[k][0]:
                 # 从行读，就把行对应bank清零，否则全部置1
@@ -1643,7 +1658,8 @@ class CHIP():
                     tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
                     tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
                 else:
-                    tmp_ins_data.append(CMD(PL_CIM_RESET))
+                    tmp_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(0xFF<<8|0)))
+                    tmp_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(0xFF<<8|0)))
             elif row_bank_data_last[0] != res_row_bank[k][0]:
                 tmp_ins_data.append( CMD(PL_ROW_BANK,command_data=CmdData(row_bank_data_last[0]<<8|0)) )
             elif col_bank_data_last[0] != res_col_bank[k][0]:
@@ -1718,7 +1734,8 @@ class CHIP():
             tmp_ins_data = []
             # 是否需要清空原来的bank
             if (row_bank_data_last[0] != res_row_bank[k][0]) and (col_bank_data_last[0] != res_col_bank[k][0]):
-                tmp_ins_data.append(CMD(PL_CIM_RESET))
+                tmp_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(0xFF<<8|0)))
+                tmp_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(0xFF<<8|0)))
                 if not set_device:
                     tmp_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(0xFF<<8|1)))
             elif row_bank_data_last[0] != res_row_bank[k][0]:
@@ -1785,7 +1802,8 @@ class CHIP():
                     tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
                     tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
                 else:
-                    tmp_ins_data.append(CMD(PL_CIM_RESET))
+                    tmp_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(0xFF<<8|0)))
+                    tmp_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(0xFF<<8|0)))
             elif row_bank_data_last[0] != res_row_bank[k][0]:
                 tmp_ins_data.append( CMD(PL_ROW_BANK,command_data=CmdData(row_bank_data_last[0]<<8|0)) )
             elif col_bank_data_last[0] != res_col_bank[k][0]:
@@ -1913,7 +1931,8 @@ class CHIP():
                 tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))
                 tmp_ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(1<<16)))
             else:
-                tmp_ins_data.append(CMD(PL_CIM_RESET))
+                tmp_ins_data.append(CMD(PL_COL_BANK,command_data=CmdData(0xFF<<8|0)))
+                tmp_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(0xFF<<8|0)))
 
             for i in range(len(res_row_bank[k])):
                 tmp_ins_data.append(CMD(PL_ROW_BANK,command_data=CmdData(res_row_bank[k][i][0]<<8|res_row_bank[k][i][1])))  # 配置行bank

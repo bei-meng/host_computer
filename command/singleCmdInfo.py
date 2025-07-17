@@ -788,18 +788,39 @@ RETURN_FLG=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
-#-------------------------------------------------------------------EXT_GPIO:49
-EXT_GPIO=dict(
+# #-------------------------------------------------------------------EXT_GPIO:49--废弃了
+# EXT_GPIO=dict(
+#     command_addr = COMMAND_ADDR,
+#     command_type = COMMAND_TYPE.RW,
+#     n_addr_bytes = N_ADDR_BYTES.ONE,
+#     n_data_bytes = N_DATA_BYTES.FOUR,
+#     command_name = "ext_gpio",
+#     command_data = CmdData(0),
+#     command_description = ""
+# )
+# COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------MULTI_BOARD_GPIO:49
+MULTI_BOARD_GPIO=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.RW,
     n_addr_bytes = N_ADDR_BYTES.ONE,
     n_data_bytes = N_DATA_BYTES.FOUR,
-    command_name = "ext_gpio",
+    command_name = "multi-board_gpio",
     command_data = CmdData(0),
-    command_description = ""
+    command_description = """
+    低8位:
+        B12_L5_N   = reg49[0]
+        B12_L7_P   = reg49[1]
+        B12_L6_P   = reg49[2]
+        B12_L7_N   = reg49[3]
+        B12_L6_N   = reg49[4]
+        B12_L13_P  = reg49[5]
+        B12_L11_P  = reg49[6]
+        B12_L11_N  = reg49[7]
+    """
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
-
 
 #-------------------------------------------------------------------ADC4_IN:50
 ADC4_IN=dict(
@@ -812,6 +833,7 @@ ADC4_IN=dict(
     command_description = "高16bit: 0, 低16bit, spi写入ADC寄存器的16bit值"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
+
 #-------------------------------------------------------------------ADC5_IN:51
 ADC5_IN=dict(
     command_addr = COMMAND_ADDR,
@@ -823,6 +845,7 @@ ADC5_IN=dict(
     command_description = "高16bit: 0, 低16bit, spi写入ADC寄存器的16bit值"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
+
 #-------------------------------------------------------------------ADC6_IN:52
 ADC6_IN=dict(
     command_addr = COMMAND_ADDR,
@@ -834,7 +857,8 @@ ADC6_IN=dict(
     command_description = "高16bit: 0, 低16bit, spi写入ADC寄存器的16bit值"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
-#-------------------------------------------------------------------ADC7_IN:6
+
+#-------------------------------------------------------------------ADC7_IN:53
 ADC7_IN=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.RW,
@@ -846,6 +870,17 @@ ADC7_IN=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------REG_OUT:54
+REG_OUT=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "reg_out",
+    command_data = CmdData(0),
+    command_description = "最低位: 0或1"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
 
 
