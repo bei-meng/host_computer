@@ -666,7 +666,7 @@ class CHIP():
                 并会清空数据列表
         """
         num = len(din_ram_data)
-        assert num+din_ram_start <= self.setting.din_ram_length,f"send_din_ram2: din_ram:{num+din_ram_start}超过界限。"
+        assert num+din_ram_start <= self.setting.din_ram_length,f"send_din_ram2: din_ram:{num}-{din_ram_start}超过界限。"
         din_ram_data.insert(0,CMD(PL_DATA_LENGTH,command_data=CmdData(num)))                
         din_ram_data.insert(0,CMD(PL_RAM_ADDR,command_data=CmdData(din_ram_start)))
 
@@ -2320,6 +2320,7 @@ class CHIP():
                 din_ram_bank_index_map[index32] = din_ram_pos                                           # 如果前面没有用过这个index, 记录下来
                 din_ram_data.append(CMD(PL_DATA,command_data=CmdData(index32)))
                 din_ram_pos = din_ram_pos+1
+                print("din_ram_pos",len(din_ram_data),index32)
             res_bank.append((bank8,din_ram_bank_index_map[index32]))
 
         # 一个个batch进行处理
@@ -2669,7 +2670,7 @@ class CHIP():
             if change_tg:
                 tg_v = tg[operator_batch[i][0][0],operator_batch[i][1][0]]
                 if tg_v!=tg_last:
-                    ins_data +=self.get_dac_ins2(tg=tg_v)
+                    ins +=self.get_dac_ins2(tg=tg_v)
                     tg_last = tg_v
 
             ins.append(CMD(write_ins))
@@ -2799,7 +2800,7 @@ class CHIP():
             if change_tg:
                 tg_v = tg[operator_batch[i][0][0],operator_batch[i][1][0]]
                 if tg_v!=tg_last:
-                    ins_data +=self.get_dac_ins2(tg=tg_v)
+                    ins +=self.get_dac_ins2(tg=tg_v)
                     tg_last = tg_v
             # 准备读指令
             ins.append(CMD(write_ins))
