@@ -2669,7 +2669,7 @@ class CHIP():
             if change_tg:
                 tg_v = tg[operator_batch[i][0][0],operator_batch[i][1][0]]
                 if tg_v!=tg_last:
-                    tmp_ins_data +=self.get_dac_ins2(tg=tg_v)
+                    ins_data +=self.get_dac_ins2(tg=tg_v)
                     tg_last = tg_v
 
             ins.append(CMD(write_ins))
@@ -2799,7 +2799,7 @@ class CHIP():
             if change_tg:
                 tg_v = tg[operator_batch[i][0][0],operator_batch[i][1][0]]
                 if tg_v!=tg_last:
-                    tmp_ins_data +=self.get_dac_ins2(tg=tg_v)
+                    ins_data +=self.get_dac_ins2(tg=tg_v)
                     tg_last = tg_v
             # 准备读指令
             ins.append(CMD(write_ins))
