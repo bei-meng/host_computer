@@ -259,7 +259,7 @@ class COMPILER:
             raise Exception(f"立即数{imm}类型错误!")
         
         if imm_c>mask or imm_c < -mask:
-            raise Exception(f"立即数{imm_c}超过256/-127限制!")
+            raise Exception(f"立即数{imm_c}超过{f}限制!")
         return imm_c&mask,isConst
     
     #------------------------------------------------------------------------------------------
@@ -370,10 +370,40 @@ class COMPILER:
         self.need_replace_label.append((self.ins_pos-1, label, 0, CHIPSETTING.INS_RAM_ADDR_LENGTH))
 
     def set_row_bank_and_data_i(self,imm1,imm0):
-        raise Exception(f"set_row_bank_and_data_i未实现!")
+        """
+            Args:
+                imm1为row_bank_mask(8bit)
+                din_ram[imm0](8bit)里面是row_index_mask(32bit)
+        """
+        imm1_c,isConst1 = self.const_str_to_int(imm1,mask=0xFF)
+        imm0_c,isConst0 = self.const_str_to_int(imm0,mask=0xFF)
+        ins = CMD(PL_ROW_BANK,command_data=CmdData(imm1_c <<8 | imm0_c))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, imm1, imm0))
+        self.ins_pos += 1
+
+        if isConst1:
+            self.need_replace_const.append((self.ins_pos-1, imm1, 8, 8))
+        if isConst0:
+            self.need_replace_const.append((self.ins_pos-1, imm0, 0, 8))
     
     def set_col_bank_and_data_i(self,imm1,imm0):
-        raise Exception(f"set_col_bank_and_data_i未实现!")
+        """
+            Args:
+                imm1为col_bank_mask(8bit)
+                din_ram[imm0](8bit)里面是col_index_mask(32bit)
+        """
+        imm1_c,isConst1 = self.const_str_to_int(imm1,mask=0xFF)
+        imm0_c,isConst0 = self.const_str_to_int(imm0,mask=0xFF)
+        ins = CMD(PL_COL_BANK,command_data=CmdData(imm1_c <<8 | imm0_c))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.command_name, imm1, imm0))
+        self.ins_pos += 1
+
+        if isConst1:
+            self.need_replace_const.append((self.ins_pos-1, imm1, 8, 8))
+        if isConst0:
+            self.need_replace_const.append((self.ins_pos-1, imm0, 0, 8))
 
     def set_daci(self,imm1:Union[int|str],imm0:Union[int|str]):
         """

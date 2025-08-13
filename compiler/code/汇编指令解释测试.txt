@@ -23,8 +23,8 @@ mov_i reg2,3
 label:
 
 jmp label                                               # 跳转到对应标签对应的IR_ram_addr
-# set_row_bank_and_data_i imm1,imm0                       # 从din_ram配置行bank,imm1为row_bank_mask(8bit),din_ram[imm0]里面是row_index_mask(32bit)
-# set_col_bank_and_data_i imm1,imm0                       # 从din_ram配置列bank,imm1为col_bank_mask(8bit),din_ram[imm0]里面是col_index_mask(32bit)
+set_row_bank_and_data_i imm1,imm0                       # 从din_ram配置行bank,imm1为row_bank_mask(8bit),din_ram[imm0]里面是row_index_mask(32bit)
+set_col_bank_and_data_i imm1,imm0                       # 从din_ram配置列bank,imm1为col_bank_mask(8bit),din_ram[imm0]里面是col_index_mask(32bit)
 set_daci imm1,imm0                                      # 设置dac的第imm1[0:11]个通道的电压码值(16bit)为imm0
 row_read_rram_32ch_to_dout_i imm                        # 从行读16路TIA,结果存储在dout_ram[imm](每个数据单元256bit)
 col_read_rram_32ch_to_dout_i imm                        # 从列读16路TIA,结果存储在dout_ram[imm](每个数据单元256bit)
