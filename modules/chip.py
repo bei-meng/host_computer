@@ -43,7 +43,7 @@ class CHIP():
     need_reset = False               # 两个芯片同用需要reset另一个芯片
 
 
-    reset_flag = (0,0b0000_0000,"")
+    reset_flag = (False,0b0000_0000,"")
 
     def __init__(self, ps:PS,deviceType:int = 0,IsNew32:bool=False,IsRERAM512:bool=False,init = True):
         self.ps = ps
@@ -178,7 +178,7 @@ class CHIP():
 
         self.ps.send_packets(pkts)
 
-    def set_cim_reset(self,flag1=0,flag2=0b0000_0000,flag3="",reset_ans=0):
+    def set_cim_reset(self,flag1=False,flag2=0b0000_0000,flag3="",reset_ans=0):
         """
             发送reset的指令,
             如果flag1为真,将reset信号设置为flag2
@@ -2320,7 +2320,6 @@ class CHIP():
                 din_ram_bank_index_map[index32] = din_ram_pos                                           # 如果前面没有用过这个index, 记录下来
                 din_ram_data.append(CMD(PL_DATA,command_data=CmdData(index32)))
                 din_ram_pos = din_ram_pos+1
-                print("din_ram_pos",len(din_ram_data),index32)
             res_bank.append((bank8,din_ram_bank_index_map[index32]))
 
         # 一个个batch进行处理

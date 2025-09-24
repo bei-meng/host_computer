@@ -37,3 +37,22 @@
 - 2025.7.17 - AT2_F_Code1.1.3
 
   - 修改多版reset信号的逻辑
+- 2025.09.24 - AT2_F_Code1.1.4
+
+  - 没有修改，新增一个版本
+
+    def set_cim_reset(self,flag1=False,flag2=0b0000_0000,flag3="",reset_ans=0):
+
+    """
+
+    发送reset的指令,
+
+    如果flag1为真,将reset信号设置为flag2
+
+    否则:
+
+    如果为ECRAM或不为v1.4版本,将reset信号状态设置为reset_ans
+
+    否则使用REG_OUT设置为reset_ans
+
+    """
