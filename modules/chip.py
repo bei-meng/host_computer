@@ -2711,7 +2711,7 @@ class CHIP():
             print("发送ps的DDR数据出错")
         pkts=Packet()
         pkts.append_single(ddr_data,mode=mode)
-        self.ps.send_packets(pkts,message_check=None)
+        self.ps.send_packets(pkts,message_check="bb550000")
         ddr_data.clear()
         return ps_ddr_pos
 
@@ -2752,7 +2752,7 @@ class CHIP():
         return ps_ddr_pos
 
     def write5(self,crossbar:np.ndarray=None,row_index:list[int]=None,col_index:list[int]=None,
-              write_voltage:float=1,tg:float = 5,
+              write_voltage:float=1,tg:float = 5,pulse_width:float = 1e-6,
               set_device:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0,
               ps_ddr_pos=0):
         """
@@ -2781,8 +2781,8 @@ class CHIP():
         """
         assert (crossbar is not None and split_type<=2) or (row_index is not None and col_index is not None and split_type>2),"write4: split_type接收数据错误!"
         self.write_voltage = write_voltage
-        # ps_ddr_pos = self.set_op_mode5(ps_ddr_pos=ps_ddr_pos,read=False,from_row=set_device)
-        # ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.clk_manager.get_pulse_cyc_ins(pulsewidth=pulse_width),mode=10,ps_ddr_pos=ps_ddr_pos)
+        ps_ddr_pos = self.set_op_mode5(ps_ddr_pos=ps_ddr_pos,read=False,from_row=set_device)
+        ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.clk_manager.get_pulse_cyc_ins(pulsewidth=pulse_width),mode=10,ps_ddr_pos=ps_ddr_pos)
 
         
         write_ins = PL_WRITE_ROW_PULSE if set_device else PL_WRITE_COL_PULSE
@@ -2814,7 +2814,7 @@ class CHIP():
         return ps_ddr_pos
     
     def read5(self,crossbar:Union[np.ndarray,None]=None,row_index:Union[list[int],None]=None,col_index:Union[list[int],None]=None,
-              read_voltage:float=0.1,tg:float = 5,sub_base:bool = False,
+              read_voltage:float=0.1,tg:float = 5,gain:int = 1,sub_base:bool = False,
               from_row:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0,
               ps_ddr_pos=0):
         """
@@ -2848,8 +2848,8 @@ class CHIP():
         """
         assert (crossbar is not None and split_type<=2) or (row_index is not None and col_index is not None and split_type>2),"read4: split_type接收数据错误!"
         self.read_voltage = read_voltage
-        # ps_ddr_pos = self.set_op_mode5(ps_ddr_pos=ps_ddr_pos,read=True,from_row=from_row)
-        # ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.adc.get_gain_ins(gain=gain),mode=10,ps_ddr_pos=ps_ddr_pos)
+        ps_ddr_pos = self.set_op_mode5(ps_ddr_pos=ps_ddr_pos,read=True,from_row=from_row)
+        ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.adc.get_gain_ins(gain=gain),mode=10,ps_ddr_pos=ps_ddr_pos)
 
         din_ram_start,ins_ram_start = 0,0
         dout_ram_start,dout_ram_pos = 0,0
@@ -2891,9 +2891,9 @@ class CHIP():
         if len(ins_data)>0:
             ins_data.append(CMD(PL_EXIT))
             ps_ddr_pos = self.send_ps_ddr5(ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
-            ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.adc.get_out_ins5(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start),mode=10,ps_ddr_pos=ps_ddr_pos)
+            ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.adc.get_out_ins5(data_length=dout_ram_pos-dout_ram_start,dout_ram_start=dout_ram_start),mode=12,ps_ddr_pos=ps_ddr_pos)
 
-        return ps_ddr_pos,(read_voltage,operator_batch,res_tia_map,sub_base,from_row,split_type)
+        return ps_ddr_pos,(read_voltage,operator_batch,res_tia_map,sub_base,from_row,split_type,gain)
 
     def get_read5(self,read_voltage,operator_batch,res_tia_map,sub_base,from_row,split_type,gain):
         # 返回的数据
@@ -2926,7 +2926,7 @@ class CHIP():
         batch_size = 128*interval
         for read_batch_start in range(0,batch_num,batch_size):
             read_batch_end = min(read_batch_start+batch_size,batch_num)
-            voltage = self.adc.get_out_output5(data_length=read_batch_end-read_batch_start)
+            voltage = self.adc.get_out_output5(data_length=(read_batch_end-read_batch_start)*interval)
             for i in range(read_batch_start,read_batch_end):
                 rows,cols = operator_batch[i]
                 tias = res_tia_map[i]
