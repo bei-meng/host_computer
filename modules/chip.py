@@ -34,6 +34,8 @@ class CHIP():
     setting:CHIPSETTING = None
     compensation:COMPENSATION = None
 
+    return_flag = True             # 是否需要立即返回数据
+
     compilers = None
 
     init = True
@@ -2684,6 +2686,12 @@ class CHIP():
     #------------------------------------------------------------------------------------------
     # ********************************** 指令传到ps的ddr里面去 *********************************
     #------------------------------------------------------------------------------------------
+    def set_return_flag(self,flag:bool=True):
+        """
+            Args:
+                flag: True表示立即返回, False表示不返回
+        """
+        self.return_flag = flag
 
     def send_ps_ddr5(self,ddr_data,mode,ps_ddr_pos):
         """
@@ -2706,7 +2714,14 @@ class CHIP():
         elif mode==12:
             # 返回return_dout
             ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))
+            ddr_data.append(CMD(PL_DATA_1B,command_data=CmdData(self.return_flag)))
             ps_ddr_pos += 1
+        elif mode==13:
+            # 写神经元的映射表dout_ram
+            ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))            # ddr的地址
+            ddr_data.insert(1,CMD(PL_RAM_ADDR,command_data=CmdData(8)))                     # dout_ram的地址是8开始
+            ddr_data.insert(2,CMD(PL_DATA_LENGTH,command_data=CmdData(ins_num)))            # 数据长度
+            ps_ddr_pos += 1 + int(np.ceil(ins_num/8))
         else:
             print("发送ps的DDR数据出错")
         pkts=Packet()

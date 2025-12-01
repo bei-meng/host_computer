@@ -1160,6 +1160,16 @@ PL_DATA=dict(
     command_description = "数据"
 )
 
+PL_DATA_1B=dict(
+    command_addr = 0,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ZERO,# 0
+    n_data_bytes = N_DATA_BYTES.FOUR,# 1
+    command_name = "pl_data_1b",
+    command_data = CmdData(0),
+    command_description = "数据"
+)
+
 
 
 

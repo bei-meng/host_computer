@@ -92,6 +92,17 @@ class CHIPSETTING:
 
         return bank, index
 
+    def numToBank_Index(self,num:int) -> tuple[int,int]:
+        """
+            Args:
+                num: 行/列号, 从0开始
+
+            Returns:
+                tuple: (bank, index) 其中 bank[0:8] 和 index[0:31] 坐标从0开始
+        """
+
+        return self.num_to_bank_index[num]
+    
     def bank_to_num(self,bank_data:list) -> list[int]:
         """
             Args:
