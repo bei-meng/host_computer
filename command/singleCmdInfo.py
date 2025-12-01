@@ -75,6 +75,18 @@ class FAST_COMMAND1_CONF():
     cfg_adc6 = 1<<18
     cfg_adc7 = 1<<19
 
+    cfg_LIF_IZH_SEL_REG_EN = 1<<20
+    cfg_VINN_REG_EN = 1<<21
+    cfg_VINP_REG_EN = 1<<22
+    cfg_RLEAK_REG_EN = 1<<23
+    cfg_VLEAK_S_REG_EN = 1<<24
+    cfg_VLEAK_D0_REG_EN = 1<<25
+    cfg_VLEAK_D1_REG_EN = 1<<26
+    cfg_RLEAK_EN = 1<<27
+    cfg_IZH_LEAK_EN = 1<<28
+    cfg_IZH_L2_STATIC_CHARGEC_EN = 1<<29
+
+
     negative_reg_clk = 1<<31                                    # 临时的指令
 
 class DAC_INFO():
@@ -1686,6 +1698,27 @@ PL_SET_ADC_DISCARD_NBITS=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------PL_SET_NEURON_ENABLE:0x2a
+PL_SET_NEURON_ENABLE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_set_neuron_enable",
+    command_data = CmdData(0),
+    command_description = "神经元使能配置"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1820,7 +1853,7 @@ PL_JGE=dict(
 COMMAND_ADDR+=1         # 命令的地址自增1
 
 
-#-------------------------------------------------------------------PL_JUMP_R:0x40
+#-------------------------------------------------------------------PL_JUMP_R:0x3a
 PL_JUMP_R=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.PL,
@@ -1832,13 +1865,61 @@ PL_JUMP_R=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
-#-------------------------------------------------------------------PL_MUL_R:0x41
+#-------------------------------------------------------------------PL_MUL_R:0x3b
 PL_MUL_R=dict(
     command_addr = COMMAND_ADDR,
     command_type = COMMAND_TYPE.PL,
     n_addr_bytes = N_ADDR_BYTES.ONE,
     n_data_bytes = N_DATA_BYTES.THREE,
     command_name = "pl_mul_r",
+    command_data = CmdData(0),
+    command_description = " "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_SET_MODE:0x3c
+PL_SET_MODE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_set_mode",
+    command_data = CmdData(0),
+    command_description = " "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_INIT_NEURON_MAP:0x3d
+PL_INIT_NEURON_MAP=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_init_neuron_map",
+    command_data = CmdData(0),
+    command_description = " "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_START_NEURON_ACCU:0x3e
+PL_START_NEURON_ACCU=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_start_neuron_accu",
+    command_data = CmdData(0),
+    command_description = " "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+#-------------------------------------------------------------------PL_SET_NEURON_BANK_INDEX:0x3f
+PL_SET_NEURON_BANK_INDEX=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_set_neuron_bank_index",
     command_data = CmdData(0),
     command_description = " "
 )

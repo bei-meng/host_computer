@@ -66,16 +66,6 @@ class PS():
         ans = "".join(f'{byte:02x}' for byte in message)
         if message != message_check:
             print(f"接收信息错误,期待接收:{message_check},实际接收:{ans}")
-        if message_check == "bb550000" and message == "cc550000":
-            print("收到错误信息",message)
-            message = self.receive_packet(bytes_num=bytes_num)
-            ans = "".join(f'{byte:02x}' for byte in message)
-            assert ans == message_check,f"接收信息错误,期待接收:{message_check},实际接收:{ans}"
-        if message_check == "cc550000" and message == "bb550000":
-            print("收到错误信息",message)
-            message = self.receive_packet(bytes_num=bytes_num)
-            ans = "".join(f'{byte:02x}' for byte in message)
-            assert ans == message_check,f"接收信息错误,期待接收:{message_check},实际接收:{ans}"
 
     def send_packets(self, pkts: Packet,message_check = "bb550000"):
         """
