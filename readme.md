@@ -59,3 +59,7 @@
 - 2025.12.01 - AT2_F_Code1.1.5
 
   - 新增神经元相关指令AT2_F_Code1.1.4
+- 2025.12.29 - AT2_F_Code1.1.6
+
+  - 修改ECRAM的inversion_type==2兼容
+-

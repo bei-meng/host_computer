@@ -64,7 +64,7 @@ class PS():
     def receive_packet_check(self,bytes_num,message_check):
         message = self.receive_packet(bytes_num=bytes_num)
         ans = "".join(f'{byte:02x}' for byte in message)
-        if message != message_check:
+        if ans != message_check:
             print(f"接收信息错误,期待接收:{message_check},实际接收:{ans}")
 
     def send_packets(self, pkts: Packet,message_check = "bb550000"):

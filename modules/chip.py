@@ -2313,10 +2313,21 @@ class CHIP():
             elif inversion_type == 1:                                                                     # ECRAM的配置取反
                 index32 = 0xFFFF_FFFF ^ index32
             elif inversion_type == 2:
-                if index32&0xFFFF_0000 == 0:
-                    index32 = index32 | 0xFFFF_0000
-                if index32&0xFFFF == 0:
-                    index32 = index32 | 0x0000_FFFF
+                if self.setting.IsNew32:
+                    # 一个bank对应4个TIA
+                    if index32&0xFF00_0000 == 0:
+                        index32 = index32 | 0xFF00_0000
+                    if index32&0x00FF_0000 == 0:
+                        index32 = index32 | 0x00FF_0000
+                    if index32&0x0000_FF00 == 0:
+                        index32 = index32 | 0x0000_FF00
+                    if index32&0x0000_00FF == 0:
+                        index32 = index32 | 0x0000_00FF
+                else:
+                    if index32&0xFFFF_0000 == 0:
+                        index32 = index32 | 0xFFFF_0000
+                    if index32&0xFFFF == 0:
+                        index32 = index32 | 0x0000_FFFF
             # ------------------------------------------------------------------------------------------# ECRAM特定修改
             if din_ram_bank_index_map.get(index32,None) is None:
                 din_ram_bank_index_map[index32] = din_ram_pos                                           # 如果前面没有用过这个index, 记录下来
