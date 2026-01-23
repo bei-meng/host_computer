@@ -37,7 +37,7 @@ class CHIPSETTING:
 
     tia_map = None                                              # 几路TIA并行
 
-    def __init__(self,deviceType:int,IsNew32:bool=False,IsRERAM512:bool=False):
+    def __init__(self,deviceType:int=0,IsNew32:bool=True,IsRERAM512:bool=False):
         self.set_device(deviceType,IsNew32,IsRERAM512)
 
     #------------------------------------------------------------------------------------------

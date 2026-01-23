@@ -1,35 +1,32 @@
-import threading
 import time
 import socket
-from command import CMD,CmdData,Packet
 
 class PS():
-    def __init__(self, host, port, delay=0, debug = 0):
-        self.host = host
-        self.port = port
+    def __init__(self, local_ip, remote_ip, remote_port, max_packet_size=65536,debug=0):
+        self.remote_ip = remote_ip
+        self.remote_port = remote_port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        # self.lock = threading.Lock()
 
-        self.local_ip = "192.168.1.15"
+        self.local_ip = local_ip
         self.local_port = None      # 这里让他自动选择端口
 
         self.debug = debug
-        self.connected = False
-        self.delay = delay
+        self.delay = 0
 
         self.historic_pkts = []
 
+        # 分配固定缓冲区，加速
+        self._buffer = bytearray(max_packet_size)
+        self._buffer_view = memoryview(self._buffer)
         try:
-            # pass
             self.socket.bind((self.local_ip, 0))
-            self.socket.connect((self.host, self.port))
+            self.socket.connect((self.remote_ip, self.remote_port))
             self.local_ip, self.local_port = self.socket.getsockname()
-            print(f"Connected to {self.host}:{self.port}\nlocal ip: {self.local_ip} local port: {self.local_port}")
-
-            self.connected = True
             self.socket.settimeout(1)
-            pass
+            print(f"Connected to {self.remote_ip}:{self.remote_port}\nlocal ip: {self.local_ip} local port: {self.local_port}")
+
+
         except Exception as e:
             print(f"Failed to connect: {e}")
 
@@ -44,40 +41,44 @@ class PS():
         self.debug = debug
 
     def receive_packet(self, bytes_num):
-        res = b''
+        total_received = 0
         try:
             start_time = time.perf_counter()
-            while len(res)< bytes_num:
-                packet = self.socket.recv(bytes_num-len(res))
-                res = res + packet
-            if self.debug&2>0:
-                end_time = time.perf_counter()
+            while total_received < bytes_num:
+                bytes_received = self.socket.recv_into(self._buffer_view[total_received:], bytes_num - total_received)
+                if bytes_received == 0:
+                    raise ConnectionError("Socket connection closed")
+                total_received += bytes_received
+            end_time = time.perf_counter()
+            if self.debug & 0x02 > 0:
                 elapsed_time = end_time - start_time
-                print(f"收到信息: {len(res)}","".join(f'{byte:02x}' for byte in res))
-                print(f"receive_packet收到消息用时: {elapsed_time:.6f} seconds")
+                print(f"用时：{elapsed_time:.6f}秒，大小: {total_received}, 数据：{self._buffer[:total_received].hex()}")
         except socket.timeout:
-            print(f"接收超时! 期望大小{bytes_num},实际大小{len(res)},结果{res}")
+            print(f"接收超时! 期望大小：{bytes_num},实际大小：{total_received},数据：{self._buffer[:total_received].hex()}")
         except socket.error:
-            print(f"Failed to recv message")
-        return res
+            print(f"接收信息错误!")
+
+        return self._buffer[:total_received]
     
     def receive_packet_check(self,bytes_num,message_check):
-        message = self.receive_packet(bytes_num=bytes_num)
-        ans = "".join(f'{byte:02x}' for byte in message)
-        if ans != message_check:
-            print(f"接收信息错误,期待接收:{message_check},实际接收:{ans}")
+        message = self.receive_packet(bytes_num=bytes_num).hex()
+        if message != message_check:
+            print(f"接收信息错误,期待接收:{message_check},实际接收:{message}")
+            return False
+        return True
 
-    def send_packets(self, pkts: Packet,message_check = "bb550000"):
+    def send_packets(self, pkts,message_check = "bb550000"):
         """
             将packer里面的所有上位机指令按顺序有间隔的发送下去
         """
+        if self.debug & 0x01 > 0:
+            for i in pkts.all_bytes():print("完整字节码:",i)
+            print(pkts)
         if self.debug >0:
             self.historic_pkts.append(pkts)
         try:
-            if self.debug & 1>0:
-                for i in pkts.all_bytes():print("完整字节码:",i)
-                print(pkts)
-            for cmd in pkts.get_bytes_list():
+            cmd_list = pkts.get_bytes_list()
+            for cmd in cmd_list:
                 self.socket.sendall(cmd)
                 if self.delay>1e-3:
                     time.sleep(self.delay)
@@ -88,7 +89,10 @@ class PS():
                     
     def close(self):
         self.socket.close()
-        print("Connection closed.")
+        print(f"Connection closed:\nremote ip: {self.remote_ip}:{self.remote_port}\nlocal ip: {self.local_ip} local port: {self.local_port}")
+
+    def __del__(self):
+        self.close()
 
 
 

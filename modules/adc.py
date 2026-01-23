@@ -1,47 +1,39 @@
 from command import CMD,CmdData,Packet
 from command.singleCmdInfo import *
-from compiler.chipSetting import CHIPSETTING
 from pc import PS
 import numpy as np
+import struct
 
 class ADC():
     """
         针对ADC的一些操作
     """
-    channel_num = 4
-    adc_spi_div = 2
-    adc_cs_gap = 0x0190
-    adc_sample_times = 32
-    adc_first_gap = 0xa
-    adc_last_gap = 0xa
+    channel_num = 4                         # ADC通道数
+    adc_spi_div = 2                         # ADC的SPI分频
+    adc_cs_gap = 0x0190                     # ADC的CS间隔
+    adc_sample_times = 32                   # ADC的采样次数
+    adc_first_gap = 0xa                     # ADC的first_gap
+    adc_last_gap = 0xa                      # ADC的last_gap
 
-    big_resistance = 10e3                               # 单位: Ω
-    small_resistance = 200                              # 单位: Ω
+    big_resistance = 10e3                   # 单位: Ω
+    small_resistance = 200                  # 单位: Ω
 
-    base = 1.25/(2**15-1)                                   # 32767 是0x7FFF对应的正最大值
+    base = 1.25/(2**15-1)                   # 32767 是0x7FFF对应的正最大值
     
-    gain = 0
-    # row_col_sw = 0 
+    gain = 0                                # 增益
 
     ps = None
     setting = None
-    init = True
 
-    def __init__(self,ps:PS,setting:CHIPSETTING,init = True):
-        self.ps = ps
-        self.setting = setting
-        self.init = init
-        # DAC的初始化操作
-        self.initOp()
-
-    def initOp(self):
+    def initOp(self,ps,setting,init):
         """
             将ADC配置为4通道
         """
-        if self.init:
+        self.setting = setting
+        self.ps = ps
+        if init:
             self.set_op_adc(0xA200)                                                             # 配置ADC为四通道
             self.channel_num = 4
-
             self.set_gap(adc_cs_gap=100,adc_first_gap=10,adc_last_gap=10)
 
     def set_op_adc(self,data):
@@ -67,22 +59,7 @@ class ADC():
                     )),
             ],mode=1)
 
-            # 发送指令
             self.ps.send_packets(pkts)
-
-    # def set_row_col_sw(self,row_col_sw = 0):
-    #     """
-    #         pcb上row或col的TIA, 0:row,1:col
-    #     """
-    #     pkts=Packet()
-    #     pkts.append_cmdlist([
-    #         CMD(ROW_COL_SW,command_data=CmdData(row_col_sw)),
-    #     ],mode=1)
-
-    #     # 发送指令
-    #     self.ps.send_packets(pkts)
-    #     self.row_col_sw = row_col_sw
-    
 
     def set_spi_div(self,adc_spi_div = 2,):
         """
@@ -149,22 +126,6 @@ class ADC():
         """
         self.gain=gain
         return [CMD(GAIN,command_data=CmdData(gain))]
-
-    def hex_to_voltage(self,message_hex,vref=1.25):
-        """
-            读取的16进制值换算成电压
-        """
-        # 将十六进制字符串转换为整数
-        data = int(message_hex, 16)
-        # 确保数据在16位范围内
-        data &= 0xFFFF
-        # 将16位有符号数转换为Python整数
-        if data & 0x8000:  # 若符号位为1, 则表示负数
-            data -= 0x10000
-
-        # 将数据转换为电压
-        voltage = (data / (2**15-1)) * vref  # 32767 是0x7FFF对应的正最大值
-        return voltage
     
     def set_gain_resistor(self,big_resistance = 10e3, small_resistance = 200):
         """
@@ -228,37 +189,45 @@ class ADC():
         message = self.ps.receive_packet(data_length*32).hex()
         return message
 
-    def get_out(self,num:list,delay=None):
+    def get_out(self, num: list, delay=None):
         """
-            从adc_num的adc的adc_channel读数据
-            返回的是电压对应的np数组
+        从指定的 ADC 通道读取数据
+        返回的是电压对应的 np 数组
+        
+        Args:
+            num: 包含 TIA 编号的列表 (如 [0, 1, 2...])
+            
+        Returns:
+            np.ndarray: 电压值数组
         """
-        # return num
-        voltage = []
+        
+        voltage_values = [] # 存储结果
+        
         for TIA_num in num:
-            adc_num, adc_channel = int(TIA_num/4),TIA_num%4
-
+            adc_num = int(TIA_num / 4)
+            adc_channel = TIA_num % 4
             channel_map = {0: 'A', 1: 'B', 2: 'C', 3: 'D'}
-            pkts=Packet()
+            
+            pkts = Packet()
             adc_out = CMD(dict(
-                command_addr = 65+TIA_num,
-                command_type = COMMAND_TYPE.RW,
-                n_addr_bytes = N_ADDR_BYTES.ONE,
-                n_data_bytes = N_DATA_BYTES.FOUR,
-                command_name = f"adc{adc_num}_out{channel_map[adc_channel]}",
-                command_data = CmdData(0),
-                command_description = "从ADC对应通道读取数据"
+                command_addr=65 + TIA_num,
+                command_type=COMMAND_TYPE.RW,
+                n_addr_bytes=N_ADDR_BYTES.ONE,
+                n_data_bytes=N_DATA_BYTES.FOUR,
+                command_name=f"adc{adc_num}_out{channel_map[adc_channel]}",
+                command_data=CmdData(0),
+                command_description="从ADC对应通道读取数据"
             ))
-            pkts.append_cmdlist([adc_out],mode=2)
+            pkts.append_cmdlist([adc_out], mode=2)
 
-            # 发送指令
-            self.ps.send_packets(pkts,message_check=None)
-            # 接收信息
-            # 高16bit: 0, 低16bit: 寄存器的16bit值
-            message = self.ps.receive_packet(bytes_num=4)
-            voltage_hex = message.hex()[2:4] + message.hex()[0:2]
-            voltage.append(self.hex_to_voltage(voltage_hex))
-        return np.array(voltage)
+            self.ps.send_packets(pkts, message_check=None)
+            raw_bytes = self.ps.receive_packet(bytes_num=4)
+            data_int = struct.unpack('<h', raw_bytes[0:2])[0]  # 解析为有符号16位整数
+
+            voltage = data_int * self.base 
+            voltage_values.append(voltage)
+
+        return np.array(voltage_values)
 
     def get_out2(self,data_length:int,dout_ram_start:int) -> np.ndarray:
         """

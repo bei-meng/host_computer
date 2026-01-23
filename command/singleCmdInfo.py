@@ -45,6 +45,9 @@ class N_DATA_BYTES():
     THREE = 3
     FOUR = 4
 
+    EIGHT = 8      # 用于给定输出
+    INPUT = 32      # 用于给定输入
+
 class FAST_COMMAND1_CONF():
     """ 
         fast_command_1 32bit 控制字配置
@@ -1988,6 +1991,16 @@ PS_START_FINSH=dict(
     command_name = "ps_start_finsh",
     command_data = CmdData(0),
     command_description = "start/finsh,0表示start,1表示finsh"
+)
+
+PS_IMAGE_DATA=dict(
+    command_addr = 0,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ZERO,# 0
+    n_data_bytes = N_DATA_BYTES.INPUT,# 32
+    command_name = "ps_image_data",
+    command_data = CmdData(0),
+    command_description = "图像数据"
 )
 
 for cmd, obj in list(locals().items()):

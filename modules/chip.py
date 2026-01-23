@@ -17,46 +17,38 @@ import os
 from typing import List, Union
 
 class CHIP():
-    """
-        对chip进行的操作
-    """
-    chip_sel = 0                    # 选择18个阵列中的一个
-
+    # 基础参数配置
     op_mode = None                  # 当前所处模式
     from_row = True                 # 从行/列读写
     read_voltage = None             # 读写电压
     write_voltage = None            # 写电压
 
+    # 基础模块配置
     ps:PS = None
     adc:ADC = None
     dac:DAC = None
     clk_manager:CLK_MANAGER = None
     setting:CHIPSETTING = None
     compensation:COMPENSATION = None
-
-    return_flag = True             # 是否需要立即返回数据
-
     compilers = None
 
-    init = True
-
+    # 特殊参数
+    return_flag = True                      # 是否需要立即返回数据
     read_parallel2_data = None
+    need_reset = False                      # 两个芯片同用需要reset另一个芯片
+    reset_flag = (False,0b0000_0000,"")     # 控制片选信号
+    chip_sel = 0                            # 选择18个阵列中的一个，512K的
 
-    need_reset = False               # 两个芯片同用需要reset另一个芯片
-
-
-    reset_flag = (False,0b0000_0000,"")
-
-    def __init__(self, ps:PS,deviceType:int = 0,IsNew32:bool=False,IsRERAM512:bool=False,init = True):
-        self.ps = ps
-        self.init = init
-        self.setting = CHIPSETTING(deviceType=deviceType,IsNew32=IsNew32,IsRERAM512=IsRERAM512)
-        self.initOp()
-        self.adc = ADC(ps,self.setting,init)
-        self.dac = DAC(ps,self.setting,init)
-        self.clk_manager = CLK_MANAGER(ps,init)
+    def __init__(self, local_ip, remote_ip, remote_port = 7, max_packet_size = 65536, debug = 0, init = True):
+        self.ps = PS(local_ip=local_ip,remote_ip=remote_ip,remote_port=remote_port,max_packet_size=max_packet_size,debug=debug)
+        self.setting = CHIPSETTING()
+        self.adc = ADC()
+        self.dac = DAC()
+        self.clk_manager = CLK_MANAGER()
         self.compensation = COMPENSATION()
-        
+
+        self.initOp(init)
+
         self.compilers = {}
 
     def add_compiler(self,directory:str,encoding:str = 'utf-8'):
@@ -95,28 +87,30 @@ class CHIP():
     #------------------------------------------------------------------------------------------
     # ********************************** 器件初始化及其他操作 ***********************************
     #------------------------------------------------------------------------------------------
-    def initOp(self):
+    def initOp(self,init=True):
         """
             chip的初始化操作
         """
         # 配置器件的初始化
-        if self.init:
-            pkts=Packet()
-            pkts.append_cmdlist([
-                CMD(FLT,command_data=CmdData(0x0FFF)),                  # 配置flt
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le1)),         # cfg_flt_le1
-                CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le2)),         # cfg_flt_le2
-                # CMD(CIM_RESET,command_data=CmdData(1)),                 # reset指令
-                CMD(CIM_SS,command_data=CmdData(1)),                    # reg写入数据打开
-                CMD(SER_PARA_SEL,command_data=CmdData(1)),              # 切换到并行模式
-            ],mode=1)
-            self.ps.send_packets(pkts)
-            self.set_cim_reset(*self.reset_flag,reset_ans=1)
-            # 不为空就执行初始化
-            if self.adc is not None:
-                self.adc.initOp()
-            if self.dac is not None:
-                self.dac.initOp()
+        pkts=Packet()
+        pkts.append_cmdlist([
+            CMD(FLT,command_data=CmdData(0x0FFF)),                  # 配置flt
+            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le1)),         # cfg_flt_le1
+            CMD(FAST_COMMAND_1,command_data=CmdData(FAST_COMMAND1_CONF.cfg_flt_le2)),         # cfg_flt_le2
+            # CMD(CIM_RESET,command_data=CmdData(1)),                 # reset指令
+            CMD(CIM_SS,command_data=CmdData(1)),                    # reg写入数据打开
+            CMD(SER_PARA_SEL,command_data=CmdData(1)),              # 切换到并行模式
+        ],mode=1)
+        self.ps.send_packets(pkts)
+        self.set_cim_reset(*self.reset_flag,reset_ans=1)
+
+        # 不为空就执行初始化
+        if self.adc is not None:
+            self.adc.initOp(self.ps,self.setting,init)
+        if self.dac is not None:
+            self.dac.initOp(self.ps,init)
+        if self.clk_manager is not None:
+            self.clk_manager.initOp(self.ps,init)
             
 
     def set_device_cfg(self,deviceType:int = 0,IsNew32:bool=False,IsRERAM512:bool=False):
@@ -606,8 +600,8 @@ class CHIP():
         if self.setting.deviceType == 1:
             self.send_cmd(cmd=[CMD(SER_DATA,command_data=CmdData(self.op_mode != "read"))],mode=1)
             if self.op_mode == "write":
-                ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(1<<16)))                                                  # 1配置行到施加电压,
-                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
+                ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(1<<16)))                                                      # 1配置行到施加电压,
+                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                      # 0配置列到TIA,
                 ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
             else:
                 if self.setting.IsECRAM2:
@@ -615,15 +609,15 @@ class CHIP():
                     ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(0<<16)))                                                  # 0配置列到TIA,
                     ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
                 else:
-                    ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(int(from_row)<<16)))                                                  # 1配置行到施加电压,
-                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
+                    ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(int(from_row)<<16)))                                      # 1配置行到施加电压,
+                    ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                  # 0配置列到TIA,
                     ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
         else:
             if self.setting.IsRERAM512:
                 ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))
             else:
-                ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(int(from_row)<<16)))                                                  # 1配置行到施加电压,
-                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                                  # 0配置列到TIA,
+                ins_data.append(CMD(PL_ROW_CTRLI,command_data=CmdData(int(from_row)<<16)))                                          # 1配置行到施加电压,
+                ins_data.append(CMD(PL_COL_CTRLI,command_data=CmdData(int(not from_row)<<16)))                                      # 0配置列到TIA,
                 ins_data.append(CMD(PL_ROW_COL_SWI,command_data=CmdData(int(from_row)<<16)))  
         self.execute_ins(ins_data=ins_data,ins_ram_start=0)
  
@@ -2733,6 +2727,14 @@ class CHIP():
             ddr_data.insert(1,CMD(PL_RAM_ADDR,command_data=CmdData(8)))                     # dout_ram的地址是8开始
             ddr_data.insert(2,CMD(PL_DATA_LENGTH,command_data=CmdData(ins_num)))            # 数据长度
             ps_ddr_pos += 1 + int(np.ceil(ins_num/8))
+        elif mode==14:
+            # 传入推理所需行列号数据, 每条数据8B，uint64存储
+            ddr_data.insert(0,CMD(PS_DATA_LENGTH,command_data=CmdData(ins_num)))
+            ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))
+            ps_ddr_pos += 1 + int(np.ceil(ins_num))
+        elif mode==15:
+            ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))
+            ps_ddr_pos += 1
         else:
             print("发送ps的DDR数据出错")
         pkts=Packet()
@@ -2980,3 +2982,152 @@ class CHIP():
             ps_ddr_pos=self.send_ps_ddr5(ddr_data=ins_data,mode=11,ps_ddr_pos=ps_ddr_pos)
             ps_ddr_pos = ps_ddr_pos-1
         return ps_ddr_pos
+    
+    #------------------------------------------------------------------------------------------
+    # ********************************** 行/列解码在FPGA中完成 *********************************
+    #------------------------------------------------------------------------------------------
+
+    def inference6(self,data:np.ndarray,row_index:list[int],col_index:list[int],
+              read_voltage:float=0.1,tg:float = 5,gain:int = 1,
+              sub_base:bool = False,from_row:bool = True,split_type:int = 0,
+              ps_ddr_pos=0):
+        """
+            Args:
+                data: np矩阵, m*n大小,每行表示一次推理的数据,
+                row_index: n/k个元素的list
+                col_index: n/k个元素的list
+                sub_base: 表示base读的电压
+
+                split_type: 
+                            =3,表示开所有行,逐列,这个使用row_index和col_index\n
+                            =4,表示开所有行,列划分TIA,这个使用row_index和col_index\n
+                            =5,表示开所有行,所有列,这个使用row_index和col_index\n
+
+                from_row: True从行给信号,False从列给信号
+            
+            Return:
+                m*n 矩阵与 n*k 矩阵相乘的结果 m*k 矩阵
+                返回读出来的电压(V),电导(uS),电阻(kΩ)
+        """
+        assert split_type>=3 and split_type<=4,"read6: split_type接收数据错误!"
+        ps_ddr_pos_start = ps_ddr_pos
+        self.read_voltage = read_voltage
+        ps_ddr_pos = self.set_op_mode5(ps_ddr_pos=ps_ddr_pos,read=True,from_row=from_row)
+        ps_ddr_pos = self.send_ps_ddr5(ddr_data=self.adc.get_gain_ins(gain=gain),mode=10,ps_ddr_pos=ps_ddr_pos)
+
+        m,n = data.shape
+        assert (from_row and n==len(row_index)) or ((not from_row) and n==len(col_index)),"read6: data和row_index/col_index长度不匹配!"
+        # 电压配置指令
+        ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)
+        ps_ddr_pos = self.send_ps_ddr5(ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
+
+        # 准备输出的配置
+        output_addr_pos = ps_ddr_pos + 1
+        crossbar = np.zeros((m,self.setting.chip_latch_num),dtype=np.uint64)
+        tia_map = []
+        if from_row:
+            crossbar[:,row_index] = data
+            batchs = self.crossbar_split_to_batch4(None,row_index=[0],col_index=col_index,split_type=split_type)
+            for batch in batchs:
+                tmp = []
+                image_single = int(0)
+                for col in batch[1]: 
+                    image_single |= (1<<col)
+                    tmp.append(self.setting.TIA_index_map(col,col=not from_row))
+                tia_map.append((batch[1],tmp))
+                ins_data.append(CMD(PS_IMAGE_DATA,command_data=CmdData(image_single)))
+        else:
+            crossbar[:,col_index] = data
+            batchs = self.crossbar_split_to_batch4(None,row_index=row_index,col_index=[0],split_type=split_type)
+            for batch in batchs:
+                tmp = []
+                image_single = int(0)
+                for row in batch[0]:
+                    image_single |= (1<<row)
+                    tmp[-1].appen(self.setting.TIA_index_map(row,col=from_row))
+                tia_map.append((batch[0],tmp))
+                ins_data.append(CMD(PS_IMAGE_DATA,command_data=CmdData(image_single)))  
+        
+        batch_num = len(tia_map)
+        
+        # 准备输入的配置
+        input_addr_pos = output_addr_pos + len(ins_data)
+        shifts = np.arange(64, dtype=np.uint64)
+        for i in range(4):
+            crossbar[:,i*64:(i+1)*64] <<= shifts
+            crossbar[:,i] = np.bitwise_or.reduce(crossbar[:,i*64:(i+1)*64], axis=1)
+        images = crossbar[:,0:4].flatten()
+
+        images_num = 4*m
+        for i in range(0,images_num,4):
+            ins_data.append(CMD(PS_IMAGE_DATA,command_data=CmdData(int(images[i])|int(images[i+1])<<16|int(images[i+2])<<32|int(images[i+3])<<48)))
+
+    
+        # 电压配置
+        v_addr_pos,v_num = 0,0
+        if sub_base:
+            v_addr_pos = output_addr_pos + len(ins_data)
+            # 第一次读电压
+            voltages = self.get_dac_ins2(v=read_voltage,tg=tg)
+            v_single = int(0)
+            for v in voltages:
+                v_single = v_single<<32 | v.get_data(byte=False)
+                v_num += 1
+                if v_num>=7:
+                    ins_data.append(CMD(PS_IMAGE_DATA,command_data=CmdData(v_single)))
+                    v_single = int(0)
+            # 第二次读电压
+            voltages = self.get_dac_ins2(v=0,tg=tg)
+            for v in voltages:
+                v_single = v_single<<32 | v.get_data(byte=False)
+                v_num += 1
+                if v_num>=7:
+                    ins_data.append(CMD(PS_IMAGE_DATA,command_data=CmdData(v_single)))
+                    v_single = int(0)
+            # 发送剩余的数据
+            if (v_num+1)%8!=0:
+                ins_data.append(CMD(PS_IMAGE_DATA,command_data=CmdData(v_single)))
+
+        # 将行列数据+电压配置数据全部发下去
+        ps_ddr_pos = self.send_ps_ddr5(ddr_data=ins_data,mode=14,ps_ddr_pos=ps_ddr_pos)
+
+        if from_row:
+            # 0是从行输入，1是从列输入
+            ins_data.append(CMD(PL_DATA,command_data=CmdData(0)))
+            # 行
+            ins_data.append(CMD(PS_DDR_ADDR,command_data=CmdData(input_addr_pos)))
+            ins_data.append(CMD(PL_DATA_LENGTH,command_data=CmdData(m)))
+            # 列
+            ins_data.append(CMD(PS_DDR_ADDR,command_data=CmdData(output_addr_pos)))
+            ins_data.append(CMD(PL_DATA_LENGTH,command_data=CmdData(batch_num)))
+        else:
+            # 0是从行输入，1是从列输入
+            ins_data.append(CMD(PL_DATA,command_data=CmdData(1)))
+            # 行
+            ins_data.append(CMD(PS_DDR_ADDR,command_data=CmdData(output_addr_pos)))
+            ins_data.append(CMD(PL_DATA_LENGTH,command_data=CmdData(m)))
+            # 列
+            ins_data.append(CMD(PS_DDR_ADDR,command_data=CmdData(input_addr_pos)))
+            ins_data.append(CMD(PL_DATA_LENGTH,command_data=CmdData(batch_num)))
+
+        # 电压
+        ins_data.append(CMD(PS_DDR_ADDR,command_data=CmdData(v_addr_pos)))
+        ins_data.append(CMD(PL_DATA_LENGTH,command_data=CmdData(v_num)))
+
+        # 将行列数据+电压配置数据全部发下去
+        ps_ddr_pos = self.send_ps_ddr5(ddr_data=ins_data,mode=15,ps_ddr_pos=ps_ddr_pos)
+
+        # 开始执行
+        ps_ddr_pos = self.send_ps_run(flag=2,ps_ddr_pos_start=ps_ddr_pos_start,ps_ddr_pos=ps_ddr_pos)
+        output = self.adc.get_out_output5(data_length=m*batch_num*(2 if sub_base else 1))
+        if sub_base:
+            output = output[::2,:] - output[1::2,:]
+        
+        res = np.zeros((m,self.setting.chip_latch_num))
+
+        for i,(index,tia) in enumerate(batchs):
+            res[:,index] = output[i::batch_num,tia]
+                
+        self.ps.receive_packet_check(bytes_num=4,message_check="cc550000")
+
+        return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)

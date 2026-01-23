@@ -27,12 +27,12 @@ class CLK_MANAGER():
     # cim_rstn_cyc = 0xF              # cim
 
     ps = None
-    
-    init = True
 
-    def __init__(self,ps:PS,init = True):
+    def initOp(self,ps,init=True):
+        """
+            初始化时钟管理器
+        """
         self.ps = ps
-        self.init = init
         if init:
             self.set_cyc()
 

@@ -1,5 +1,4 @@
 from command import CMD,CmdData,Packet
-from compiler.chipSetting import CHIPSETTING
 from command.singleCmdInfo import *
 from pc import PS
 
@@ -17,20 +16,12 @@ class DAC():
 
     ps = None
 
-    init = True
-
-    def __init__(self,ps:PS,setting:CHIPSETTING,init = True):
-        self.ps = ps
-        self.setting = setting
-        self.init = init
-        # DAC的初始化操作
-        self.initOp()
-
-    def initOp(self):
+    def initOp(self,ps,init=True):
         """
             两个DAC, 需要关broadcast,以及将gain置2
         """
-        if self.init:
+        self.ps = ps
+        if init:
             pkts=Packet()
             pkts.append_cmdlist([
                 CMD(DAC_IN,command_data=CmdData(0<<24|0x020000)),       # 关闭DAC的broadcast
