@@ -1152,6 +1152,17 @@ PL_DATA_LENGTH=dict(
     command_data = CmdData(0),
     command_description = "指令条数"
 )
+
+# 数据长度
+PL_DATA_LENGTH_4B=dict(
+    command_addr = 0,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ZERO,# 0
+    n_data_bytes = N_DATA_BYTES.FOUR,# 4
+    command_name = "pl_data_length_4b",
+    command_data = CmdData(0),
+    command_description = "指令条数"
+)
 # 传入的数据
 PL_DATA=dict(
     command_addr = 0,

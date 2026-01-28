@@ -1,4 +1,3 @@
-import numpy as np
 from compiler.chipSetting import CHIPSETTING
 from command.singleCmdInfo import *
 class SIMULATOR:

@@ -33,7 +33,7 @@ class CHIP():
     compilers = None
 
     # 特殊参数
-    return_flag = True                      # 是否需要立即返回数据
+    return_flag = True                      # 是否需要立即返回数据,flag: True表示立即返回, False表示不返回
     read_parallel2_data = None
     need_reset = False                      # 两个芯片同用需要reset另一个芯片
     reset_flag = (False,0b0000_0000,"")     # 控制片选信号
@@ -2729,7 +2729,7 @@ class CHIP():
             ps_ddr_pos += 1 + int(np.ceil(ins_num/8))
         elif mode==14:
             # 传入推理所需行列号数据, 每条数据8B，uint64存储
-            ddr_data.insert(0,CMD(PS_DATA_LENGTH,command_data=CmdData(ins_num)))
+            ddr_data.insert(0,CMD(PS_DATA_LENGTH,command_data=CmdData(ins_num*8)))
             ddr_data.insert(0,CMD(PS_DDR_ADDR,command_data=CmdData(ps_ddr_pos)))
             ps_ddr_pos += 1 + int(np.ceil(ins_num))
         elif mode==15:
@@ -3019,6 +3019,7 @@ class CHIP():
         assert (from_row and n==len(row_index)) or ((not from_row) and n==len(col_index)),"read6: data和row_index/col_index长度不匹配!"
         # 电压配置指令
         ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)
+        ins_data.append(CMD(PL_EXIT))
         ps_ddr_pos = self.send_ps_ddr5(ins_data,mode=9,ps_ddr_pos=ps_ddr_pos)
 
         # 准备输出的配置
@@ -3044,7 +3045,7 @@ class CHIP():
                 image_single = int(0)
                 for row in batch[0]:
                     image_single |= (1<<row)
-                    tmp[-1].appen(self.setting.TIA_index_map(row,col=from_row))
+                    tmp.append(self.setting.TIA_index_map(row,col=from_row))
                 tia_map.append((batch[0],tmp))
                 ins_data.append(CMD(PS_IMAGE_DATA,command_data=CmdData(image_single)))  
         
@@ -3060,7 +3061,7 @@ class CHIP():
 
         images_num = 4*m
         for i in range(0,images_num,4):
-            ins_data.append(CMD(PS_IMAGE_DATA,command_data=CmdData(int(images[i])|int(images[i+1])<<16|int(images[i+2])<<32|int(images[i+3])<<48)))
+            ins_data.append(CMD(PS_IMAGE_DATA,command_data=CmdData(int(images[i])|int(images[i+1])<<64|int(images[i+2])<<128|int(images[i+3])<<192)))
 
     
         # 电压配置
@@ -3071,21 +3072,21 @@ class CHIP():
             voltages = self.get_dac_ins2(v=read_voltage,tg=tg)
             v_single = int(0)
             for v in voltages:
-                v_single = v_single<<32 | v.get_data(byte=False)
+                v_single = v_single<<32 | v.concatenate()
                 v_num += 1
-                if v_num>=7:
+                if v_num%8==0:
                     ins_data.append(CMD(PS_IMAGE_DATA,command_data=CmdData(v_single)))
                     v_single = int(0)
             # 第二次读电压
             voltages = self.get_dac_ins2(v=0,tg=tg)
             for v in voltages:
-                v_single = v_single<<32 | v.get_data(byte=False)
+                v_single = v_single<<32 | v.concatenate()
                 v_num += 1
-                if v_num>=7:
+                if v_num%8==0:
                     ins_data.append(CMD(PS_IMAGE_DATA,command_data=CmdData(v_single)))
                     v_single = int(0)
             # 发送剩余的数据
-            if (v_num+1)%8!=0:
+            if v_num%8!=0:
                 ins_data.append(CMD(PS_IMAGE_DATA,command_data=CmdData(v_single)))
 
         # 将行列数据+电压配置数据全部发下去
@@ -3093,26 +3094,26 @@ class CHIP():
 
         if from_row:
             # 0是从行输入，1是从列输入
-            ins_data.append(CMD(PL_DATA,command_data=CmdData(0)))
+            ins_data.append(CMD(PL_DATA,command_data=CmdData(int(self.return_flag))))
             # 行
             ins_data.append(CMD(PS_DDR_ADDR,command_data=CmdData(input_addr_pos)))
-            ins_data.append(CMD(PL_DATA_LENGTH,command_data=CmdData(m)))
+            ins_data.append(CMD(PL_DATA_LENGTH_4B,command_data=CmdData(m)))
             # 列
             ins_data.append(CMD(PS_DDR_ADDR,command_data=CmdData(output_addr_pos)))
-            ins_data.append(CMD(PL_DATA_LENGTH,command_data=CmdData(batch_num)))
+            ins_data.append(CMD(PL_DATA_LENGTH_4B,command_data=CmdData(batch_num)))
         else:
             # 0是从行输入，1是从列输入
-            ins_data.append(CMD(PL_DATA,command_data=CmdData(1)))
+            ins_data.append(CMD(PL_DATA,command_data=CmdData(1<<1 | int(self.return_flag))))
             # 行
             ins_data.append(CMD(PS_DDR_ADDR,command_data=CmdData(output_addr_pos)))
-            ins_data.append(CMD(PL_DATA_LENGTH,command_data=CmdData(m)))
+            ins_data.append(CMD(PL_DATA_LENGTH_4B,command_data=CmdData(m)))
             # 列
             ins_data.append(CMD(PS_DDR_ADDR,command_data=CmdData(input_addr_pos)))
-            ins_data.append(CMD(PL_DATA_LENGTH,command_data=CmdData(batch_num)))
+            ins_data.append(CMD(PL_DATA_LENGTH_4B,command_data=CmdData(batch_num)))
 
         # 电压
         ins_data.append(CMD(PS_DDR_ADDR,command_data=CmdData(v_addr_pos)))
-        ins_data.append(CMD(PL_DATA_LENGTH,command_data=CmdData(v_num)))
+        ins_data.append(CMD(PL_DATA_LENGTH_4B,command_data=CmdData(v_num)))
 
         # 将行列数据+电压配置数据全部发下去
         ps_ddr_pos = self.send_ps_ddr5(ddr_data=ins_data,mode=15,ps_ddr_pos=ps_ddr_pos)
