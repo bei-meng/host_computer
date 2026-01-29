@@ -12,4 +12,5 @@ network/__pycache__
 .idea/
 temp/
 废弃/
-并行权重更新/
+# 并行权重更新/
+ParallelWeightUpdate/mlp_manual/__pycache__/
