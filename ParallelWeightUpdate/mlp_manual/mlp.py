@@ -241,13 +241,18 @@ class SoftmaxCrossEntropy:
         self.labels = None
 
     def forward(self, logits, labels):
-        # labels: int class indices, shape (batch,)
         probs = softmax(logits)
         self.probs = probs
         self.labels = labels
+
         batch = logits.shape[0]
         log_likelihood = -np.log(probs[np.arange(batch), labels] + 1e-12)
-        return log_likelihood.mean()
+        loss = log_likelihood.mean()
+
+        preds = np.argmax(probs, axis=1) 
+        correct_count = (preds == labels).sum()
+
+        return loss, correct_count
 
     def backward(self):
         probs = self.probs.copy()

@@ -91,8 +91,8 @@ class PS():
         self.socket.close()
         print(f"Connection closed:\nremote ip: {self.remote_ip}:{self.remote_port}\nlocal ip: {self.local_ip} local port: {self.local_port}")
 
-    def __del__(self):
-        self.close()
+    # def __del__(self):
+    #     self.close()
 
 
 

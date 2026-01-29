@@ -630,7 +630,7 @@ class CHIP():
                 自动检查指令长度,配置,然后执行
                 并会清空指令列表
         """
-        if len(ins_data)==0 or ins_data[-1].command_name != "pl_exit":
+        if len(ins_data)==0 or ins_data[-1].data["command_name"] != "pl_exit":
             ins_data.append(CMD(PL_EXIT))
         ins_num = len(ins_data)
         assert ins_num+ins_ram_start < self.setting.ins_ram_length,f"execute_ins: ins_ram:{ins_num+ins_ram_start}超过界限。"
@@ -3094,7 +3094,7 @@ class CHIP():
 
         if from_row:
             # 0是从行输入，1是从列输入
-            ins_data.append(CMD(PL_DATA,command_data=CmdData(int(self.return_flag))))
+            ins_data.append(CMD(PL_DATA,command_data=CmdData(int(self.return_flag)<<1 | 0)))
             # 行
             ins_data.append(CMD(PS_DDR_ADDR,command_data=CmdData(input_addr_pos)))
             ins_data.append(CMD(PL_DATA_LENGTH_4B,command_data=CmdData(m)))
@@ -3103,13 +3103,13 @@ class CHIP():
             ins_data.append(CMD(PL_DATA_LENGTH_4B,command_data=CmdData(batch_num)))
         else:
             # 0是从行输入，1是从列输入
-            ins_data.append(CMD(PL_DATA,command_data=CmdData(1<<1 | int(self.return_flag))))
+            ins_data.append(CMD(PL_DATA,command_data=CmdData(int(self.return_flag)<<1 | 1)))
             # 行
             ins_data.append(CMD(PS_DDR_ADDR,command_data=CmdData(output_addr_pos)))
-            ins_data.append(CMD(PL_DATA_LENGTH_4B,command_data=CmdData(m)))
+            ins_data.append(CMD(PL_DATA_LENGTH_4B,command_data=CmdData(batch_num)))
             # 列
             ins_data.append(CMD(PS_DDR_ADDR,command_data=CmdData(input_addr_pos)))
-            ins_data.append(CMD(PL_DATA_LENGTH_4B,command_data=CmdData(batch_num)))
+            ins_data.append(CMD(PL_DATA_LENGTH_4B,command_data=CmdData(m)))
 
         # 电压
         ins_data.append(CMD(PS_DDR_ADDR,command_data=CmdData(v_addr_pos)))
@@ -3126,9 +3126,10 @@ class CHIP():
         
         res = np.zeros((m,self.setting.chip_latch_num))
 
-        for i,(index,tia) in enumerate(batchs):
+        for i,(index,tia) in enumerate(tia_map):
             res[:,index] = output[i::batch_num,tia]
-                
+        
+        res = res[:,col_index if from_row else row_index]
         self.ps.receive_packet_check(bytes_num=4,message_check="cc550000")
 
-        return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_resistance(voltage=res, read_voltage=read_voltage)
+        return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_resistance(voltage=res, read_voltage=read_voltage),ps_ddr_pos
