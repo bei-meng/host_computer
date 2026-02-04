@@ -297,4 +297,5 @@ class ADC():
         # 大端字节序解析
         int16_array = np.frombuffer(message, dtype=np.dtype('>i2'))
         voltage = int16_array * self.base
+        # return np.zeros((data_length,self.setting.chip_tia_num))
         return voltage.reshape(data_length,self.setting.chip_tia_num)

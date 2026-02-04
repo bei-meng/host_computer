@@ -2,7 +2,7 @@ import time
 import socket
 
 class PS():
-    def __init__(self, local_ip, remote_ip, remote_port, max_packet_size=65536,debug=0):
+    def __init__(self, local_ip, remote_ip, remote_port, max_packet_size=2**23,debug=0):
         self.remote_ip = remote_ip
         self.remote_port = remote_port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

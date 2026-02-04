@@ -8,7 +8,7 @@
 
 # 这两条指令不用管
 const_i imm,10                                          # 注册常量imm, 值为10,指令中的立即数可以使用
-# free_reg reg1                                           # 释放变量reg1所占寄存器(如果后面没有用到这个寄存器的值)
+free_reg reg1                                           # 释放变量reg1所占寄存器(如果后面没有用到这个寄存器的值)
 
 const_i imm0,10
 const_i imm1,10
@@ -40,8 +40,8 @@ load_din_ram_to_reg reg1,reg0                           # 从din_ram取数据,re
 add_r reg2,reg1,reg0                                    # reg2 = reg1 + reg0
 sub_r reg2,reg1,reg0                                    # reg2 = reg1 - reg0
 xor_i reg1,reg0,imm                                     # reg1 = reg0 ^ imm
-sll reg2,reg1,reg0                                    # reg2 = reg1 << reg0
-srl reg2,reg1,reg0                                    # reg2 = reg1 >> reg0
+sll reg2,reg1,reg0                                      # reg2 = reg1 << reg0
+srl reg2,reg1,reg0                                      # reg2 = reg1 >> reg0
 
 set_row_bank_and_data_r reg1,reg0                       # 配置行bank,reg1 为row_bank_mask,reg0 为row_index_mask
 set_col_bank_and_data_r reg1,reg0                       # 配置列bank,reg1 为col_bank_mask,reg0 为col_index_mask
@@ -107,9 +107,9 @@ set_adc_discard_nbits imm
 
 IR_ram_addr:
 # RRAM基础控制
-MOV_i reg10,imm0                                          # reg = imm
+MOV_i reg10,imm0                                        # reg = imm
 MOV_r reg2,reg1                                         # reg2 = reg1
-CMP_i reg0,imm0                                          # reg和imm比较,结果返回比较状态寄存器
+CMP_i reg0,imm0                                         # reg和imm比较,结果返回比较状态寄存器
 CMP_r reg2,reg1                                         # reg1和reg1比较,结果返回比较状态寄存器
 JEQ IR_ram_addr
 JNE IR_ram_addr

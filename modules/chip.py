@@ -39,7 +39,7 @@ class CHIP():
     reset_flag = (False,0b0000_0000,"")     # 控制片选信号
     chip_sel = 0                            # 选择18个阵列中的一个，512K的
 
-    def __init__(self, local_ip, remote_ip, remote_port = 7, max_packet_size = 65536, debug = 0, init = True):
+    def __init__(self, local_ip, remote_ip, remote_port = 7, max_packet_size = 2**23, debug = 0, init = True):
         self.ps = PS(local_ip=local_ip,remote_ip=remote_ip,remote_port=remote_port,max_packet_size=max_packet_size,debug=debug)
         self.setting = CHIPSETTING()
         self.adc = ADC()
@@ -3009,7 +3009,7 @@ class CHIP():
                 m*n 矩阵与 n*k 矩阵相乘的结果 m*k 矩阵
                 返回读出来的电压(V),电导(uS),电阻(kΩ)
         """
-        assert split_type>=3 and split_type<=4,"read6: split_type接收数据错误!"
+        assert split_type>=3 and split_type<=5,"read6: split_type接收数据错误!"
         ps_ddr_pos_start = ps_ddr_pos
         self.read_voltage = read_voltage
         ps_ddr_pos = self.set_op_mode5(ps_ddr_pos=ps_ddr_pos,read=True,from_row=from_row)
@@ -3028,18 +3028,18 @@ class CHIP():
         tia_map = []
         if from_row:
             crossbar[:,row_index] = data
-            batchs = self.crossbar_split_to_batch4(None,row_index=[0],col_index=col_index,split_type=split_type)
+            batchs = self.crossbar_split_to_batch4(None,row_index=[0],col_index=col_index,from_row=from_row,split_type=split_type)
             for batch in batchs:
                 tmp = []
                 image_single = int(0)
                 for col in batch[1]: 
                     image_single |= (1<<col)
-                    tmp.append(self.setting.TIA_index_map(col,col=not from_row))
+                    tmp.append(self.setting.TIA_index_map(col,col=from_row))
                 tia_map.append((batch[1],tmp))
                 ins_data.append(CMD(PS_IMAGE_DATA,command_data=CmdData(image_single)))
         else:
             crossbar[:,col_index] = data
-            batchs = self.crossbar_split_to_batch4(None,row_index=row_index,col_index=[0],split_type=split_type)
+            batchs = self.crossbar_split_to_batch4(None,row_index=row_index,col_index=[0],from_row=from_row,split_type=split_type)
             for batch in batchs:
                 tmp = []
                 image_single = int(0)
@@ -3122,7 +3122,7 @@ class CHIP():
         ps_ddr_pos = self.send_ps_run(flag=2,ps_ddr_pos_start=ps_ddr_pos_start,ps_ddr_pos=ps_ddr_pos)
         output = self.adc.get_out_output5(data_length=m*batch_num*(2 if sub_base else 1))
         if sub_base:
-            output = output[::2,:] - output[1::2,:]
+            output = output[1::2,:] - output[::2,:]
         
         res = np.zeros((m,self.setting.chip_latch_num))
 
