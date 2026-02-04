@@ -72,7 +72,7 @@ class SIMULATOR:
         if cmdType=="PL":
             record = -1
             cmd = PL_ADDR_TO_CMD[cmd_addr] 
-            print(f"执行指令:{hex(self.ins_ram[self.pc])}",cmd["command_name"])
+            print(f"执行指令:{hex(self.ins_ram[self.pc])}",cmd['command_name'])
             if cmd == PL_ADDI:
                 self.reg[reg1] = self.reg[reg0]+reg2
                 record = reg1
@@ -106,7 +106,7 @@ class SIMULATOR:
                 print(f"reg:{record}\t改变后的值:{hex(self.reg[record])}")
         else:
             cmd = PL_ADDR_TO_CMD[cmd_addr] 
-            print("执行指令:",cmd["command_name"])
+            print("执行指令:",cmd['command_name'])
 
         self.pc = self.pc+1
 

@@ -40,7 +40,7 @@ class COMPILER:
 
         # 闭包变量 i 的延迟绑定
 
-        apu_calc = ["apu_calc_relu","apu_calc_sigmoid","apu_calc_tanh"]
+        apu_calc = ['apu_calc_relu","apu_calc_sigmoid","apu_calc_tanh']
         for i,name in enumerate(apu_calc):
             setattr(self, name.lower(), lambda i=str(i): self.apu_calc(i))
 
@@ -387,7 +387,7 @@ class COMPILER:
         """
         ins = CMD(PL_JUMP,command_data=CmdData(0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], label))
+        self.ass_ins.append((0, ins.data['command_name'], label))
         self.ins_pos += 1
 
         self.need_replace_label.append((self.ins_pos-1, label, 0, CHIPSETTING.INS_RAM_ADDR_LENGTH))
@@ -402,7 +402,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0,mask=0xFF)
         ins = CMD(PL_ROW_BANK,command_data=CmdData(imm1_c <<8 | imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], imm1, imm0))
+        self.ass_ins.append((0, ins.data['command_name'], imm1, imm0))
         self.ins_pos += 1
 
         if isConst1:
@@ -420,7 +420,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0,mask=0xFF)
         ins = CMD(PL_COL_BANK,command_data=CmdData(imm1_c <<8 | imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], imm1, imm0))
+        self.ass_ins.append((0, ins.data['command_name'], imm1, imm0))
         self.ins_pos += 1
 
         if isConst1:
@@ -438,7 +438,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0,mask=0xFFFF)
         ins = CMD(PL_DAC_V,command_data=CmdData(imm1_c <<16 | imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], imm1, imm0))
+        self.ass_ins.append((0, ins.data['command_name'], imm1, imm0))
         self.ins_pos += 1
 
         if isConst1:
@@ -455,7 +455,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0)
         ins = CMD(PL_READ_ROW_PULSE,command_data=CmdData(imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], imm0))
+        self.ass_ins.append((0, ins.data['command_name'], imm0))
         self.ins_pos += 1
 
         if isConst0:
@@ -470,7 +470,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0)
         ins = CMD(PL_READ_COL_PULSE,command_data=CmdData(imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], imm0))
+        self.ass_ins.append((0, ins.data['command_name'], imm0))
         self.ins_pos += 1
 
         if isConst0:
@@ -482,7 +482,7 @@ class COMPILER:
         """
         ins = CMD(PL_WRITE_ROW_PULSE)
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"]))
+        self.ass_ins.append((0, ins.data['command_name']))
         self.ins_pos += 1
 
     def col_write_pulse(self):
@@ -491,7 +491,7 @@ class COMPILER:
         """
         ins = CMD(PL_WRITE_COL_PULSE)
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"]))
+        self.ass_ins.append((0, ins.data['command_name']))
         self.ins_pos += 1
 
     def cim_reset(self):
@@ -500,7 +500,7 @@ class COMPILER:
         """
         ins = CMD(PL_CIM_RESET)
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"]))
+        self.ass_ins.append((0, ins.data['command_name']))
         self.ins_pos += 1
 
     def bge_r(self,reg1:str,reg0:str,label:str):
@@ -512,7 +512,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_BGE,command_data=CmdData(reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg1, reg0, label))
+        self.ass_ins.append((0, ins.data['command_name'], reg1, reg0, label))
         self.ins_pos += 1
 
         self.need_replace_label.append((self.ins_pos-1, label, CHIPSETTING.BGE_INS_ADDR_START_POS, CHIPSETTING.INS_RAM_ADDR_LENGTH))
@@ -526,7 +526,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_ADDI,command_data=CmdData(imm_c<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg1, reg0, str(imm)))
+        self.ass_ins.append((0, ins.data['command_name'], reg1, reg0, str(imm)))
         self.ins_pos += 1
 
         if isConst:
@@ -538,7 +538,7 @@ class COMPILER:
         """
         ins = CMD(PL_EXIT)
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"]))
+        self.ass_ins.append((0, ins.data['command_name']))
         self.ins_pos += 1
 
     def load_din_ram_to_reg(self,reg1:str,reg0:str):
@@ -549,7 +549,7 @@ class COMPILER:
         reg_1 = self.get_reg_variable(reg1)
         ins = CMD(PL_LOAD_DIN_RAM,command_data=CmdData(reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg1, reg0))
         self.ins_pos += 1
 
     def add_r(self,reg2:str,reg1:str,reg0:str):
@@ -561,7 +561,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_ADD,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2, reg1, reg0))
         self.ins_pos += 1
 
     def sub_r(self,reg2:str,reg1:str,reg0:str):
@@ -573,7 +573,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_SUB,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2, reg1, reg0))
         self.ins_pos += 1
 
     def xor_i(self,reg1:str,reg0:str,imm:Union[int|str]):
@@ -585,7 +585,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_XORI,command_data=CmdData(imm_c<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg1, reg0, str(imm)))
+        self.ass_ins.append((0, ins.data['command_name'], reg1, reg0, str(imm)))
         self.ins_pos += 1
 
         if isConst:
@@ -600,7 +600,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_SLL,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2, reg1, reg0))
         self.ins_pos += 1
 
     def srl(self,reg2:str,reg1:str,reg0:str):
@@ -612,7 +612,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_SRL,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2, reg1, reg0))
         self.ins_pos += 1
 
     def set_row_bank_and_data_r(self,reg1:str,reg0:str):
@@ -625,7 +625,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_SET_ROW_BANK,command_data=CmdData(reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg1, reg0))
         self.ins_pos += 1
 
     def set_col_bank_and_data_r(self,reg1:str,reg0:str):
@@ -638,7 +638,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_SET_COL_BANK,command_data=CmdData(reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg1, reg0))
         self.ins_pos += 1
 
     def row_read_rram_1ch_to_dout(self,reg2:str,reg1:str,reg0:str):
@@ -653,7 +653,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_READ_ROW_PULSE_TIA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2, reg1, reg0))
         self.ins_pos += 1
 
     def col_read_rram_1ch_to_dout(self,reg2:str,reg1:str,reg0:str):
@@ -669,7 +669,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_READ_COL_PULSE_TIA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2, reg1, reg0))
         self.ins_pos += 1
 
     def return_dout(self,reg2:str,reg1:str,reg0:str):
@@ -684,7 +684,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_RETURN_DOUT,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2, reg1, reg0))
         self.ins_pos += 1
 
     def row_read_rram_1ch_to_reg(self,reg1:str,reg0:str):
@@ -697,7 +697,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_READ_ROW_PULSE_REG,command_data=CmdData(reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"],reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'],reg1, reg0))
         self.ins_pos += 1
 
     def col_read_rram_1ch_to_reg(self,reg1:str,reg0:str):
@@ -711,7 +711,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_READ_COL_PULSE_REG,command_data=CmdData(reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"],reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'],reg1, reg0))
         self.ins_pos += 1
 
     def row_ctrl_i(self,imm0:Union[int|str]):
@@ -722,7 +722,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0)
         ins = CMD(PL_ROW_CTRLI,command_data=CmdData(imm0_c<<16))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], imm0))
+        self.ass_ins.append((0, ins.data['command_name'], imm0))
         self.ins_pos += 1
 
         if isConst0:
@@ -736,7 +736,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0)
         ins = CMD(PL_COL_CTRLI,command_data=CmdData(imm0_c<<16))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], imm0))
+        self.ass_ins.append((0, ins.data['command_name'], imm0))
         self.ins_pos += 1
         
         if isConst0:
@@ -750,7 +750,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0)
         ins = CMD(PL_ROW_COL_SWI,command_data=CmdData(imm0_c<<16))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], imm0))
+        self.ass_ins.append((0, ins.data['command_name'], imm0))
         self.ins_pos += 1
         
         if isConst0:
@@ -762,7 +762,7 @@ class COMPILER:
         """
         ins = CMD(PL_READ_ROW_PULSE_DIFF)
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"]))
+        self.ass_ins.append((0, ins.data['command_name']))
         self.ins_pos += 1
 
     def col_read_rram_32ch_to_diff(self):
@@ -771,7 +771,7 @@ class COMPILER:
         """
         ins = CMD(PL_READ_COL_PULSE_DIFF)
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"]))
+        self.ass_ins.append((0, ins.data['command_name']))
         self.ins_pos += 1
 
     def cal_ch_mask(self,imm1:Union[int|str],imm0:Union[int|str]):
@@ -784,7 +784,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0)
         ins = CMD(PL_CAL_CH_MASK,command_data=CmdData(imm1_c <<8 | imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], imm1, imm0))
+        self.ass_ins.append((0, ins.data['command_name'], imm1, imm0))
         self.ins_pos += 1
 
         if isConst1:
@@ -800,7 +800,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0)
         ins = CMD(PL_APU_MODE,command_data=CmdData(imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], imm0))
+        self.ass_ins.append((0, ins.data['command_name'], imm0))
         self.ins_pos += 1
 
         if isConst0:
@@ -823,7 +823,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0)
         ins = CMD(PL_ELEMENT_WISE,command_data=CmdData(reg_0 <<16 | imm1_c <<8 | imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg0, imm1, imm0))
+        self.ass_ins.append((0, ins.data['command_name'], reg0, imm1, imm0))
         self.ins_pos += 1
 
         if isConst1:
@@ -838,7 +838,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_ACTV_RAM_ADDR,command_data=CmdData(reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg0))
         self.ins_pos += 1
 
     def load_actv_ram(self):
@@ -847,7 +847,7 @@ class COMPILER:
         """
         ins = CMD(PL_ACTV_RAM_READ)
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"]))
+        self.ass_ins.append((0, ins.data['command_name']))
         self.ins_pos += 1
 
     def store_actv_ram(self,imm0:Union[int|str]):
@@ -858,7 +858,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0)
         ins = CMD(PL_ACTV_RAM_WRITE,command_data=CmdData(imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], imm0))
+        self.ass_ins.append((0, ins.data['command_name'], imm0))
         self.ins_pos += 1
 
         if isConst0:
@@ -870,7 +870,7 @@ class COMPILER:
         """
         ins = CMD(PL_RESHAPE_BUFFER_CLEAR)
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"]))
+        self.ass_ins.append((0, ins.data['command_name']))
         self.ins_pos += 1
 
     def set_reshape_buffer_addr(self,reg0:str):
@@ -880,7 +880,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_RESHAPE_BUFFER_ADDR,command_data=CmdData(reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg0))
         self.ins_pos += 1
 
     def store_reshape_buffer(self):
@@ -889,7 +889,7 @@ class COMPILER:
         """
         ins = CMD(PL_RESHAPE_BUFFER_WRITE)
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"]))
+        self.ass_ins.append((0, ins.data['command_name']))
         self.ins_pos += 1
 
     def load_reshape_buffer_t(self,reg2:str,reg1:str,reg0:str):
@@ -900,7 +900,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_RESHAPE_BUFFER_READ,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2,reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2,reg1, reg0))
         self.ins_pos += 1
 
     def set_adc_discard_nbits(self,imm0:Union[int|str]):
@@ -909,7 +909,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0)
         ins = CMD(PL_SET_ADC_DISCARD_NBITS,command_data=CmdData(imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], imm0))
+        self.ass_ins.append((0, ins.data['command_name'], imm0))
         self.ins_pos += 1
 
         if isConst0:
@@ -923,7 +923,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0,mask=0xFFFF)
         ins = CMD(PL_MOVE_I,command_data=CmdData(reg_0 <<16 | imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg0, imm0))
+        self.ass_ins.append((0, ins.data['command_name'], reg0, imm0))
         self.ins_pos += 1
 
         if isConst0:
@@ -937,7 +937,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_MOVE_R,command_data=CmdData(reg_1<<16|reg_0<<8))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"],reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'],reg1, reg0))
         self.ins_pos += 1
 
     def cmp_i(self,reg0:str,imm0:Union[int|str]):
@@ -948,7 +948,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0,mask=0xFFFF)
         ins = CMD(PL_CMP_I,command_data=CmdData(reg_0 <<16 | imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg0, imm0))
+        self.ass_ins.append((0, ins.data['command_name'], reg0, imm0))
         self.ins_pos += 1
 
         if isConst0:
@@ -962,7 +962,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_CMP_R,command_data=CmdData(reg_1<<16|reg_0<<8))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"],reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'],reg1, reg0))
         self.ins_pos += 1
 
     def jeq(self,label:str):
@@ -971,7 +971,7 @@ class COMPILER:
         """
         ins = CMD(PL_JEQ,command_data=CmdData(0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], label))
+        self.ass_ins.append((0, ins.data['command_name'], label))
         self.ins_pos += 1
 
         self.need_replace_label.append((self.ins_pos-1, label, 0, 16))
@@ -983,7 +983,7 @@ class COMPILER:
         """
         ins = CMD(PL_JNE,command_data=CmdData(0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], label))
+        self.ass_ins.append((0, ins.data['command_name'], label))
         self.ins_pos += 1
 
         self.need_replace_label.append((self.ins_pos-1, label, 0, 16))
@@ -994,7 +994,7 @@ class COMPILER:
         """
         ins = CMD(PL_JLT,command_data=CmdData(0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], label))
+        self.ass_ins.append((0, ins.data['command_name'], label))
         self.ins_pos += 1
 
         self.need_replace_label.append((self.ins_pos-1, label, 0, 16))
@@ -1005,7 +1005,7 @@ class COMPILER:
         """
         ins = CMD(PL_JGT,command_data=CmdData(0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], label))
+        self.ass_ins.append((0, ins.data['command_name'], label))
         self.ins_pos += 1
 
         self.need_replace_label.append((self.ins_pos-1, label, 0, 16))
@@ -1016,7 +1016,7 @@ class COMPILER:
         """
         ins = CMD(PL_JLE,command_data=CmdData(0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], label))
+        self.ass_ins.append((0, ins.data['command_name'], label))
         self.ins_pos += 1
 
         self.need_replace_label.append((self.ins_pos-1, label, 0, 16))
@@ -1027,7 +1027,7 @@ class COMPILER:
         """
         ins = CMD(PL_JGE,command_data=CmdData(0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], label))
+        self.ass_ins.append((0, ins.data['command_name'], label))
         self.ins_pos += 1
 
         self.need_replace_label.append((self.ins_pos-1, label, 0, 16))
@@ -1039,7 +1039,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_JUMP_R,command_data=CmdData(reg_0<<16))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg0))
         self.ins_pos += 1
 
     def ret(self):
@@ -1049,7 +1049,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(self.return_reg,init=False)
         ins = CMD(PL_JUMP_R,command_data=CmdData(reg_0<<16))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"]))
+        self.ass_ins.append((0, ins.data['command_name']))
         self.ins_pos += 1
 
     def mul(self,reg2:str,reg1:str,reg0:str):
@@ -1060,7 +1060,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_MUL_R,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2,reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2,reg1, reg0))
         self.ins_pos += 1
 
     def set_dac_i(self,imm0:Union[int|str],reg0:Union[int|str]):
@@ -1076,7 +1076,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_DAC_V,command_data=CmdData(reg_0 <<16 | imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg0, imm0))
+        self.ass_ins.append((0, ins.data['command_name'], reg0, imm0))
         self.ins_pos += 1
 
         if isConst0:
@@ -1089,7 +1089,7 @@ class COMPILER:
         imm0_c,isConst0 = self.const_str_to_int(imm0,mask=0xFFFF)
         ins = CMD(PL_IO_CTRL,command_data=CmdData(imm0_c))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], imm0))
+        self.ass_ins.append((0, ins.data['command_name'], imm0))
         self.ins_pos += 1
 
         if isConst0:
@@ -1101,7 +1101,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_ROW_CTRL_PULSE_PARA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2, reg1, reg0))
         self.ins_pos += 1
 
     def set_col_ctrl_pulse_para(self,reg2:str,reg1:str,reg0:str):
@@ -1110,7 +1110,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_COL_CTRL_PULSE_PARA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2, reg1, reg0))
         self.ins_pos += 1
 
     def set_tg_pulse_width_para(self,reg2:str,reg1:str,reg0:str):
@@ -1119,7 +1119,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_TG_PULSE_PARA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2, reg1, reg0))
         self.ins_pos += 1
 
     def set_vin_row_pulse_para(self,reg2:str,reg1:str,reg0:str):
@@ -1128,7 +1128,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_VIN_ROW_PULSE_PARA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2, reg1, reg0))
         self.ins_pos += 1
     
     def set_vin_col_pulse_para(self,reg2:str,reg1:str,reg0:str):
@@ -1137,7 +1137,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_VIN_COL_PULSE_PARA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2, reg1, reg0))
         self.ins_pos += 1
 
     def set_write_row_pulse_para(self,reg2:str,reg1:str,reg0:str):
@@ -1146,7 +1146,7 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_WRITE_ROW_PULSE_PARA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2, reg1, reg0))
         self.ins_pos += 1
 
     def set_write_col_pulse_para(self,reg2:str,reg1:str,reg0:str):
@@ -1155,25 +1155,25 @@ class COMPILER:
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_WRITE_COL_PULSE_PARA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg2, reg1, reg0))
         self.ins_pos += 1
 
     def set_read_row_pulse_delay(self,reg0:str):
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_READ_ROW_PULSE_DELAY,command_data=CmdData(reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg0))
         self.ins_pos += 1
 
     def set_read_col_pulse_delay(self,reg0:str):
         reg_0 = self.get_reg_variable(reg0,init=False)
         ins = CMD(PL_READ_COL_PULSE_DELAY,command_data=CmdData(reg_0))
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"], reg0))
+        self.ass_ins.append((0, ins.data['command_name'], reg0))
         self.ins_pos += 1
 
     def set_write(self):
         ins = CMD(PL_SET_WRITE)
         self.ins_data.append(ins)
-        self.ass_ins.append((0, ins.data["command_name"]))
+        self.ass_ins.append((0, ins.data['command_name']))
         self.ins_pos += 1

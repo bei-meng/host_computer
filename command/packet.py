@@ -62,7 +62,7 @@ class Packet:
         max_cmd_name_len = 0
         for cmd in self.instruction_list:
             for k in cmd[1]:
-                max_cmd_name_len = max(max_cmd_name_len, len(k.data["command_name"]))
+                max_cmd_name_len = max(max_cmd_name_len, len(k.data['command_name']))
 
         res = ""
         for cmd in self.instruction_list:
@@ -75,10 +75,10 @@ class Packet:
                     pass
                 elif cmd[0]==2:
                     cmdbytes = k.get_addr()
-                    res += f"\t指令: {str(k.data["command_name"]):<{max_cmd_name_len}}\t字节码: " + self.delimiter.join(f'{byte:02x}' for byte in cmdbytes) + "\n"
+                    res += f"\t指令: {str(k.data['command_name']):<{max_cmd_name_len}}\t字节码: " + self.delimiter.join(f'{byte:02x}' for byte in cmdbytes) + "\n"
                 else:
                     cmdbytes = k.get_command()
-                    res += f"\t指令: {str(k.data["command_name"]):<{max_cmd_name_len}}\t字节码: " + self.delimiter.join(f'{byte:02x}' for byte in cmdbytes) + "\n"
+                    res += f"\t指令: {str(k.data['command_name']):<{max_cmd_name_len}}\t字节码: " + self.delimiter.join(f'{byte:02x}' for byte in cmdbytes) + "\n"
         return res
     
     def all_bytes(self):
@@ -94,7 +94,7 @@ class Packet:
         max_cmd_name_len = 0
         for cmd in self.instruction_list:
             for k in cmd[1]:
-                max_cmd_name_len = max(max_cmd_name_len, len(k.data["command_name"]))
+                max_cmd_name_len = max(max_cmd_name_len, len(k.data['command_name']))
 
         res = ""
         for cmd in self.instruction_list:

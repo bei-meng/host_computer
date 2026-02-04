@@ -2145,8 +2145,8 @@ PS_IMAGE_DATA=dict(
 for cmd, obj in list(locals().items()):
     if isinstance(obj, dict) and (obj.get("command_addr",None)!=None):
         if "PL_" not in cmd and "PS_" not in cmd:
-            DEBUGA_ADDR_TO_CMD[obj["command_addr"]]=obj
+            DEBUGA_ADDR_TO_CMD[obj['command_addr']]=obj
         else:
-            PL_ADDR_TO_CMD[obj["command_addr"]]=obj
+            PL_ADDR_TO_CMD[obj['command_addr']]=obj
 
 
