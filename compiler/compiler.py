@@ -36,6 +36,8 @@ class COMPILER:
         # self.get_reg_variable("zero")                               # 寄存器默认初始化就为0,不要改0寄存器的值
         self.offset = 0                                             # 指令整体偏移量
 
+        self.din_data = []
+
         # 闭包变量 i 的延迟绑定
 
         apu_calc = ["apu_calc_relu","apu_calc_sigmoid","apu_calc_tanh"]
@@ -171,7 +173,7 @@ class COMPILER:
     def get_ins_data(self)->list[CMD]:
         """
             获取ins_data
-            返回ins_data的副本
+            返回ins_data的副本,以及din_data的副本
         """
         for ins_pos,label,start,length in self.need_replace_label:
             new_data = self.labels.get(label,None)
@@ -194,7 +196,7 @@ class COMPILER:
                 self.ins_data[ins_pos].command_data.replace_bit(start,length,new_data)
             else:
                 raise Exception(f"返回地址{label}未定义!")
-        return self.ins_data.copy()
+        return self.ins_data.copy(), self.din_data.copy()
     
     def load_assembler_ins(self,filename:str,encoding:str = 'utf-8'):
         """
@@ -202,6 +204,7 @@ class COMPILER:
         """
         print("正在编译文件: ",filename)
         with open(filename, 'r', encoding=encoding) as file:
+            is_din_data = False
             for line in file:
                 # 删除注释,同时删除首尾空格和\t符号
                 line = line.replace(';', '#').split('#')[0].strip().lower()
@@ -210,9 +213,18 @@ class COMPILER:
                     continue
                 # 是标签
                 if line[-1] == ':':
-                    self.add_label(line[:-1])
-                else:
+                    label = line[:-1].replace(' ','')
+                    if label == "_data_":
+                        is_din_data = True
+                    elif label == "_main_":
+                        is_din_data = False
+                    if not is_din_data:
+                        self.add_label(label)
+                # 是数据
+                elif is_din_data:
+                    self.add_din(line)
                 # 是指令
+                else:
                     pos = line.find(' ')
                     if pos>0:
                         cmd_name = line[:pos] or line
@@ -228,6 +240,20 @@ class COMPILER:
     #------------------------------------------------------------------------------------------
     # *********************************** 常量相关函数 ***********************************
     #------------------------------------------------------------------------------------------
+    def set_din(self,din_data):
+        self.din_data = din_data.copy()
+
+    def set_const(self,const_data):
+        for k,v in const_data.items():
+            self.add_const_variable(k,v)
+
+    def add_din(self,imm):
+        """
+            添加数据
+        """
+        value,isConst = self.const_str_to_int(imm,mask=0xFFFF_FFFF)
+        self.din_data.append(CMD(PL_DATA,command_data=CmdData(value)))
+
     def add_const_variable(self,variable_name:str,value:int):
         self.const_variable[variable_name] = value
 
@@ -252,10 +278,10 @@ class COMPILER:
         elif type(imm)==int:
             imm_c = imm
         else:
-            raise Exception(f"立即数{imm}类型错误!")
+            raise Exception(f"数据{imm}格式错误!")
         
         if imm_c>mask or imm_c < -mask:
-            raise Exception(f"立即数{imm_c}超过{int(mask)}限制!")
+            raise Exception(f"数据{imm_c}超过{int(mask)}限制!")
         return imm_c&mask,isConst
     
     #------------------------------------------------------------------------------------------
@@ -315,7 +341,7 @@ class COMPILER:
         self.labels[label_name] = self.ins_pos
         self.ass_ins.append((1, label_name))
 
-    def const_i(self,variable_name:str,value:Union[int|str]):
+    def const_uint8(self,variable_name:str,value:Union[int|str]):
         """
             Args:
                 variable_name: 变量名
@@ -1006,7 +1032,7 @@ class COMPILER:
 
         self.need_replace_label.append((self.ins_pos-1, label, 0, 16))
 
-    def jump_r(self,reg0:str):
+    def jmp_r(self,reg0:str):
         """
             jump to [reg0]
         """
@@ -1056,4 +1082,98 @@ class COMPILER:
         if isConst0:
             self.need_replace_const.append((self.ins_pos-1, imm0, 0, 16))
 
+    def set_io(self,imm0:Union[int|str]):
+        """
+            设置GPIO口控制, 16bit的值, 低10bit控制IO口
+        """
+        imm0_c,isConst0 = self.const_str_to_int(imm0,mask=0xFFFF)
+        ins = CMD(PL_IO_CTRL,command_data=CmdData(imm0_c))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.data["command_name"], imm0))
+        self.ins_pos += 1
 
+        if isConst0:
+            self.need_replace_const.append((self.ins_pos-1, imm0, 0, 16))
+
+    def set_row_ctrl_pulse_para(self,reg2:str,reg1:str,reg0:str):
+        reg_2 = self.get_reg_variable(reg2,init=False)
+        reg_1 = self.get_reg_variable(reg1,init=False)
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_ROW_CTRL_PULSE_PARA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ins_pos += 1
+
+    def set_col_ctrl_pulse_para(self,reg2:str,reg1:str,reg0:str):
+        reg_2 = self.get_reg_variable(reg2,init=False)
+        reg_1 = self.get_reg_variable(reg1,init=False)
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_COL_CTRL_PULSE_PARA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ins_pos += 1
+
+    def set_tg_pulse_width_para(self,reg2:str,reg1:str,reg0:str):
+        reg_2 = self.get_reg_variable(reg2,init=False)
+        reg_1 = self.get_reg_variable(reg1,init=False)
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_TG_PULSE_PARA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ins_pos += 1
+
+    def set_vin_row_pulse_para(self,reg2:str,reg1:str,reg0:str):
+        reg_2 = self.get_reg_variable(reg2,init=False)
+        reg_1 = self.get_reg_variable(reg1,init=False)
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_VIN_ROW_PULSE_PARA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ins_pos += 1
+    
+    def set_vin_col_pulse_para(self,reg2:str,reg1:str,reg0:str):
+        reg_2 = self.get_reg_variable(reg2,init=False)
+        reg_1 = self.get_reg_variable(reg1,init=False)
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_VIN_COL_PULSE_PARA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ins_pos += 1
+
+    def set_write_row_pulse_para(self,reg2:str,reg1:str,reg0:str):
+        reg_2 = self.get_reg_variable(reg2,init=False)
+        reg_1 = self.get_reg_variable(reg1,init=False)
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_WRITE_ROW_PULSE_PARA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ins_pos += 1
+
+    def set_write_col_pulse_para(self,reg2:str,reg1:str,reg0:str):
+        reg_2 = self.get_reg_variable(reg2,init=False)
+        reg_1 = self.get_reg_variable(reg1,init=False)
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_WRITE_COL_PULSE_PARA,command_data=CmdData(reg_2<<16|reg_1<<8|reg_0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.data["command_name"], reg2, reg1, reg0))
+        self.ins_pos += 1
+
+    def set_read_row_pulse_delay(self,reg0:str):
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_READ_ROW_PULSE_DELAY,command_data=CmdData(reg_0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.data["command_name"], reg0))
+        self.ins_pos += 1
+
+    def set_read_col_pulse_delay(self,reg0:str):
+        reg_0 = self.get_reg_variable(reg0,init=False)
+        ins = CMD(PL_READ_COL_PULSE_DELAY,command_data=CmdData(reg_0))
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.data["command_name"], reg0))
+        self.ins_pos += 1
+
+    def set_write(self):
+        ins = CMD(PL_SET_WRITE)
+        self.ins_data.append(ins)
+        self.ass_ins.append((0, ins.data["command_name"]))
+        self.ins_pos += 1

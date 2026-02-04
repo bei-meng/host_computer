@@ -57,7 +57,7 @@ class CHIP():
         """
         for root, dirs, files in os.walk(directory):
             for file in files:
-                if file.endswith('.txt'):
+                if file.endswith('.asm'):
                     self.compilers[file] = COMPILER()
                     self.compilers[file].load_assembler_ins(os.path.join(root, file),encoding)
 
@@ -3133,3 +3133,20 @@ class CHIP():
         self.ps.receive_packet_check(bytes_num=4,message_check="cc550000")
 
         return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_resistance(voltage=res, read_voltage=read_voltage),ps_ddr_pos
+
+
+    def execute_asm(self,file_path,const_data:dict = None,din_data:list[CMD] = None,din_ram_start:int = 0,ins_ram_start:int = 0):
+        """
+            执行对应路径下面的汇编代码，
+            const_data为
+        """
+        compiler = COMPILER()
+        compiler.load_assembler_ins(file_path)
+        if const_data is not None:
+            compiler.set_const(const_data)
+        if din_data is not None:
+            compiler.set_din(din_data)
+
+        ins_data,din_ram_data = compiler.get_ins_data()
+        self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
+        self.execute_ins(ins_data=ins_data,ins_ram_start = ins_ram_start)

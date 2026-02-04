@@ -1,18 +1,27 @@
 # 注释使用:#或者;
 # 立即数只支持：16进制数格式0x10或者0X10, 10进制数格式10101,10进制数最高位不能为0
-# 指令名称后面为i的表示对立即数或常量的操作
-# 立即数大小不能超过256，因为只有8位,可以通过移位乘法来实现
+# 指令名称后面为i的表示对立即数或常量的操作, 常量支持外部数据覆盖， din数据也支持外部数据覆盖
+# 大部分指令的立即数大小不能超过256，因为只有8位,可以通过移位乘法来实现
 # 一定要记得reset：cim_reset
 # 指令不区分大小写
+# 传到din_ram的数据必须放到_data_标签和_main_标签之间，执行的指令必须放在main标签之后, _data_标签和_main_标签之间不能有其他标签
+# _data_标签在_main_标签之前
+
+_data_:
+0x0000_FFFF
+0x0000_0000
+0x0000_0001
+0x0000_0002
 
 
+_main_:
 # 这两条指令不用管
-const_i imm,10                                          # 注册常量imm, 值为10,指令中的立即数可以使用
-free_reg reg1                                           # 释放变量reg1所占寄存器(如果后面没有用到这个寄存器的值)
+const_uint8 imm,10                                      # 注册常量imm, 值为10,指令中的立即数可以使用
+# free_reg reg1                                           # 释放变量reg1所占寄存器(如果后面没有用到这个寄存器的值)
 
-const_i imm0,10
-const_i imm1,10
-const_i mode,1
+const_uint8 imm0,10
+const_uint8 imm1,10
+const_uint8 mode,1
 
 mov_i reg8,0
 mov_i reg0,1
@@ -120,4 +129,19 @@ JGE IR_ram_addr
 
 JMP_r reg2
 MUL reg2,reg1,reg0
-#ret = JMP_R reg127
+# ret                                                     # ret = JMP_r reg63
+
+
+
+# PL新增指令(0x2B,0x40-0x49)
+set_IO imm                                              # 设置IO
+set_row_ctrl_pulse_para reg2, reg1, reg0                # 设置行控制脉冲参数, reg[addr2]:mode。mode0:常0，mode1:常1，mode2:pusle。reg[addr1]：pulse delay。 reg[addr0]：pulse width 
+set_col_ctrl_pulse_para reg2, reg1, reg0                # 设置列控制脉冲参数
+set_tg_pulse_width_para reg2, reg1, reg0                # 设置tg脉冲宽度
+set_vin_row_pulse_para reg2, reg1, reg0                 # 设置vin行脉冲参数
+set_vin_col_pulse_para reg2, reg1, reg0                 # 设置vin列脉冲参数
+set_write_row_pulse_para reg2, reg1, reg0               # 设置写行脉冲参数
+set_write_col_pulse_para reg2, reg1, reg0               # 设置写列脉冲参数
+set_read_row_pulse_delay reg0                           # 设置读行脉冲延迟
+set_read_col_pulse_delay reg0                           # 设置读列脉冲延迟
+set_write

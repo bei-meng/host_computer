@@ -1643,7 +1643,7 @@ PL_ACTV_RAM_READ=dict(
     n_data_bytes = N_DATA_BYTES.THREE,
     command_name = "pl_actv_ram_read",
     command_data = CmdData(0),
-    command_description = "读取actv ram的结果，结果保存在512bits寄存器"
+    command_description = "读取actv ram的结果, 结果保存在512bits寄存器"
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -1731,6 +1731,33 @@ PL_SET_NEURON_ENABLE=dict(
     command_name = "pl_set_neuron_enable",
     command_data = CmdData(0),
     command_description = "神经元使能配置"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
+#-------------------------------------------------------------------PL_IO_CTRL:0x2b
+PL_IO_CTRL=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_io_ctrl",
+    command_data = CmdData(0),
+    command_description = 
+        """
+            设置IO[15:0]为{imm1[7:0], imm0[7:0]}
+            reset:ins_IO[0]
+            reg_out:ins_IO[1]
+            B12_L5_N:ins_IO[2]
+            B12_L7_P:ins_IO[3]
+            B12_L6_P:ins_IO[4]
+            B12_L7_N:ins_IO[5]
+            B12_L6_N:ins_IO[6]
+            B12_L13_P:ins_IO[7]
+            B12_L11_P:ins_IO[8]
+            B12_L11_N:ins_IO[9]
+        """
+
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
@@ -1949,24 +1976,125 @@ PL_SET_NEURON_BANK_INDEX=dict(
 )
 COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------PL_ROW_CTRL_PULSE_PARA:0x40
+PL_ROW_CTRL_PULSE_PARA=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_row_ctrl_pulse_para",
+    command_data = CmdData(0),
+    command_description = "reg[addr2]:mode。mode0:常0, mode1:常1, mode2:pusle。reg[addr1]: pulse delay。 reg[addr0]: pulse width "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------PL_COL_CTRL_PULSE_PARA:0x41
+PL_COL_CTRL_PULSE_PARA=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_col_ctrl_pulse_para",
+    command_data = CmdData(0),
+    command_description = "reg[addr2]:mode。mode0:常0, mode1:常1, mode2:pusle。reg[addr1]: pulse delay。 reg[addr0]: pulse width "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------PL_TG_PULSE_PARA:0x42
+PL_TG_PULSE_PARA=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_tg_pulse_para",
+    command_data = CmdData(0),
+    command_description = "reg[addr2]:mode。mode0:常0, mode1:常1, mode2:pusle。reg[addr1]: pulse delay。 reg[addr0]: pulse width "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------PL_VIN_ROW_PULSE_PARA:0x43
+PL_VIN_ROW_PULSE_PARA=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_vin_row_pulse_para",
+    command_data = CmdData(0),
+    command_description = "reg[addr2]:mode。mode0:常0, mode1:常1, mode2:pusle。reg[addr1]: pulse delay。 reg[addr0]: pulse width "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------PL_VIN_COL_PULSE_PARA:0x44
+PL_VIN_COL_PULSE_PARA=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_vin_col_pulse_para",
+    command_data = CmdData(0),
+    command_description = "reg[addr2]:mode。mode0:常0, mode1:常1, mode2:pusle。reg[addr1]: pulse delay。 reg[addr0]: pulse width "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------PL_WRITE_ROW_PULSE_PARA:0x45
+PL_WRITE_ROW_PULSE_PARA=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_write_row_pulse_para",
+    command_data = CmdData(0),
+    command_description = "reg[addr2]:mode。mode0:常0, mode1:常1, mode2:pusle。reg[addr1]: pulse delay。 reg[addr0]: pulse width "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------PL_WRITE_COL_PULSE_PARA:0x46
+PL_WRITE_COL_PULSE_PARA=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_write_col_pulse_para",
+    command_data = CmdData(0),
+    command_description = "reg[addr2]:mode。mode0:常0, mode1:常1, mode2:pusle。reg[addr1]: pulse delay。 reg[addr0]: pulse width "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------PL_READ_ROW_PULSE_DELAY:0x47
+PL_READ_ROW_PULSE_DELAY=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_read_row_pulse_delay",
+    command_data = CmdData(0),
+    command_description = "reg[addr2]:mode。mode0:常0, mode1:常1, mode2:pusle。reg[addr1]: pulse delay。 reg[addr0]: pulse width "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
+#-------------------------------------------------------------------PL_READ_COL_PULSE_DELAY:0x48
+PL_READ_COL_PULSE_DELAY=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_read_col_pulse_delay",
+    command_data = CmdData(0),
+    command_description = "reg[addr2]:mode。mode0:常0, mode1:常1, mode2:pusle。reg[addr1]: pulse delay。 reg[addr0]: pulse width "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
-
-
-
-
-
-
-
-
-
+#-------------------------------------------------------------------PL_SET_WRITE:0x49
+PL_SET_WRITE=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.PL,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.THREE,
+    command_name = "pl_set_write",
+    command_data = CmdData(0),
+    command_description = "reg[addr2]:mode。mode0:常0, mode1:常1, mode2:pusle。reg[addr1]: pulse delay。 reg[addr0]: pulse width "
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
 
 #------------------------------------------------------------------------------------------
 # **************************************** PS指令 ******************************************

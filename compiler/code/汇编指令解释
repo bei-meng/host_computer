@@ -6,7 +6,7 @@
 
 
 # 这两条指令不用管
-const_i imm,10                                          # 注册常量imm, 值为10,指令中的立即数可以使用
+const_uint8 imm,10                                      # 注册常量imm, 值为10,指令中的立即数可以使用
 free_reg reg1                                           # 释放变量reg1所占寄存器(如果后面没有用到这个寄存器的值)
 
 # 上面写了注释的，按注释来,因为有些参数的顺序改过
@@ -105,6 +105,21 @@ JLT IR_ram_addr
 JGT IR_ram_addr
 JLE IR_ram_addr
 JGE IR_ram_addr
-JMP_r reg2
-#ret = JMP_R reg127
-MUL reg2,reg1,reg0
+
+JMP_r reg2                                              # 跳转到reg2对应的IR_ram_addr,# ret = JMP_R reg63
+MUL reg2,reg1,reg0                                      # reg2 = reg1 * reg0
+ret                                                     # ret = JMP_r reg63
+
+
+# PL新增指令(0x2B,0x40-0x49)
+set_IO imm                                              # 设置IO
+set_row_ctrl_pulse_para reg2, reg1, reg0                # 设置行控制脉冲参数, reg[addr2]:mode。mode0:常0，mode1:常1，mode2:pusle。reg[addr1]：pulse delay。 reg[addr0]：pulse width 
+set_col_ctrl_pulse_para reg2, reg1, reg0                # 设置列控制脉冲参数
+set_tg_pulse_width_para reg2, reg1, reg0                # 设置tg脉冲宽度
+set_vin_row_pulse_para reg2, reg1, reg0                 # 设置vin行脉冲参数
+set_vin_col_pulse_para reg2, reg1, reg0                 # 设置vin列脉冲参数
+set_write_row_pulse_para reg2, reg1, reg0               # 设置写行脉冲参数
+set_write_col_pulse_para reg2, reg1, reg0               # 设置写列脉冲参数
+set_read_row_pulse_delay reg0                           # 设置读行脉冲延迟
+set_read_col_pulse_delay reg0                           # 设置读列脉冲延迟
+set_write
