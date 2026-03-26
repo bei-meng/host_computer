@@ -195,6 +195,22 @@ class CHIP():
         self.ps.send_packets(pkts)
         self.reset_flag = (flag1,flag2,flag3)
 
+    def reset(self,bit10=0b00_0000_0000):
+        """
+            设置IO[15:0]为{imm1[7:0],imm0[7:0]}
+            reset:ins_IO[0]
+            reg_out:ins_IO[1]
+            B12_L5_N:ins_IO[2]
+            B12_L7_P:ins_IO[3]
+            B12_L6_P:ins_IO[4]
+            B12_L7_N:ins_IO[5]
+            B12_L6_N:ins_IO[6]
+            B12_L13_P:ins_IO[7]
+            B12_L11_P:ins_IO[8]
+            B12_L11_N:ins_IO[9]
+        """
+        self.execute_ins([CMD(PL_IO_CTRL,command_data=CmdData(bit10))],ins_ram_start=0)
+
     def send_cmd(self,cmd:list,mode:int):
         """
             Args:
@@ -1486,10 +1502,21 @@ class CHIP():
                 if inversion_type == 1:                                                                 # ECRAM的行配置需要取反
                     index32 = 0xFFFF_FFFF ^ index32
                 elif inversion_type == 2:
-                    if index32&0xFFFF >0:
-                        index32 = index32 | 0xFFFF_0000
+                    if self.setting.IsNew32:
+                        # 一个bank对应4个TIA
+                        if index32&0xFF00_0000 == 0:
+                            index32 = index32 | 0xFF00_0000
+                        if index32&0x00FF_0000 == 0:
+                            index32 = index32 | 0x00FF_0000
+                        if index32&0x0000_FF00 == 0:
+                            index32 = index32 | 0x0000_FF00
+                        if index32&0x0000_00FF == 0:
+                            index32 = index32 | 0x0000_00FF
                     else:
-                        index32 = index32 | 0x0000_FFFF
+                        if index32&0xFFFF_0000 == 0:
+                            index32 = index32 | 0xFFFF_0000
+                        if index32&0xFFFF == 0:
+                            index32 = index32 | 0x0000_FFFF
             # ------------------------------------------------------------------------------------------# ECRAM特定修改
             if din_ram_bank_index_map.get(index32,None) is None:
                 din_ram_bank_index_map[index32] = din_ram_pos                                           # 如果前面没有用过这个index, 记录下来
