@@ -51,14 +51,14 @@ class CHIP():
 
         self.compilers = {}
 
-    def add_compiler(self,directory:str,encoding:str = 'utf-8'):
+    def add_compiler(self,directory:str,check_reg:bool = True, encoding:str = 'utf-8'):
         """
             增加汇编代码
         """
         for root, dirs, files in os.walk(directory):
             for file in files:
                 if file.endswith('.asm'):
-                    self.compilers[file] = COMPILER()
+                    self.compilers[file] = COMPILER(check_reg)
                     self.compilers[file].load_assembler_ins(os.path.join(root, file),encoding)
 
     def get_compiler(self,name:str)->COMPILER:
@@ -1502,7 +1502,7 @@ class CHIP():
                 if inversion_type == 1:                                                                 # ECRAM的行配置需要取反
                     index32 = 0xFFFF_FFFF ^ index32
                 elif inversion_type == 2:
-                    if self.setting.IsNew32:
+                    if self.setting.IsNew32 and self.setting.deviceType==0:
                         # 一个bank对应4个TIA
                         if index32&0xFF00_0000 == 0:
                             index32 = index32 | 0xFF00_0000
@@ -2083,9 +2083,9 @@ class CHIP():
         self.set_tia_gain(gain)
         self.set_op_mode2(read=True,from_row=from_row)
         if from_row:
-            compiler = self.get_compiler("read_point3_from_row.txt")
+            compiler = self.get_compiler("read_point3_from_row.asm")
         else:
-            compiler = self.get_compiler("read_point3_from_col.txt")
+            compiler = self.get_compiler("read_point3_from_col.asm")
 
         din_ram_start = 0
         ins_ram_start = 0
@@ -2334,7 +2334,7 @@ class CHIP():
             elif inversion_type == 1:                                                                     # ECRAM的配置取反
                 index32 = 0xFFFF_FFFF ^ index32
             elif inversion_type == 2:
-                if self.setting.IsNew32:
+                if self.setting.IsNew32 and self.setting.deviceType==0:
                     # 一个bank对应4个TIA
                     if index32&0xFF00_0000 == 0:
                         index32 = index32 | 0xFF00_0000
@@ -2654,7 +2654,7 @@ class CHIP():
     
     def write4(self,crossbar:np.ndarray=None,row_index:list[int]=None,col_index:list[int]=None,
               write_voltage:float=1,tg:Union[float|np.ndarray]= 5,pulse_width:float = 1e-6,
-              set_device:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0):
+              set_device:bool = True,split_type:int = 0,row_type:int = 0,col_type:int = 0, write_num:int = 1):
         """
             Args:
                 crossbar: n*n的np矩阵
@@ -2705,8 +2705,8 @@ class CHIP():
                 if tg_v!=tg_last:
                     ins +=self.get_dac_ins2(tg=tg_v)
                     tg_last = tg_v
-
-            ins.append(CMD(write_ins))
+            for i in range(write_num):
+                ins.append(CMD(write_ins))
             if len(ins_data)+len(ins)+1 >= self.setting.ins_ram_length:
                 self.execute_ins(ins_data=ins_data,ins_ram_start=ins_ram_start)
             ins_data.extend(ins)
@@ -3177,3 +3177,206 @@ class CHIP():
         ins_data,din_ram_data = compiler.get_ins_data()
         self.execute_send_din_data(din_ram_data=din_ram_data,din_ram_start=din_ram_start)
         self.execute_ins(ins_data=ins_data,ins_ram_start = ins_ram_start)
+
+
+    #------------------------------------------------------------------------------------------
+    # *************************************** 汇编执行 ***************************************
+    #------------------------------------------------------------------------------------------
+    def get_din_data_asm(self,row_num_start:int,row_num_end:int,
+                      col_num_start:int,col_num_end:int,point_count_max:int) -> tuple[dict,list[CMD],list[int],list[int]]:
+        """
+            Args:
+                row_num_start: 行号左边界
+                row_num_end: 行号右边界
+                col_num_start: 列号左边界
+                col_num_end: 列号右边界
+                din_ram_start: din_ram起始地址
+                point_count_max: 一次读最大点数
+
+            Returns:
+                const_para: 汇编代码中需要预先获取的常量值
+                din_ram_data: 要下发的din_ram数据
+                row_data: 按顺序遍历的行bank数据
+                col_data: 按顺序遍历的列bank数据
+
+            Function:
+                这里只考虑逐点读的情况
+        """
+
+        const_para = dict(
+            row_bank_din_ram_s_c = 0,                                                                   # 要读的行bank号存放的位置,以及右边界,最多8个bank
+            row_bank_din_ram_e_c = 0,
+            col_bank_din_ram_s_c = 8,                                                                   # 要读的列bank号存放的位置,以及右边界，最多8个bank
+            col_bank_din_ram_e_c = 8,
+            row_index_din_ram_s_c = 16,                                                                  # 每个行bank的起始index号和结束index号存放的位置，最多8个bank，里面存的是索引index[0:31] 坐标从0开始
+            row_index_din_ram_e_c = 24,
+            col_index_din_ram_s_c = 32,                                                                  # 每个列bank的起始index号和结束index号存放的位置
+            col_index_din_ram_e_c = 40,
+            row_col_type0 = 48,                                                                          # 正常32bit
+            row_col_type1 = 80,                                                                          # 存储表示index中01反转的32bit
+            row_col_type2 = 112,                                                                          # 存储表示index反转对应行/列所在TIA之外的所有索引对应的32bit
+            count_max_pos = 144,                                                                      # 一次读最大点数
+            init_mask_zero_pos = 145,                                                                   # 用于初始化
+            init_mask_one_pos = 146,                                                                     
+        )
+
+        # --------------------------------------------------准备din_ram的数据
+        din_ram_data = [CMD(PL_DATA,command_data=CmdData(0)) for i in range(148)]                        # 要发送下去的数据, din_ram的开始存0,用于恢复
+
+
+        # --------------------------------------------------一块dout最大存储空间
+        din_ram_data[const_para["count_max_pos"]]=CMD(PL_DATA,command_data=CmdData(point_count_max))
+        din_ram_data[const_para["init_mask_zero_pos"]]=CMD(PL_DATA,command_data=CmdData(0))
+        din_ram_data[const_para["init_mask_one_pos"]]=CMD(PL_DATA,command_data=CmdData(0xFFFF_FFFF))
+
+        # --------------------------------------------------处理行bank，这里是按顺序来的，所以后面取最大最小的行index默认按顺序就好
+        row_data = self.setting.get_bank_index_tia(list(range(row_num_start,row_num_end)),self.from_row)
+        row_data = self.setting.bank_split(row_data,all_data=True)
+        for i,v in enumerate(row_data):
+            # (pos, row_num/col_num, bank, index, tia_num)
+            din_ram_data[const_para["row_bank_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][2]))
+            din_ram_data[const_para["row_index_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][3]))      # 按顺序，取最大最小值就好
+            din_ram_data[const_para["row_index_din_ram_e_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[-1][3]))
+        const_para["row_bank_din_ram_e_c"] = const_para["row_bank_din_ram_s_c"]+i
+
+        # --------------------------------------------------处理列bank
+        col_data = self.setting.get_bank_index_tia(list(range(col_num_start,col_num_end)),self.from_row)
+        col_data = self.setting.bank_split(col_data,all_data=True)
+        for i,v in enumerate(col_data):
+            # (pos, row_num/col_num, bank, index, tia_num)
+            din_ram_data[const_para["col_bank_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][2]))
+            din_ram_data[const_para["col_index_din_ram_s_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[0][3]))
+            din_ram_data[const_para["col_index_din_ram_e_c"]+i]=CMD(PL_DATA,command_data=CmdData(v[-1][3]))
+        const_para["col_bank_din_ram_e_c"] = const_para["col_bank_din_ram_s_c"] +i
+        # --------------------------------------------------正常32bit
+        for i in range(32):
+            din_ram_data[const_para["row_col_type0"]+i]=CMD(PL_DATA,command_data=CmdData(1<<i))
+        # --------------------------------------------------处理index翻转的32bit值
+        # 表示index中01反转
+        for i in range(32):
+            din_ram_data[const_para["row_col_type1"]+i]=CMD(PL_DATA,command_data=CmdData(0xFFFF_FFFF ^ (1<<i)))
+        # 表示只反转对应行/列所在TIA之外的所有索引
+        if self.setting.deviceType == 0 and self.setting.IsNew32:
+            for i in range(32):
+                if i<8:
+                    index_mask = 0xFFFF_FF00
+                elif i<16:
+                    index_mask = 0xFFFF_00FF
+                elif i<24:
+                    index_mask = 0xFF00_FFFF
+                elif i<32:
+                    index_mask = 0x00FF_FFFF
+                din_ram_data[const_para["row_col_type2"]+i]=CMD(PL_DATA,command_data=CmdData(index_mask | (1<<i)))
+        else:
+            for i in range(32):
+                if i<16:
+                    index_mask = 0xFFFF_0000
+                elif i<32:
+                    index_mask = 0x0000_FFFF
+                din_ram_data[const_para["row_col_type2"]+i]=CMD(PL_DATA,command_data=CmdData(index_mask | (1<<i)))
+
+
+        row_data = [j[0] for i in row_data for j in i]
+        col_data = [j[0] for i in col_data for j in i]
+        return const_para,din_ram_data,row_data,col_data
+
+    def read_point_asm(self,row_num_start:int,row_num_end:int,col_num_start:int,col_num_end:int,
+                    read_voltage:float,tg:float = 5,gain:int = 1,from_row:bool = True, 
+                    row_type:int = 0,col_type:int = 0):
+        """
+            Args:
+                row_num_start: 行号左边界
+                row_num_end: 行号右边界
+                col_num_start: 列号左边界
+                col_num_end: 列号右边界
+
+            Returns:
+                对应块大小的矩阵
+            
+                左闭右开
+        """
+        assert row_num_start>=0 and row_num_start<256 and row_num_end>=0 and row_num_end<=256, "超过界限"
+        assert col_num_start>=0 and col_num_start<256 and col_num_end>=0 and col_num_end<=256, "超过界限"
+        assert from_row==True, "只实现了从行给电压,列输出"
+        if row_num_start>=row_num_end or col_num_start>=col_num_end:
+            # print("0个点需要读。")
+            return np.array([])
+        self.read_voltage = read_voltage
+        self.set_tia_gain(gain)
+        self.set_op_mode2(read=True,from_row=from_row)
+        if from_row:
+            compiler = self.get_compiler("read_point3_from_row.asm")
+        # else:
+        #     compiler = self.get_compiler("read_point3_from_col.asm")
+
+        ins_ram_start = 0
+        count_max_c = self.setting.dout_ram_length if self.setting.IsNew32 else self.setting.dout_ram_length
+        count_max_c = count_max_c*self.setting.chip_tia_num
+        const_data,din_data,row_data,col_data = self.get_din_data_asm(row_num_start,row_num_end,col_num_start,col_num_end,count_max_c)
+
+        # -------------------------------------------------------常量初始化
+        for k,v in const_data.items():
+            compiler.add_const_variable(k,v)
+
+        compiler.add_const_variable("pq_c",1)
+        if self.setting.chip_tia_num == 16:
+            compiler.add_const_variable("per_points_bit",4)
+            compiler.add_const_variable("per_points_sub1",15)
+        else:
+            compiler.add_const_variable("per_points_bit",5)
+            compiler.add_const_variable("per_points_sub1",31)
+
+        if row_type==0:
+            compiler.add_const_variable("row_index_pos",const_data["row_col_type0"])
+            compiler.add_const_variable("row_index_init",const_data["init_mask_zero_pos"])
+        elif row_type==1:
+            compiler.add_const_variable("row_index_pos",const_data["row_col_type1"])
+            compiler.add_const_variable("row_index_init",const_data["init_mask_one_pos"])
+        elif row_type==2:
+            compiler.add_const_variable("row_index_pos",const_data["row_col_type2"])
+            compiler.add_const_variable("row_index_init",const_data["init_mask_one_pos"])
+
+        if col_type==0:
+            compiler.add_const_variable("col_index_pos",const_data["row_col_type0"])
+            compiler.add_const_variable("col_index_init",const_data["init_mask_zero_pos"])
+        elif col_type==1:
+            compiler.add_const_variable("col_index_pos",const_data["row_col_type1"])
+            compiler.add_const_variable("col_index_init",const_data["init_mask_one_pos"])
+        elif col_type==2:
+            compiler.add_const_variable("col_index_pos",const_data["row_col_type2"])
+            compiler.add_const_variable("col_index_init",const_data["init_mask_one_pos"])
+        # -------------------------------------------------------常量初始化
+
+        ins_data = self.get_dac_ins2(v=read_voltage,tg=tg)
+        compiler.add_offset(len(ins_data))
+        ins_data_asm,din_data_asm = compiler.get_ins_data()
+        ins_data += ins_data_asm
+
+        # --------------------------------------------------发送数据
+        self.execute_send_din_data(din_ram_data=din_data+din_data_asm,din_ram_start=0)
+        self.execute_ins(ins_data=ins_data,ins_ram_start = ins_ram_start,message_check=None)
+
+        # 等待读取数据
+        row_length,col_length = row_num_end-row_num_start, col_num_end-col_num_start
+        res = np.zeros((row_length,col_length))
+
+        point_num = row_length*col_length
+        num = count_max_c
+        
+        voltage = None
+        coords = [(r, c) for r in row_data for c in col_data]
+
+        for row_pos, col_pos in coords:
+            if num == count_max_c:
+                voltage = self.adc.get_out3(min(point_num, count_max_c))
+                num = 0
+                point_num -= count_max_c
+            
+            res[row_pos, col_pos] = voltage[num]
+            num += 1
+
+        self.ps.receive_packet_check(4,"cc550000")
+
+        return res,self.voltage_to_cond(voltage=res, read_voltage=read_voltage),self.voltage_to_cond(voltage=res, read_voltage=read_voltage)
+
+        

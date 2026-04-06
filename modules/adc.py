@@ -279,12 +279,12 @@ class ADC():
 
             从dout_ram里面的dout_ram_start位置开始读num次, 返回对应的tia的值
         """
-        data_B = int((data_length*16+self.setting.dout_ram_size-1)/self.setting.dout_ram_size)*self.setting.dout_ram_size_B
+        data_B = int((data_length+self.setting.chip_tia_num-1)//self.setting.chip_tia_num)*self.setting.dout_ram_size_B
         message = self.ps.receive_packet(data_B)
         # 大端字节序解析
         int16_array = np.frombuffer(message, dtype=np.dtype('>i2'))
         voltage = int16_array * self.base
-        return voltage,False
+        return voltage
     
 
     def get_out_ins5(self,data_length:int,dout_ram_start:int):

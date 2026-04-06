@@ -74,7 +74,7 @@ class COMPENSATION():
             return resistence
         
 
-    def compensation_forward(self,index,resistence,gain_r_mult = None,offset = None,value = None,mult = None,from_row=True,return_type = 0):
+    def compensation_forward(self,index,resistence,r_out = None,gain_r_mult = None,offset = None,value = None,mult = None,from_row=True,return_type = 0):
         """
             index表示输入的行号,或者列号
             resistence为输出的电阻结果kΩ
@@ -88,7 +88,8 @@ class COMPENSATION():
         # 线阻的影响
         rw = np.array([(255-max_index)*self.r_wire if (from_row and i%2==0) or (not from_row and i%2==1) else (min_index)*self.r_wire for i in range(latchsize)])
         # r_out的影响
-        r_out = self.col_r_out if from_row else self.row_r_out
+        if r_out is None:
+            r_out = self.col_r_out if from_row else self.row_r_out
         # 因为读误差，计算误差r_out不准,拟合后得到对应的offset
         if offset is None:
             offset = self.col_offset if from_row else self.row_offset

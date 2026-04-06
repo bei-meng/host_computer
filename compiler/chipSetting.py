@@ -364,7 +364,7 @@ class CHIPSETTING:
                 if num&1:
                     index_base,index_offset = 32,1
                     TIA_base = 0
-                # 偶数行17-31
+                # 偶数列17-31
                 else:
                     index_base,index_offset = 32,2
                     TIA_base = 17

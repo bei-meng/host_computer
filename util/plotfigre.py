@@ -2,8 +2,56 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 import numpy as np
 
-import time
-import json
+def plot_images_list(data_list, pos=None, title_list=None, vmin=None,
+                     cmap=plt.cm.viridis, cbar_label="Value", save_path=None):
+    """
+    自动根据数据数量绘制子图：一行最多3张，自动换行
+    :param data_list: 数据列表 [data1, data2, data3, ...]
+    :param pos: 灰色窗口坐标 (x1, y1, x2, y2)
+    :param title_list: 标题列表
+    :param vmin: 全局统一最小值
+    :param cmap: 配色
+    :param cbar_label: 色条标签
+    :param save_path: 保存路径
+    """
+    n = len(data_list)
+    ncols = min(3, n)
+    nrows = (n + ncols - 1) // ncols
+
+    fig, axes = plt.subplots(nrows, ncols, figsize=(4.5 * ncols, 4 * nrows))
+    if n == 1:
+        axes = [axes]
+    else:
+        axes = axes.flatten()
+
+    text_style = {'color':'k', 'fontsize':10, 'bbox':dict(facecolor='w', alpha=0.7)}
+
+    for i in range(n):
+        data = data_list[i]
+        ax = axes[i]
+        vmin_use = vmin if vmin is not None else np.nanmin(data)
+        vmax_use = np.nanmax(data)
+        norm = Normalize(vmin=vmin_use, vmax=vmax_use)
+        im = ax.imshow(data, cmap=cmap, norm=norm)
+
+        if title_list and i < len(title_list):
+            ax.set_title(title_list[i], fontsize=11)
+
+        roi_data = data[pos] if pos is not None else data
+        mean_val = np.nanmean(roi_data)
+        std_val = np.nanstd(roi_data)
+
+        ax.text(0.98, 0.98, f'mean={mean_val:.3f}\nstd={np.std(std_val):.3f}', ha='right', va='top', transform=ax.transAxes, **text_style)
+        fig.colorbar(im, ax=ax, label=cbar_label)
+
+    for j in range(n, len(axes)):
+        axes[j].set_visible(False)
+
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.show()
 
 def plot_v(v,figsize=(12,4),title=""):
     """

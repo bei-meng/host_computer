@@ -35,6 +35,7 @@ srl_r reg2,reg1,reg0                                    # reg2 = reg1 >> reg0
 set_row_bank_and_data_r reg1,reg0                       # 配置行bank,reg1 为row_bank_mask,reg0 为row_index_mask
 set_col_bank_and_data_r reg1,reg0                       # 配置列bank,reg1 为col_bank_mask,reg0 为col_index_mask
 
+# 不记得哪边是给电压的了
 row_read_rram_1ch_to_dout reg2,reg1,reg0                # 从行读,reg2 为tia的掩码,reg1 为结果存储的dout_ram地址,reg0 为哪一块dout_ram(每个数据单元16bit)
 col_read_rram_1ch_to_dout reg2,reg1,reg0                # 从列读,reg2 为tia的掩码,reg1 为结果存储的dout_ram地址,reg0 为哪一块dout_ram(每个数据单元16bit)
 

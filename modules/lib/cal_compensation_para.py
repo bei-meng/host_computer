@@ -143,7 +143,6 @@ class COMPENSATION_PARA():
         """
         point_read = np.zeros((256,256))
         sum_read = np.zeros((256))
-        num = 40
         for i in range(num):
             crossbar = np.ones((256,256))
             voltage,cond,resistence = chip.read4(crossbar=crossbar,row_index=None,col_index=None,read_voltage=0.1,tg=5,gain=1,sub_base=True,from_row=from_row,split_type=0,row_type=0,col_type=0)

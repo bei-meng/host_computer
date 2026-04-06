@@ -54,6 +54,16 @@ class CLK_MANAGER():
 
         self.pulse_cyc = pulse_cyc
 
+    def set_write_done_delay(self,delay):
+        pkts=Packet()
+        pkts.append_cmdlist([
+            # 给行脉冲，结束后，等待周期数
+            CMD(OP_ROW_PULSE_DONE_DELAY_CYC,command_data=CmdData(delay)),
+            # 给列脉冲，结束后，等待周期数
+            CMD(OP_COL_PULSE_DONE_DELAY_CYC,command_data=CmdData(delay)),
+        ],mode=1)
+        self.ps.send_packets(pkts)
+
     def set_cyc(self,delay1 = 20,delay2 = 20,delay3 = 100):        
         pkts=Packet()
         pkts.append_cmdlist([

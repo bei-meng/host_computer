@@ -19,9 +19,9 @@ class COMPILER:
     offset = 0                                                      # 当前指令的偏移
     return_reg = "reg63"
 
-    check_reg = False
+    check_reg = True
 
-    def __init__(self):
+    def __init__(self,check_reg):
         self.ins_data = []                                          # 存放CMD
         self.ass_ins = []                                           # 汇编指令(name,参数2, 参数1, 参数0)
         self.reg_flag = [0]*CHIPSETTING.REG_NUM                     # 寄存器使用标志, 使用为1,未使用为0
@@ -33,14 +33,15 @@ class COMPILER:
         self.const_variable = {}
         self.return_label = {}                                      # 返回位置的标签
         self.ins_pos = 0                                            # 最后一条指令的位置
-        # self.get_reg_variable("zero")                               # 寄存器默认初始化就为0,不要改0寄存器的值
         self.offset = 0                                             # 指令整体偏移量
 
         self.din_data = []
 
+        self.check_reg = check_reg                                  # 是否检查寄存器，比如reg0这种直接用0表示寄存器的情况，就设置为False
+
         # 闭包变量 i 的延迟绑定
 
-        apu_calc = ['apu_calc_relu","apu_calc_sigmoid","apu_calc_tanh']
+        apu_calc = ["apu_calc_relu", "apu_calc_sigmoid", "apu_calc_tanh"]
         for i,name in enumerate(apu_calc):
             setattr(self, name.lower(), lambda i=str(i): self.apu_calc(i))
 
@@ -78,6 +79,9 @@ class COMPILER:
 
         setattr(self, "add", lambda reg2,reg1,reg0: self.add_r(reg2,reg1,reg0))
         setattr(self, "sub", lambda reg2,reg1,reg0: self.sub_r(reg2,reg1,reg0))
+
+        if check_reg:
+            self.get_reg_variable("zero")                               # 寄存器默认初始化就为0,不要改0寄存器的值
 
     def __str__ (self):
         res = ""
