@@ -1120,6 +1120,20 @@ COMMAND_ADDR+=1         # 命令的地址自增1
 
 
 
+COMMAND_ADDR = 111
+#-------------------------------------------------------------------ECRAM_POWER:80
+ECRAM_POWER=dict(
+    command_addr = COMMAND_ADDR,
+    command_type = COMMAND_TYPE.RW,
+    n_addr_bytes = N_ADDR_BYTES.ONE,
+    n_data_bytes = N_DATA_BYTES.FOUR,
+    command_name = "ecram_power",
+    command_data = CmdData(0),
+    command_description = "可写入0或者1，配置ECRAM的电源"
+)
+COMMAND_ADDR+=1         # 命令的地址自增1
+
+
 
 
 
